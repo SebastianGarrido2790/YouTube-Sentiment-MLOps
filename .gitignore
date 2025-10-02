@@ -224,7 +224,7 @@ env/
 
 # Data and models
 data/
-models/
+# models/
 
 # Environmental variables
 .env

@@ -1,0 +1,1 @@
+RandomForest with TF-IDF Trigrams, imbalance handling method=class_weights

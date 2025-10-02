@@ -1,0 +1,7 @@
+stages:
+  download_dataset:
+    cmd: uv run python src/data/download_dataset.py
+    deps:
+    - src/data/download_dataset.py
+    outs:
+    - data/raw
