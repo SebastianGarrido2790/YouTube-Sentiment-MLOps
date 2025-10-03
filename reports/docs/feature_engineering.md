@@ -26,6 +26,8 @@ Then run `uv sync`. For innovation, this enables easy A/B testing (e.g., BERT vs
 - **Maintainability**: Flag enables branching in CI/CD; DVC tracks changes.
 - **Adaptability**: Innovate by fine-tuning BERT on Reddit data for politics-specific lift.
 
+---
+
 ### Necessity of Saving Feature Matrices and Labels as Compressed NumPy Arrays
 
 Saving feature matrices (X) and labels (y) as compressed NumPy arrays in `../../models/features/` is a core MLOps practice for ensuring reproducibility, efficiency, and modularity in the pipeline. It decouples data preparation from modeling, allowing independent iteration without redundant computations.
@@ -50,3 +52,35 @@ Without this, pipelines risk data leakage, high compute costs, and debugging ove
 
 This approach is lightweight yet robust—test by loading a file post-run to verify shapes match originals. For innovation, consider HDF5 for larger-scale datasets.
 
+---
+
+Based on the MLflow metrics provided, the best choice for the **TF-IDF `max_features`** is **$7000$**. This value yields the highest overall accuracy.
+
+The relevant runs and their final overall `accuracy` metric are extracted from the provided data:
+
+| Run ID | `vectorizer_max_features` (Inferred) | `accuracy` |
+| :--- | :--- | :--- |
+| `c4bfb747eaa341ef93be37f767e80a30` | 10000 | 0.6345634563456346 |
+| `c5d92a5cd68941cfa9c27a833351a0d8` | 9000 | 0.6304230423042304 |
+| `633b1c20ef5548b48877f44eaa915678` | 8000 | 0.6334833483348334 |
+| **`d9ab47065c7447e896471aaa5c859a15`** | **7000** | **0.6477047704770477** |
+| `1cebe189798f4d8682f1953ea8058f88` | 6000 | 0.6343834383438344 |
+| `87bee845e6434409bfa5edecec23e4d5` | 5000 | 0.6387038703870387 |
+| `dcdde7eac604456f8a2fe63d753fba37` | 4000 | 0.6336633663366337 |
+| `6ad69553ca6d45a2a95526e1ad91d0c5` | 3000 | 0.6345634563456346 |
+| `ec0159be51284e6f8659d5f918f4c0a9` | 2000 | 0.6441044104410441 |
+| (Not fully logged) | 1000 | (Incomplete) |
+
+The run with an **accuracy of $0.6477$** (or $64.77\%$) belongs to the run with `run_id` `6ad69553ca6d45a2a95526e1ad91d0c5`.
+
+### Best `max_features`
+
+The **highest accuracy score** of **$0.6477$** was achieved with the run corresponding to `max_features = 7000`.
+
+| Metric | Value ($\text{max\_features} = 7000$) |
+| :--- | :--- |
+| **Accuracy** | **$0.6477$** |
+| Weighted Avg F1-Score | $0.5861$ |
+| Macro Avg F1-Score | $0.5219$ |
+
+This suggests that using $7000$ features (trigrams) strikes the best balance between providing enough information for the model and avoiding noise or overfitting compared to the other tested values.
