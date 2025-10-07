@@ -54,6 +54,12 @@ This approach is lightweight yet robust—test by loading a file post-run to ver
 
 ---
 
+### Error Analysis and Fixes
+
+The `TypeError: 'coo_matrix' object is not subscriptable` arises because `load_npz` returns a COO sparse matrix, which lacks support for slicing (e.g., `[:, -4:]`). Solution: Convert to CSR format post-load with `.tocsr()`, enabling efficient indexing. This is standard for SciPy sparse operations.
+
+---
+
 Based on the MLflow metrics provided, the best choice for the **TF-IDF `max_features`** is **$7000$**. This value yields the highest overall accuracy.
 
 The relevant runs and their final overall `accuracy` metric are extracted from the provided data:

@@ -1,7 +1,20 @@
 stages:
-  download_dataset:
-    cmd: uv run python src/data/download_dataset.py
+  data_ingestion:
+    cmd: uv run python -m src.data.download_dataset --url ${data_ingestion.url} --output_path ${data_ingestion.output_path}
     deps:
     - src/data/download_dataset.py
     outs:
-    - data/raw
+    - data/raw/reddit_comments.csv
+
+  data_preparation:
+    cmd: uv run python -m src.data.make_dataset --test_size ${data_preparation.test_size} --random_state ${data_preparation.random_state}
+    deps:
+    - data/raw/reddit_comments.csv
+    - src/data/make_dataset.py
+    params:
+    - data_preparation.test_size
+    - data_preparation.random_state
+    outs:
+    - data/processed/train.parquet
+    - data/processed/val.parquet
+    - data/processed/test.parquet

@@ -1,0 +1,7 @@
+data_ingestion:
+  url: "https://raw.githubusercontent.com/Himanshu-1703/reddit-sentiment-analysis/refs/heads/main/data/reddit.csv"
+  output_path: "data/raw/reddit_comments.csv"
+
+data_preparation:
+  test_size: 0.15  # For test split (remaining 85% further split into train/val)
+  random_state: 42

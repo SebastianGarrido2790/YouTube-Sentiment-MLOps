@@ -7,13 +7,11 @@ import mlflow
 import mlflow.sklearn
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import accuracy_score, f1_score, classification_report
-from sklearn.preprocessing import LabelEncoder
 import numpy as np
 from scipy.sparse import load_npz
 from imblearn.under_sampling import RandomUnderSampler
 import pickle
 import os
-from sklearn.preprocessing import StandardScaler  # For optional dense scaling
 
 # Set up MLflow (adjust URI for your EC2 instance)
 # mlflow.set_tracking_uri("http://ec2-54-175-41-29.compute-1.amazonaws.com:5000/")
@@ -23,9 +21,6 @@ mlflow.set_experiment("Baseline Model - Logistic Regression TF-IDF")
 def train_baseline(scale_dense: bool = False) -> None:
     """
     Train Logistic Regression with undersampling.
-
-    Args:
-        scale_dense: If True, scale derived features for better convergence.
     """
     # Load features (TF-IDF + derived; assumes default from feature_engineering.py)
     X_train = load_npz(
@@ -105,7 +100,7 @@ def train_baseline(scale_dense: bool = False) -> None:
         )
 
     # Save locally for inference
-    local_dir = os.path.abspath("models/baseline_logistic")
+    local_dir = os.path.abspath("models/baseline")
     os.makedirs(local_dir, exist_ok=True)
     full_path = os.path.join(local_dir, "logistic_baseline.pkl")
 

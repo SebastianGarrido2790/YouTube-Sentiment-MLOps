@@ -5,6 +5,7 @@ description = "End-to-end MLOps pipeline for real-time YouTube sentiment analysi
 authors = [{name = "Sebastian Garrido", email = "sebastiangarrido2790@gmail.com"}]
 dependencies = [
     "pandas>=2.0",
+    "python-dotenv>=1.0",
     "scikit-learn>=1.3",
     "nltk>=3.8",
     "mlflow>=2.8",
@@ -15,9 +16,13 @@ dependencies = [
     "jupyter==1.0.0",
     "seaborn>=0.13.2",
     "wordcloud>=1.9.4",
-    "transformers>=4.30",
     "torch>=2.0", # For efficient inference
-    "accelerate>=0.20",
-    "imblearn>=0.0",
+    "imbalanced-learn>=0.12.0",
+    "optuna>=3.6",
+    "xgboost>=2.0",
+    "lightgbm>=4.3",
+    "transformers>=4.40",
+    "datasets>=2.20",  # For BERT data loading
+    "accelerate>=0.30"  # For distributed training
 ]
-requires-python = ">=3.10"
+requires-python = ">=3.10, <3.13"

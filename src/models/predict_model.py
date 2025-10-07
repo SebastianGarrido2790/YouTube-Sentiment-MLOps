@@ -7,8 +7,8 @@ import numpy as np
 
 def predict_sentiment(
     comments: list[str],
-    model_path: str = "models/logistic_baseline.pkl",
-    vectorizer_path: str = "data/processed/features/vectorizer.pkl",
+    model_path: str = "../../models/baseline/logistic_model.pkl",
+    vectorizer_path: str = "../../models/features/vectorizer.pkl",
 ) -> list[str]:
     """
     Predict sentiment for new comments (-1: Negative, 0: Neutral, 1: Positive).
@@ -23,7 +23,7 @@ def predict_sentiment(
         model = pickle.load(f)
     with open(vectorizer_path, "rb") as f:
         vectorizer = pickle.load(f)
-    with open("data/processed/features/label_encoder.pkl", "rb") as f:
+    with open("../../models/features/label_encoder.pkl", "rb") as f:
         le = pickle.load(f)
 
     # Clean and vectorize (reuse clean_text from src/data/make_dataset.py)
