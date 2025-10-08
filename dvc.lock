@@ -1,0 +1,45 @@
+schema: '2.0'
+stages:
+  data_ingestion:
+    cmd: uv run python -m src.data.download_dataset --url 
+      https://raw.githubusercontent.com/Himanshu-1703/reddit-sentiment-analysis/refs/heads/main/data/reddit.csv
+      --output_path data/raw/reddit_comments.csv
+    deps:
+    - path: src/data/download_dataset.py
+      hash: md5
+      md5: 133dd7458c14afa797daee3fead1422e
+      size: 3653
+    outs:
+    - path: data/raw/reddit_comments.csv
+      hash: md5
+      md5: 38ee083169162dbac0cb07c80ac0f04e
+      size: 6888934
+  data_preparation:
+    cmd: uv run python -m src.data.make_dataset --test_size 0.15 --random_state 
+      42
+    deps:
+    - path: data/raw/reddit_comments.csv
+      hash: md5
+      md5: 38ee083169162dbac0cb07c80ac0f04e
+      size: 6888934
+    - path: src/data/make_dataset.py
+      hash: md5
+      md5: 9f0f44de0c037f152628a00a54668041
+      size: 5030
+    params:
+      params.yaml:
+        data_preparation.random_state: 42
+        data_preparation.test_size: 0.15
+    outs:
+    - path: data/processed/test.parquet
+      hash: md5
+      md5: 28b2289497d5ce4f41945ef18ed36b6d
+      size: 511597
+    - path: data/processed/train.parquet
+      hash: md5
+      md5: b91b5441e14fbb36b0289251c073ee3c
+      size: 2387085
+    - path: data/processed/val.parquet
+      hash: md5
+      md5: 3268ccb60c38c536fb968913be0ba6c1
+      size: 497388
