@@ -5,3 +5,11 @@ data_ingestion:
 data_preparation:
   test_size: 0.15  # For test split (remaining 85% further split into train/val)
   random_state: 42
+
+feature_comparison:
+  mlflow_uri: "http://127.0.0.1:5000" # Local for testing, change to EC2 IP later
+  ngram_ranges: "[(1,1),(1,2),(1,3)]"  # List as string; parse in script
+  max_features: 5000
+  batch_size: 32
+  n_estimators: 200
+  max_depth: 15

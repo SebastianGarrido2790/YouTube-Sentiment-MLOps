@@ -18,3 +18,21 @@ stages:
     - data/processed/train.parquet
     - data/processed/val.parquet
     - data/processed/test.parquet
+
+  feature_comparison:
+    cmd: uv run python -m src.features.tfidf_vs_bert --ngram_ranges ${feature_comparison.ngram_ranges} --max_features ${feature_comparison.max_features} --batch_size ${feature_comparison.batch_size} --n_estimators ${feature_comparison.n_estimators} --max_depth ${feature_comparison.max_depth}
+    deps:
+    - data/processed/train.parquet
+    - data/processed/test.parquet
+    - src/features/tfidf_vs_bert.py
+    - src/utils/mlflow_utils.py
+    params:
+    - feature_comparison.mlflow_uri
+    - feature_comparison.ngram_ranges
+    - feature_comparison.max_features
+    - feature_comparison.batch_size
+    - feature_comparison.n_estimators
+    - feature_comparison.max_depth
+    outs:
+    - reports/figures/tfidf_vs_bert/
+    - models/features/  # For local vectorizer/model saves if needed

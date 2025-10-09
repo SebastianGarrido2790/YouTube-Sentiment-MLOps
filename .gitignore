@@ -26,6 +26,18 @@ share/python-wheels/
 *.egg
 MANIFEST
 
+# Data and models
+data/
+
+# Add/Ensure this line ignores the processed data contents but allows DVC files
+data/processed/*
+data/processed/**/
+!data/processed/**/*.dvc
+
+# Ignore generated outputs tracked by DVC
+reports/figures/tfidf_vs_bert/
+models/features/
+
 # PyInstaller
 #  Usually these files are written by a python script from a template
 #  before PyInstaller builds the exe, so as to inject date/other infos into it.

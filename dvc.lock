@@ -24,8 +24,8 @@ stages:
       size: 6888934
     - path: src/data/make_dataset.py
       hash: md5
-      md5: 9f0f44de0c037f152628a00a54668041
-      size: 5030
+      md5: 79c08644605746c0a7bb35da78617599
+      size: 5032
     params:
       params.yaml:
         data_preparation.random_state: 42
@@ -43,3 +43,43 @@ stages:
       hash: md5
       md5: 3268ccb60c38c536fb968913be0ba6c1
       size: 497388
+  feature_comparison:
+    cmd: uv run python -m src.features.tfidf_vs_bert --ngram_ranges 
+      [(1,1),(1,2),(1,3)] --max_features 5000 --batch_size 32 --n_estimators 200
+      --max_depth 15
+    deps:
+    - path: data/processed/test.parquet
+      hash: md5
+      md5: 28b2289497d5ce4f41945ef18ed36b6d
+      size: 511597
+    - path: data/processed/train.parquet
+      hash: md5
+      md5: b91b5441e14fbb36b0289251c073ee3c
+      size: 2387085
+    - path: src/features/tfidf_vs_bert.py
+      hash: md5
+      md5: b8989d269587a6b3f401fd660909aa1b
+      size: 11500
+    - path: src/utils/mlflow_utils.py
+      hash: md5
+      md5: 17327c8e20a565cdf34fb18db35ab8fa
+      size: 1711
+    params:
+      params.yaml:
+        feature_comparison.batch_size: 32
+        feature_comparison.max_depth: 15
+        feature_comparison.max_features: 5000
+        feature_comparison.mlflow_uri: http://127.0.0.1:5000
+        feature_comparison.n_estimators: 200
+        feature_comparison.ngram_ranges: '[(1,1),(1,2),(1,3)]'
+    outs:
+    - path: models/features/
+      hash: md5
+      md5: 34d359b5cc819bc9af75630f542a04c4.dir
+      size: 20311437
+      nfiles: 6
+    - path: reports/figures/tfidf_vs_bert/
+      hash: md5
+      md5: 1cc628dc106ed90ad25ba7c648346cd6.dir
+      size: 69166
+      nfiles: 3

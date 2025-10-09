@@ -1,5 +1,5 @@
 """
-Prepare processed dataset from raw Reddit data.
+Prepare a processed dataset from raw Reddit data.
 
 Loads raw CSV, cleans text, engineers labels, performs stratified train/val/test split,
 and saves Parquet files to data/processed/.

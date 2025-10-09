@@ -90,3 +90,99 @@ The **highest accuracy score** of **$0.6477$** was achieved with the run corresp
 | Macro Avg F1-Score | $0.5219$ |
 
 This suggests that using $7000$ features (trigrams) strikes the best balance between providing enough information for the model and avoiding noise or overfitting compared to the other tested values.
+
+---
+
+## **three TF-IDF vectorizers**. Let’s interpret these results systematically.
+
+---
+
+### 🔹 1. Context Recap
+
+You tested three TF-IDF configurations:
+
+| Run ID                               | Vectorizer       | Accuracy   |
+| ------------------------------------ | ---------------- | ---------- |
+| **2c2a8f962f0b437bbe2ee8310f880699** | **TF-IDF (1,1)** | **0.6448** |
+| e6accc6f0842412fa818252fed6008c7     | TF-IDF (1,2)     | 0.6385     |
+| addba9debd9e4aee8dffe432be3b96d6     | TF-IDF (1,3)     | 0.6417     |
+
+Your dataset is moderately imbalanced:
+
+| Sentiment | Count  |    % |
+| --------- | ------ | ---: |
+| Positive  | 15,830 | 42.5 |
+| Neutral   | 13,142 | 35.3 |
+| Negative  | 8,277  | 22.2 |
+
+---
+
+### 🔹 2. Aggregate (Weighted) Metrics
+
+| Metric                 | (1,1)      | (1,2)  | (1,3)     |
+| ---------------------- | ---------- | ------ | --------- |
+| **Accuracy**           | **0.6448** | 0.6385 | 0.6417    |
+| **Weighted Precision** | 0.710      | 0.707  | **0.711** |
+| **Weighted Recall**    | **0.645**  | 0.638  | 0.642     |
+| **Weighted F1-Score**  | **0.582**  | 0.567  | 0.577     |
+
+✅ **Best configuration:** **TF-IDF (1,1)**
+Highest accuracy and F1-score, simplest model, and least overfitting risk.
+
+---
+
+### 🔹 3. Class-Level Insights (TF-IDF (1,1))
+
+| Sentiment         | Precision | Recall | F1-Score | Support |
+| ----------------- | --------- | ------ | -------- | ------: |
+| **Negative (-1)** | 0.94      | 0.06   | 0.12     |    1241 |
+| **Neutral (0)**   | 0.68      | 0.77   | 0.72     |    1908 |
+| **Positive (1)**  | 0.62      | 0.85   | 0.71     |    2375 |
+
+### 🧩 Interpretation:
+
+* **Positive comments:** Detected best (recall = 0.85).
+* **Neutral comments:** Reasonably balanced precision/recall.
+* **Negative comments:** High precision but **very low recall** — the model rarely identifies negatives.
+
+The low recall for negatives is expected in imbalanced datasets, where fewer negative samples lead to weak feature learning.
+
+---
+
+### 🔹 4. Why TF-IDF (1,1) Wins
+
+| Factor              | TF-IDF (1,1) | TF-IDF (1,2) | TF-IDF (1,3)   |
+| ------------------- | ------------ | ------------ | -------------- |
+| Vocabulary size     | Small (fast) | Larger       | Very large     |
+| Risk of overfitting | Low          | Medium       | High           |
+| Generalization      | ✅ Best       | Decent       | Slightly worse |
+| Runtime             | ⚡ Fastest    | Slower       | Slowest        |
+
+Adding bigrams/trigrams slightly hurts generalization because rare n-grams dominate sparse features.
+
+---
+
+### 🔹 5. Next Step: Improving Negative Recall
+
+You can address the poor recall for negative samples using one or several of these strategies:
+
+| Strategy                | Description                                                                                        |
+| ----------------------- | -------------------------------------------------------------------------------------------------- |
+| **Class weighting**     | Give more importance to negative samples. E.g., `RandomForestClassifier(class_weight='balanced')`. |
+| **Resampling**          | Oversample negatives (`SMOTE`) or undersample positives.                                           |
+| **Feature engineering** | Include sentiment lexicons or emoji tokens (many negatives use “not”, “never”, etc.).              |
+| **Model upgrade**       | Try linear models (`LogisticRegression`, `LinearSVC`) that handle sparse text better than trees.   |
+
+---
+
+### 🔹 6. Summary
+
+| Observation         | Conclusion                                           |
+| ------------------- | ---------------------------------------------------- |
+| Highest accuracy/F1 | TF-IDF (1,1)                                         |
+| Model weakness      | Detecting negatives                                  |
+| Likely cause        | Class imbalance and sparse negative signals          |
+| Next improvement    | Use `class_weight='balanced'` or a linear classifier |
+| MLflow setup        | Correct — metrics are well-logged for comparison     |
+
+---
