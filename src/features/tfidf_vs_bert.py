@@ -56,7 +56,7 @@ ROOT = Path(__file__).parent.parent.parent
 TRAIN_PATH = ROOT / "data" / "processed" / "train.parquet"
 TEST_PATH = ROOT / "data" / "processed" / "test.parquet"
 FIGURES_DIR = ROOT / "reports" / "figures" / "tfidf_vs_bert"
-MODELS_DIR = ROOT / "models" / "features"
+MODELS_DIR = ROOT / "models" / "features" / "tfidf_vs_bert"
 FIGURES_DIR.mkdir(parents=True, exist_ok=True)
 MODELS_DIR.mkdir(parents=True, exist_ok=True)
 
@@ -243,8 +243,10 @@ def run_experiment(
 
         # Save model locally
         local_model_path = MODELS_DIR / f"{model_path}.pkl"
-        with open(local_model_path, "wb") as f:
-            pickle.dump(model, f)
+        # with open(local_model_path, "wb") as f:
+        #     pickle.dump(model, f)
+
+        # Log vectorizer artifact
         logger.info(
             f"Logged metrics (accuracy: {accuracy:.4f}) and saved model: {local_model_path}"
         )

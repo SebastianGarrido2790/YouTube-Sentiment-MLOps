@@ -1,38 +1,67 @@
 stages:
   data_ingestion:
-    cmd: uv run python -m src.data.download_dataset --url ${data_ingestion.url} --output_path ${data_ingestion.output_path}
+    cmd: uv run python -m src.data.download_dataset \
+      --url ${data_ingestion.url} \
+      --output_path ${data_ingestion.output_path}
     deps:
-    - src/data/download_dataset.py
+      - src/data/download_dataset.py
     outs:
-    - data/raw/reddit_comments.csv
+      - data/raw/reddit_comments.csv
 
   data_preparation:
-    cmd: uv run python -m src.data.make_dataset --test_size ${data_preparation.test_size} --random_state ${data_preparation.random_state}
+    cmd: uv run python -m src.data.make_dataset \
+      --test_size ${data_preparation.test_size} \
+      --random_state ${data_preparation.random_state}
     deps:
-    - data/raw/reddit_comments.csv
-    - src/data/make_dataset.py
+      - data/raw/reddit_comments.csv
+      - src/data/make_dataset.py
     params:
-    - data_preparation.test_size
-    - data_preparation.random_state
+      - data_preparation.test_size
+      - data_preparation.random_state
     outs:
-    - data/processed/train.parquet
-    - data/processed/val.parquet
-    - data/processed/test.parquet
+      - data/processed/train.parquet
+      - data/processed/val.parquet
+      - data/processed/test.parquet
 
   feature_comparison:
-    cmd: uv run python -m src.features.tfidf_vs_bert --ngram_ranges ${feature_comparison.ngram_ranges} --max_features ${feature_comparison.max_features} --batch_size ${feature_comparison.batch_size} --n_estimators ${feature_comparison.n_estimators} --max_depth ${feature_comparison.max_depth}
+    cmd: uv run python -m src.features.tfidf_vs_bert \
+      --ngram_ranges ${feature_comparison.ngram_ranges} \
+      --max_features ${feature_comparison.max_features} \
+      --batch_size ${feature_comparison.batch_size} \
+      --n_estimators ${feature_comparison.n_estimators} \
+      --max_depth ${feature_comparison.max_depth}
     deps:
-    - data/processed/train.parquet
-    - data/processed/test.parquet
-    - src/features/tfidf_vs_bert.py
-    - src/utils/mlflow_utils.py
+      - data/processed/train.parquet
+      - data/processed/test.parquet
+      - src/features/tfidf_vs_bert.py
+      - src/utils/mlflow_utils.py
     params:
-    - feature_comparison.mlflow_uri
-    - feature_comparison.ngram_ranges
-    - feature_comparison.max_features
-    - feature_comparison.batch_size
-    - feature_comparison.n_estimators
-    - feature_comparison.max_depth
+      - feature_comparison.mlflow_uri
+      - feature_comparison.ngram_ranges
+      - feature_comparison.max_features
+      - feature_comparison.batch_size
+      - feature_comparison.n_estimators
+      - feature_comparison.max_depth
     outs:
-    - reports/figures/tfidf_vs_bert/
-    - models/features/  # For local vectorizer/model saves if needed
+      - reports/figures/tfidf_vs_bert/
+      - models/features/tfidf_vs_bert/
+
+  feature_tuning:
+    cmd: uv run python -m src.features.tfidf_max_features \
+      --max_features_values ${feature_tuning.max_features_values} \
+      --ngram_range ${feature_tuning.ngram_range} \
+      --n_estimators ${feature_tuning.n_estimators} \
+      --max_depth ${feature_tuning.max_depth}
+    deps:
+      - data/processed/train.parquet
+      - data/processed/test.parquet
+      - src/features/tfidf_max_features.py
+      - src/utils/mlflow_utils.py
+    params:
+      - feature_tuning.max_features_values
+      - feature_tuning.ngram_range
+      - feature_tuning.n_estimators
+      - feature_tuning.max_depth
+    outs:
+      - reports/figures/tfidf_max_features/
+      - models/features/tfidf_max_features/
