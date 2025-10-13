@@ -105,3 +105,119 @@ The **macro F1 score** is the primary metric for comparing the performance of th
 | **XGBoost** | 0.78317 | Achieved a high score, but was slightly outperformed by both LightGBM and the Logistic Regression baseline. |
 
 **LightGBM's best trial achieved a Macro F1 score of 0.79986, making it the top-performing model.**
+
+---
+
+Excellent question — this is precisely the kind of trade-off thinking that separates **experimentation design** from **production MLOps**.
+
+Let’s analyze both options systematically across **four key criteria** relevant to our current stage:
+simplicity, reliability, reproducibility, and signal fidelity (how well the model captures patterns in imbalanced data).
+
+---
+
+## ⚖️ 1. **Purpose of a Baseline Model**
+
+A **baseline model** serves to:
+
+* Establish a *minimal viable benchmark* for downstream models.
+* Be *simple, deterministic, and fast to train*.
+* Represent the **“expected floor”** of performance before applying complex methods.
+
+Hence, your baseline should emphasize **simplicity and reliability**, not raw performance.
+
+---
+
+## 🔹 Option A — `class_weight="balanced"`
+
+**Mechanism:**
+The model adjusts the contribution of each class’s loss term inversely proportional to its frequency.
+Mathematically:
+[
+w_i = \frac{n_{\text{samples}}}{n_{\text{classes}} \times n_i}
+]
+No resampling, just weighted learning.
+
+**Pros**
+
+* ✅ *Built-in and stable*: native to scikit-learn; minimal risk of data leakage.
+* ✅ *Lightweight*: no memory overhead, no synthetic data generation.
+* ✅ *Deterministic*: consistent across runs; no random neighbor synthesis.
+* ✅ *Ideal for baselines*: interpretable and fast to compute.
+
+**Cons**
+
+* ❌ May underperform in extreme imbalance when minority class signals are very weak.
+* ❌ Does not modify class distributions (model still sees the same imbalance in data).
+
+---
+
+## 🔹 Option B — **ADASYN**
+
+**Mechanism:**
+Adaptive Synthetic Sampling (He et al., 2008) generates new samples in feature space for underrepresented classes, prioritizing difficult-to-learn regions.
+
+**Pros**
+
+* ✅ Often yields **higher recall and F1**, especially for non-linear models.
+* ✅ Can reveal potential upper bounds on what resampling can achieve.
+
+**Cons**
+
+* ❌ Adds synthetic data, increasing memory and CPU cost.
+* ❌ Introduces stochasticity — even with fixed random seeds, results can vary slightly.
+* ❌ Not ideal for baseline reproducibility (extra data transformations).
+* ❌ Risk of minor overfitting or distorted class boundaries with linear models like Logistic Regression.
+
+---
+
+## 📊 Empirical Context — Your Logs
+
+| Method            | Accuracy | Recall | Precision | F1         |
+| :---------------- | :------- | :----- | :-------- | :--------- |
+| **Class weights** | 0.6758   | 0.9560 | 0.5886    | **0.7286** |
+| **ADASYN**        | 0.6814   | 0.9245 | 0.6076    | **0.7333** |
+
+ADASYN slightly outperforms class weights (+0.0047 F1), but both are close — and that’s crucial.
+
+---
+
+## 🧠 3. **Strategic Recommendation**
+
+| Goal                                     | Recommended Approach                                             | Rationale                                                                        |
+| ---------------------------------------- | ---------------------------------------------------------------- | -------------------------------------------------------------------------------- |
+| **For Baseline (Current Stage)**         | ✅ `class_weight="balanced"`                                      | Simpler, native, fully deterministic, and strong enough to establish a baseline. |
+| **For Advanced Model Training / Tuning** | ✅ ADASYN (or SMOTE variants)                                     | Use in experimentation stages once the pipeline baseline is fixed.               |
+| **For Deployment / Production**          | ⚙️ Use whatever imbalance method generalizes best on unseen data | After formal model evaluation and registry comparison.                           |
+
+---
+
+## 🧩 4. Practical Implementation Choice
+
+In our `baseline_logistic.py`, replace ADASYN with the native weight balancing:
+
+```python
+model = LogisticRegression(
+    C=1.0,
+    max_iter=2000,
+    solver="liblinear",
+    class_weight="balanced",
+    random_state=42
+)
+```
+
+That way:
+
+* We keep the **baseline concept pure** (no data resampling).
+* Future stages (e.g., `model_experiments.py`) can explicitly explore ADASYN and SMOTE variants for improved recall.
+
+---
+
+## ✅ Final Answer
+
+> For a **baseline model**, we should use `class_weight="balanced"`.
+> It’s simpler, more reliable, fully reproducible, and perfectly suited for establishing our project’s initial benchmark.
+>
+> Reserve **ADASYN** and other resampling techniques for subsequent **model improvement experiments**, not the baseline stage.
+
+---
+
