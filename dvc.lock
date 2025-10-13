@@ -171,8 +171,8 @@ stages:
       size: 499418
     - path: src/features/feature_engineering.py
       hash: md5
-      md5: 9a4822bd728d029443882b6b69dd7fa1
-      size: 12168
+      md5: d257a3ad8de27ba551e6e2227341e551
+      size: 12335
     - path: src/utils/logger.py
       hash: md5
       md5: 73106bb3de64f8ef8c097a990a6e2f49
@@ -190,6 +190,64 @@ stages:
     outs:
     - path: models/features/engineered_features/
       hash: md5
-      md5: 0d0cc1f13ca06a152d6dab1c6777101d.dir
+      md5: 603e0cfa4b28c3287bed34738f104385.dir
       size: 3053474
       nfiles: 8
+  baseline_model:
+    cmd: uv run python -m src.models.baseline_logistic
+    deps:
+    - path: models/features/engineered_features/X_test.npz
+      hash: md5
+      md5: 5ad9362bddb9771a265e72d40a3e568c
+      size: 411831
+    - path: models/features/engineered_features/X_train.npz
+      hash: md5
+      md5: 0da3db618a4facc78e97d864e1962590
+      size: 1911617
+    - path: models/features/engineered_features/X_val.npz
+      hash: md5
+      md5: 262666f9552c8532a609e22fbaae5631
+      size: 398166
+    - path: models/features/engineered_features/label_encoder.pkl
+      hash: md5
+      md5: e5c04dce5c4ccd04129e4d80412dcd3e
+      size: 266
+    - path: models/features/engineered_features/y_test.npy
+      hash: md5
+      md5: 3d93b2947650aff2973d57248ddfa80d
+      size: 44320
+    - path: models/features/engineered_features/y_train.npy
+      hash: md5
+      md5: ff2992f566f145e0dabff508b76fd5de
+      size: 206344
+    - path: models/features/engineered_features/y_val.npy
+      hash: md5
+      md5: 6170668e1d3ef3e4b157d5a76a85299e
+      size: 44320
+    - path: src/models/baseline_logistic.py
+      hash: md5
+      md5: faa70695b1e3562d8cb15f6e2f7a312e
+      size: 5548
+    - path: src/utils/logger.py
+      hash: md5
+      md5: 73106bb3de64f8ef8c097a990a6e2f49
+      size: 2345
+    - path: src/utils/mlflow_config.py
+      hash: md5
+      md5: 8ff67d5220552d5f63ad14f0705e458b
+      size: 3318
+    - path: src/utils/paths.py
+      hash: md5
+      md5: 5f371b210ba97567dc12fcda4b0ebb56
+      size: 1579
+    params:
+      params.yaml:
+        baseline_model.class_weight: balanced
+        baseline_model.max_iter: 2000
+        baseline_model.model_type: LogisticRegression
+        baseline_model.solver: liblinear
+    outs:
+    - path: models/baseline/logistic_baseline.pkl
+      hash: md5
+      md5: 1497f360bfba22000460aec99aff86af
+      size: 25045

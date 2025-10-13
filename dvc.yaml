@@ -98,3 +98,26 @@ stages:
       - imbalance_tuning.best_ngram_range
     outs:
       - models/features/engineered_features/
+
+  baseline_model:
+      cmd: uv run python -m src.models.baseline_logistic
+      deps:
+        - models/features/engineered_features/X_train.npz
+        - models/features/engineered_features/X_val.npz
+        - models/features/engineered_features/X_test.npz
+        - models/features/engineered_features/y_train.npy
+        - models/features/engineered_features/y_val.npy
+        - models/features/engineered_features/y_test.npy
+        - models/features/engineered_features/label_encoder.pkl
+        - src/models/baseline_logistic.py
+        - src/utils/mlflow_config.py
+        - src/utils/logger.py
+        - src/utils/paths.py
+      params:
+        - baseline_model.model_type
+        - baseline_model.class_weight
+        - baseline_model.solver
+        - baseline_model.max_iter
+      outs:
+        - models/baseline/logistic_baseline.pkl
+
