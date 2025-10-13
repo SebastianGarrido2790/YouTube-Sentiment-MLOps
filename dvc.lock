@@ -15,8 +15,8 @@ stages:
       size: 2345
     - path: src/utils/paths.py
       hash: md5
-      md5: 2bdfcc4a2b3f9c156cd32bba1f011871
-      size: 1586
+      md5: 5f371b210ba97567dc12fcda4b0ebb56
+      size: 1579
     outs:
     - path: data/raw/reddit_comments.csv
       hash: md5
@@ -32,16 +32,16 @@ stages:
       size: 6888934
     - path: src/data/make_dataset.py
       hash: md5
-      md5: b7543782999dbf4d111656457adfc7f5
-      size: 5693
+      md5: bed42eaa2ecd20dc1bb4721353e85b99
+      size: 5679
     - path: src/utils/logger.py
       hash: md5
       md5: 73106bb3de64f8ef8c097a990a6e2f49
       size: 2345
     - path: src/utils/paths.py
       hash: md5
-      md5: 2bdfcc4a2b3f9c156cd32bba1f011871
-      size: 1586
+      md5: 5f371b210ba97567dc12fcda4b0ebb56
+      size: 1579
     params:
       params.yaml:
         data_preparation.random_state: 42
@@ -153,3 +153,43 @@ stages:
       md5: d5b6114363259b91d3a4582263a2588f.dir
       size: 239882
       nfiles: 10
+  feature_engineering:
+    cmd: uv run python -m src.features.feature_engineering --use_bert False 
+      --max_features 1000 --ngram_range (1,1) --bert_batch_size 32
+    deps:
+    - path: data/processed/test.parquet
+      hash: md5
+      md5: 27afcf1e4e595381b70f8fd8b8e6ae7b
+      size: 513629
+    - path: data/processed/train.parquet
+      hash: md5
+      md5: ef9df44b106362663b835efdefe950c3
+      size: 2394224
+    - path: data/processed/val.parquet
+      hash: md5
+      md5: c55232be629f4fba0cdc3cce4329c594
+      size: 499418
+    - path: src/features/feature_engineering.py
+      hash: md5
+      md5: 9a4822bd728d029443882b6b69dd7fa1
+      size: 12168
+    - path: src/utils/logger.py
+      hash: md5
+      md5: 73106bb3de64f8ef8c097a990a6e2f49
+      size: 2345
+    - path: src/utils/paths.py
+      hash: md5
+      md5: 5f371b210ba97567dc12fcda4b0ebb56
+      size: 1579
+    params:
+      params.yaml:
+        feature_engineering.bert_batch_size: 32
+        feature_engineering.use_bert: 'False'
+        imbalance_tuning.best_max_features: 1000
+        imbalance_tuning.best_ngram_range: (1,1)
+    outs:
+    - path: models/features/engineered_features/
+      hash: md5
+      md5: 0d0cc1f13ca06a152d6dab1c6777101d.dir
+      size: 3053474
+      nfiles: 8

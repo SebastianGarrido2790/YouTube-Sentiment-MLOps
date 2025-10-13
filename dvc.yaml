@@ -80,3 +80,21 @@ stages:
     outs:
     - reports/figures/imbalance_tuning/
     - models/features/imbalance_tuning/
+
+  feature_engineering:
+    cmd: uv run python -m src.features.feature_engineering --use_bert ${feature_engineering.use_bert} --max_features ${imbalance_tuning.best_max_features} --ngram_range ${imbalance_tuning.best_ngram_range} --bert_batch_size ${feature_engineering.bert_batch_size}
+    deps:
+      - data/processed/train.parquet
+      - data/processed/val.parquet
+      - data/processed/test.parquet
+      - src/features/feature_engineering.py
+      - src/utils/logger.py
+      - src/utils/paths.py
+    params:
+      - feature_engineering.use_bert
+      - feature_engineering.bert_batch_size
+      # Reuse best parameters found in tuning stages
+      - imbalance_tuning.best_max_features
+      - imbalance_tuning.best_ngram_range
+    outs:
+      - models/features/engineered_features/
