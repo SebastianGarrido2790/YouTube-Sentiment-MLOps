@@ -25,7 +25,7 @@ EXTERNAL_DATA_DIR = DATA_DIR / "external"
 # --- Train and Test Data Paths ---
 TRAIN_PATH = PROCESSED_DATA_DIR / "train.parquet"
 TEST_PATH = PROCESSED_DATA_DIR / "test.parquet"
-VALIDATION_PATH = PROCESSED_DATA_DIR / "val.parquet"
+VAL_PATH = PROCESSED_DATA_DIR / "val.parquet"
 
 # --- Model, Reports, and Artifacts ---
 MODELS_DIR = PROJECT_ROOT / "models"

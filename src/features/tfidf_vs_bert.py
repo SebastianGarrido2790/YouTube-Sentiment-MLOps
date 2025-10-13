@@ -34,9 +34,14 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics import accuracy_score, classification_report, confusion_matrix
 
-# Conditional import for BERT (minimize overhead for TF-IDF runs)
-import torch
-from transformers import AutoTokenizer, AutoModel
+# --- Conditional Imports for BERT ---
+# These are imported only if 'use_bert' is True, but must be defined here for type hinting.
+try:
+    import torch
+    from transformers import AutoTokenizer, AutoModel
+except ImportError:
+    # If transformers/torch isn't installed (e.g., lightweight environment)
+    pass
 
 # --- Project Utilities ---
 from src.utils.paths import MODELS_DIR, FIGURES_DIR, TRAIN_PATH, TEST_PATH, PROJECT_ROOT
@@ -65,15 +70,18 @@ def get_bert_embeddings(
     Generate mean-pooled BERT embeddings for texts.
 
     Args:
-        texts: List of input texts.
-        device: Torch device ('cuda' or 'cpu').
-        batch_size: Inference batch size.
+        texts (list): Cleaned text samples.
+        device (str): "cuda" or "cpu". Auto-detected if None.
+        batch_size (int): Batch size for batched inference.
 
     Returns:
-        np.ndarray: Pooled embeddings (n_samples, 768).
+        np.ndarray: Dense embeddings (n_samples, 768).
     """
+    if "torch" not in globals() or "AutoModel" not in globals():
+        raise ImportError("BERT mode requires torch and transformers to be installed.")
+
     device = device or ("cuda" if torch.cuda.is_available() else "cpu")
-    logger.info(f"Using device: {device}")
+    logger.info(f"BERT Inference: Using device: {device}")
     tokenizer = AutoTokenizer.from_pretrained("bert-base-uncased")
     model = AutoModel.from_pretrained("bert-base-uncased").to(device)
     model.eval()
@@ -277,10 +285,16 @@ def main() -> None:
     parser.add_argument("--max_depth", type=int, default=15, help="RF max_depth.")
     args = parser.parse_args()
 
-    # Parse ngram_ranges
-    ngram_ranges = ast.literal_eval(args.ngram_ranges.strip())
-    if not isinstance(ngram_ranges, list):
-        raise ValueError("ngram_ranges must be a list of tuples.")
+    # Convert string tuple back to a Python tuple
+    try:
+        ngram_ranges = ast.literal_eval(args.ngram_range.strip())
+        if not isinstance(ngram_ranges, tuple):
+            raise ValueError
+    except (ValueError, SyntaxError):
+        logger.error(
+            f"Invalid ngram_range format: {args.ngram_range}. Must be '(int,int)'."
+        )
+        return
 
     # --- TF-IDF experiments with different n-grams (parameterized) ---
     logger.info("--- Starting TF-IDF Experiments ---")

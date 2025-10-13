@@ -28,7 +28,7 @@ from nltk.corpus import stopwords
 from nltk.tokenize import word_tokenize
 
 # --- Project Utilities ---
-from src.utils.paths import RAW_DATA_DIR, TRAIN_PATH, VALIDATION_PATH, TEST_PATH
+from src.utils.paths import RAW_DATA_DIR, TRAIN_PATH, VAL_PATH, TEST_PATH
 from src.utils.logger import get_logger
 
 # --- Logging Setup ---
@@ -128,7 +128,7 @@ def prepare_reddit_dataset(test_size: float = 0.15, random_state: int = 42) -> N
     # Save and validate shapes
     outputs = [
         (TRAIN_PATH, train),
-        (VALIDATION_PATH, val),
+        (VAL_PATH, val),
         (TEST_PATH, test),
     ]
     for out_path, split_df in outputs:
