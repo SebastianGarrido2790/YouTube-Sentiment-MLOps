@@ -78,13 +78,26 @@ def save_model_bundle(model_bundle: dict, save_path):
 # ---------------------------------------------------------------------
 # 4. Parameter Saving (Optuna or manual tuning)
 # ---------------------------------------------------------------------
-def save_best_params(model_name: str, params: dict, score: float):
-    """Save best parameters and score to pickle file."""
-    filepath = ADVANCED_DIR / f"{model_name}_best.pkl"
+def save_hyperparams_bundle(model_name: str, params: dict, score: float):
+    """Save best parameters and score to a separate pickle file."""
+    # Saving to a separate, non-DVC-tracked path to avoid confusion
+    filepath = ADVANCED_DIR / f"{model_name}_best_hyperparams.pkl"
     with open(filepath, "wb") as f:
+        # Saving a dictionary containing params and score
         pickle.dump({"params": params, "score": score}, f)
     logger.info(
         f"Best parameters saved for {model_name} → {filepath.relative_to(PROJECT_ROOT)}"
+    )
+
+
+def save_model_object(model, model_name: str):
+    """Save the final trained model object for DVC tracking."""
+    filepath = ADVANCED_DIR / f"{model_name}_model.pkl"
+    filepath.parent.mkdir(parents=True, exist_ok=True)
+    with open(filepath, "wb") as f:
+        pickle.dump(model, f)
+    logger.info(
+        f"Final model object saved for {model_name} → {filepath.relative_to(PROJECT_ROOT)}"
     )
 
 

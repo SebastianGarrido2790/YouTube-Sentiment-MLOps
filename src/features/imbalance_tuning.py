@@ -2,14 +2,14 @@
 Experiment with imbalance handling techniques for sentiment classification.
 
 Applies techniques (SMOTE, ADASYN, etc.) to TF-IDF features on the train set only, trains RandomForest,
-logs to MLflow, and saves artifacts/models.
+and logs to MLflow using reusable helper functions.
 
 Usage:
     uv run python -m src.features.imbalance_tuning --imbalance_methods "['class_weights','oversampling']" --max_features 1000
 
 Requirements:
     - Processed data in data/processed/.
-    - uv sync (for imblearn, scikit-learn, mlflow, seaborn).
+    - uv sync (for imblearn, scikit-learn, mlflow).
     - MLflow server running (e.g., uv run mlflow server --host 127.0.0.1 --port 5000).
 
 Design Considerations:
@@ -20,40 +20,32 @@ Design Considerations:
 """
 
 import argparse
-import ast  # For safe list parsing from params
-from typing import Tuple
+from typing import Tuple, Dict, Any, Union
 import mlflow
-import mlflow.sklearn
 import numpy as np
-import pandas as pd
-import seaborn as sns
+from scipy.sparse import spmatrix  # For sparse matrix type hint
 from imblearn.over_sampling import SMOTE, ADASYN
 from imblearn.under_sampling import RandomUnderSampler
 from imblearn.combine import SMOTEENN
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.feature_extraction.text import TfidfVectorizer
-from sklearn.metrics import accuracy_score, classification_report, confusion_matrix
-import matplotlib.pyplot as plt
-import pickle
 
 # --- Project Utilities ---
-from src.utils.paths import TRAIN_PATH, TEST_PATH, FIGURES_DIR, MODELS_DIR, PROJECT_ROOT
-from src.utils.mlflow_config import get_mlflow_uri
+from src.utils.paths import FIGURES_DIR
 from src.utils.logger import get_logger
+from src.features.helpers.feature_utils import (
+    setup_mlflow_run,
+    load_train_val_data,
+    parse_dvc_param,
+    evaluate_and_log,
+)
 
 # --- Logging Setup ---
 logger = get_logger(__name__, headline="imbalance_tuning.py")
 
 # --- Path setup ---
-IMBALANCE_MODELS_DIR = MODELS_DIR / "features" / "imbalance_methods"
 IMBALANCE_FIGURES_DIR = FIGURES_DIR / "imbalance_methods"
-IMBALANCE_MODELS_DIR.mkdir(parents=True, exist_ok=True)
 IMBALANCE_FIGURES_DIR.mkdir(parents=True, exist_ok=True)
-
-# --- MLflow setup via utility function (for consistency) ---
-mlflow_uri = get_mlflow_uri()
-mlflow.set_tracking_uri(mlflow_uri)
-mlflow.set_experiment("Exp - Imbalance Handling")
 
 
 def run_imbalanced_experiment(
@@ -75,17 +67,17 @@ def run_imbalanced_experiment(
     """
 
     # --- Load data ---
-    if not TRAIN_PATH.exists() or not TEST_PATH.exists():
-        raise FileNotFoundError("Processed data missing. Run data_preparation first.")
+    # NOTE: load_train_val_data loads train.parquet and val.parquet for hyperparameter tuning.
+    train_df, val_df = load_train_val_data()
 
-    train_df = pd.read_parquet(TRAIN_PATH)
-    test_df = pd.read_parquet(TEST_PATH)
     X_train_text = train_df["clean_comment"].tolist()
+    # Assuming 'category_encoded' is the numerical target variable (0, 1, 2)
     y_train = train_df["category_encoded"].values
-    X_test_text = test_df["clean_comment"].tolist()
-    y_test = test_df["category_encoded"].values
+    X_val_text = val_df["clean_comment"].tolist()
+    y_val = val_df["category_encoded"].values
+
     logger.info(
-        f"Loaded train: {len(X_train_text)} samples, test: {len(X_test_text)} samples."
+        f"Data split: Train {train_df.shape[0]} ({np.bincount(y_train)}), Val {val_df.shape[0]}"
     )
 
     # --- Vectorization using TF-IDF (Fit on training, transform both) ---
@@ -93,16 +85,16 @@ def run_imbalanced_experiment(
         ngram_range=ngram_range,
         max_features=max_features,
         stop_words="english",
-        # tokenizer=lambda x: x.split(),  # Pre-cleaned tokens
-        lowercase=False,  # Already lowercased
+        lowercase=False,
         min_df=2,
     )
-    X_train_vec = vectorizer.fit_transform(X_train_text)
-    X_test_vec = vectorizer.transform(X_test_text)
+    X_train_vec: spmatrix = vectorizer.fit_transform(X_train_text)
+    X_val_vec: spmatrix = vectorizer.transform(X_val_text)
     feature_dim = X_train_vec.shape[1]
 
     # --- Handle class imbalance (train set only) ---
-    class_weight = None
+    class_weight: Union[str, None] = None
+    resampling_applied: bool = False
 
     if imbalance_method == "class_weights":
         class_weight = "balanced"
@@ -116,41 +108,24 @@ def run_imbalanced_experiment(
         elif imbalance_method == "undersampling":
             sampler = RandomUnderSampler(random_state=42)
         elif imbalance_method == "smote_enn":
-            sampler = SMOTEENN(random_state=42)
+            sampler = SMOTEENN(random_state=42, smote=SMOTE(random_state=42))
         else:
             raise ValueError(f"Unsupported imbalance method: {imbalance_method}")
 
         if sampler:
+            resampling_applied = True
             logger.info(f"Applying {imbalance_method.upper()} to training data...")
             X_train_vec, y_train = sampler.fit_resample(X_train_vec, y_train)
             logger.info(
-                f"New training sample size: {X_train_vec.shape[0]} ({np.bincount(y_train)})"
+                f"New training sample size: {X_train_vec.shape[0]} (Classes: {np.bincount(y_train)})"
             )  # np.bincount for sanity check: count of samples per class after resampling
 
-    # --- MLflow Tracking ---
-    with mlflow.start_run() as run:
-        run_name = f"Imbalance_RF_{imbalance_method}_Feat_{feature_dim}"
-        logger.info(f"🚀 Running experiment: {run_name}")
-        # Tags
-        mlflow.set_tag("mlflow.runName", run_name)
-        mlflow.set_tag("experiment_type", "imbalance_tuning")
-        mlflow.set_tag("model_type", "RandomForestClassifier")
-        mlflow.set_tag(
-            "description",
-            f"RF with TF-IDF, method={imbalance_method}, focus on positive F1",
-        )
+    # --- MLflow Tracking, Training, and Evaluation ---
+    run_name = f"Imb_{imbalance_method}_Feat_{feature_dim}"
+    logger.info(f"🚀 Running experiment: {run_name}")
 
-        # Params
-        mlflow.log_param("vectorizer_type", "TF-IDF")
-        mlflow.log_param("ngram_range", ngram_range)
-        mlflow.log_param("max_features", max_features)
-        mlflow.log_param("feature_dim", feature_dim)
-        mlflow.log_param("n_estimators", n_estimators)
-        mlflow.log_param("max_depth", max_depth)
-        mlflow.log_param("imbalance_method", imbalance_method)
-        mlflow.log_param("class_weight", class_weight)
-
-        # --- Model Training ---
+    with mlflow.start_run(run_name=run_name):
+        # 1. Model Training
         model = RandomForestClassifier(
             n_estimators=n_estimators,
             max_depth=max_depth,
@@ -160,54 +135,46 @@ def run_imbalanced_experiment(
         )
         model.fit(X_train_vec, y_train)
 
-        # Predict and Metrics
-        y_pred = model.predict(X_test_vec)
-        accuracy = accuracy_score(y_test, y_pred)
-        mlflow.log_metric("accuracy", accuracy)
-        logger.info(f"Model Accuracy: {accuracy:.4f}")
+        # 2. Define Params and Tags for Logging
+        params: Dict[str, Any] = {
+            "vectorizer_type": "TF-IDF",
+            "ngram_range": ngram_range,
+            "max_features": max_features,
+            "feature_dim": feature_dim,
+            "n_estimators": n_estimators,
+            "max_depth": max_depth,
+            "imbalance_method": imbalance_method,
+            "class_weight_param": class_weight,
+            "resampling_applied": resampling_applied,
+        }
+        tags: Dict[str, str] = {
+            "experiment_type": "imbalance_tuning",
+            "model_type": "RandomForestClassifier",
+            "imbalance_method": imbalance_method,
+        }
 
-        # Classification report (log key metrics, focusing on class 1)
-        report = classification_report(y_test, y_pred, output_dict=True)
-        for label, metrics in report.items():
-            if isinstance(metrics, dict):
-                mlflow.log_metric(f"{label}_f1-score", metrics.get("f1-score", 0))
-                mlflow.log_metric(f"{label}_precision", metrics.get("precision", 0))
-                mlflow.log_metric(f"{label}_recall", metrics.get("recall", 0))
-
-        # Log key class 1 metrics to console
-        logger.info(f"Recall: {report.get('1', {}).get('recall'):.4f}")
-        logger.info(f"Precision: {report.get('1', {}).get('precision'):.4f}")
-        logger.info(f"F1-score: {report.get('1', {}).get('f1-score'):.4f}")
-
-        # Confusion matrix (artifact)
-        conf_matrix = confusion_matrix(y_test, y_pred)
-        plt.figure(figsize=(8, 6))
-        sns.heatmap(conf_matrix, annot=True, fmt="d", cmap="Blues")
-        plt.xlabel("Predicted Label")
-        plt.ylabel("True Label")
-        plt.title(f"Confusion Matrix: {run_name}")
-        plot_path = IMBALANCE_FIGURES_DIR / f"confusion_matrix_{run_name}.png"
-        plt.savefig(plot_path, bbox_inches="tight")
-        plt.close()
-        mlflow.log_artifact(str(plot_path))
-
-        # Log model (for later deployment/registration)
-        model_path = f"random_forest_model_imbalanced_{imbalance_method}"
-        mlflow.sklearn.log_model(model, model_path)
-
-        # Save the vectorizer and model locally for this specific method
-        # model_path = IMBALANCE_MODELS_DIR / f"rf_model_{imbalance_method}.pkl"
-        # with open(model_path, "wb") as f:
-        #     pickle.dump(model, f)
-
-        vectorizer_path = (
-            IMBALANCE_MODELS_DIR / f"tfidf_vectorizer_{imbalance_method}.pkl"
+        # 3. Evaluation and Logging
+        metrics = evaluate_and_log(
+            model=model,
+            X_val=X_val_vec,
+            y_val=y_val,
+            run_name=run_name,
+            params=params,
+            tags=tags,
+            output_dir=IMBALANCE_FIGURES_DIR,
+            log_model=True,  # Log the model to the MLflow registry
         )
-        with open(vectorizer_path, "wb") as f:
-            pickle.dump(vectorizer, f)
+
+        # 4. Log key metric to console
+        # Use .get() to safely retrieve the metric, defaulting to 0.0 if the key is missing.
+        val_accuracy = metrics.get("val_accuracy", 0.0)
+        f1_score_1 = metrics.get("1_f1-score", 0.0)
+
+        logger.info(f"Model Val Accuracy: {val_accuracy:.4f}")
+        logger.info(f"Class 1 F1-Score: {f1_score_1:.4f}")
 
         logger.info(
-            f"✅ Experiment finished: {run_name} | MLflow Run ID: {run.info.run_id} | Artifacts saved locally to {IMBALANCE_MODELS_DIR.relative_to(PROJECT_ROOT)}"
+            f"✅ Experiment finished: {run_name} | MLflow Run ID: {mlflow.last_active_run().info.run_id}"
         )
 
 
@@ -234,13 +201,17 @@ def main() -> None:
     parser.add_argument("--max_depth", type=int, default=15, help="RF max_depth.")
     args = parser.parse_args()
 
-    # Parse lists/tuples
-    imbalance_methods = ast.literal_eval(args.imbalance_methods.strip())
-    ngram_range = ast.literal_eval(args.ngram_range.strip())
-    if not isinstance(imbalance_methods, list) or not isinstance(ngram_range, tuple):
-        raise ValueError(
-            "imbalance_methods must be a list of strings and ngram_range must be a tuple of ints."
-        )
+    # --- MLflow Setup ---
+    setup_mlflow_run(experiment_name="Exp - Imbalance Handling")
+
+    # --- Parameter Parsing ---
+    imbalance_methods = parse_dvc_param(
+        args.imbalance_methods, name="imbalance_methods", expected_type=list
+    )
+    ngram_range = parse_dvc_param(
+        args.ngram_range, name="ngram_range", expected_type=tuple
+    )
+    # Note: parse_dvc_param handles the ast.literal_eval and validation internally.
 
     logger.info(
         f"--- Running imbalance experiments for methods: {imbalance_methods} ---"

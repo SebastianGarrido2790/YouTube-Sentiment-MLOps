@@ -16,6 +16,9 @@ logger = get_logger(__name__)
 def get_mlflow_uri(params_path: str = "params.yaml") -> str:
     """
     Returns the MLflow Tracking URI with clear priority and automatic environment handling.
+    Detects the appropriate MLflow URI based on the current environment (ENV), checks environment variables, and falls back to params.yaml.
+    This function is a pure utility that does not rely on or call the mlflow library itself.
+    This isolation is crucial for testing and adaptability.
 
     Priority:
         1. Environment variable MLFLOW_TRACKING_URI (highest priority)

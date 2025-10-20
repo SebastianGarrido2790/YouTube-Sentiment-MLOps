@@ -1,35 +1,153 @@
-### Project Overview: End-to-End MLOps Pipeline for Real-Time YouTube Sentiment Analysis
+# Project Overview: End-to-End MLOps Pipeline for Real-Time YouTube Sentiment Analysis
 
-This project will develop a robust MLOps pipeline to collect YouTube video comments, perform real-time sentiment analysis, and display results via a Chrome extension. The pipeline will leverage the provided Reddit sentiment dataset as a proxy for initial training, transitioning to YouTube-specific data collection. We will emphasize clean, modular code with comprehensive documentation (e.g., docstrings, README updates) to facilitate learning and iteration.
+Let’s structure the project overview around **CRISP-DM** while embedding **MLOps best practices** and your design pillars: **reliability, scalability, maintainability, and adaptability.**
+Below is the complete **strategic plan** for how we’ll build our end-to-end YouTube Sentiment Analysis MLOps system.
 
-The approach integrates modern ML tools for reproducibility (DVC for data versioning), experiment tracking (MLflow), containerization (Docker), automation (GitHub Actions for CI/CD), and cloud deployment (AWS for scalable inference). Package management will use uv for fast, dependency-resolved environments, ensuring reproducibility across local and cloud setups. To encourage innovation, we'll design modular components allowing easy swaps (e.g., advanced models like transformers) while prioritizing practicality through iterative testing.
+---
 
-The workflow follows the CRISP-DM (Cross-Industry Standard Process for Data Mining) methodology, adapted for MLOps. This ensures a structured lifecycle from problem definition to production, with feedback loops for continuous improvement.
+## 🧭 1. CRISP-DM Framework (Professional Data Science Lifecycle)
 
-### CRISP-DM Workflow Adapted to the Project
+We’ll use **CRISP-DM** as the methodological backbone, but integrate it with **modern MLOps components** for full reproducibility, automation, and monitoring.
 
-| Phase              | Key Activities | Tools/Practices | Alignment with Requirements |
-|--------------------|----------------|---------------|-----------------------------|
-| **Business Understanding** | Define objectives: Real-time sentiment scoring (-1 to 1) for YouTube comments via extension. Identify success metrics (e.g., accuracy >85%, latency <2s). Scope: Proxy training on Reddit data; live YouTube ingestion. | Stakeholder alignment via README; requirements in .env. | **Reliability**: Clear KPIs prevent scope creep. **Scalability**: Design for comment volumes (e.g., 1000+/video). **Maintainability**: Document assumptions. **Adaptability**: Modular for future metrics (e.g., toxicity). |
-| **Data Understanding** | Explore Reddit dataset (37k samples, imbalanced categories: ~60% neutral/positive). Analyze distributions, missing values (~0.3% in comments). Prototype YouTube data fetch via API. | Pandas in notebooks; DVC for versioning raw/interim data. Run `download_dataset.py` to ingest Reddit CSV. | **Reliability**: Validate data quality early. **Scalability**: Batch processing scripts. **Maintainability**: Scripts in `src/data`. **Adaptability**: Hooks for YouTube API integration. |
-| **Data Preparation** | Clean text (e.g., remove URLs, normalize); engineer features (e.g., TF-IDF, embeddings); split train/test (80/20). Version processed data. Augment with synthetic YouTube-like comments for domain shift. | DVC pipelines; `make_dataset.py` and `feature_engineering.py` in `src`. uv for deps like scikit-learn, NLTK. | **Reliability**: Automated validation (e.g., schema checks). **Scalability**: Parallel processing with Dask if needed. **Maintainability**: Reproducible via DVC tracks. **Adaptability**: Configurable preprocessors for new data sources. |
-| **Modeling** | Train baselines (e.g., Logistic Regression on TF-IDF, LSTM) on sentiment; log experiments (params, metrics), progress to advanced (e.g., BERT via Hugging Face for better sentiment nuance). Select the best model via cross-validation. Prototype inference endpoint. | MLflow for tracking; `train_model.py`/`predict_model.py` in `src/models`. Dockerize training env. | **Reliability**: A/B testing in MLflow. **Scalability**: GPU support via AWS EC2. **Maintainability**: Serialized models in `models/` with metadata. **Adaptability**: Experiment with Hugging Face for zero-shot models. |
-| **Evaluation** | Assess on holdout/YouTube test set (precision, recall, F1). Monitor drift (e.g., sentiment shifts). Simulate real-time via extension mockups. | MLflow UI; custom metrics in `visualize.py`. GitHub Actions for automated eval on PRs. | **Reliability**: Threshold-based alerts. **Scalability**: Batch eval scripts. **Maintainability**: Reports in `reports/`. **Adaptability**: Feedback loop to retrain on new data. |
-| **Deployment** | Containerize pipeline (Docker); deploy inference to AWS Lambda/EC2. Integrate Chrome extension (JS frontend calling API). CI/CD for builds/tests. | Dockerfiles; GitHub Actions workflows; AWS CDK for infra-as-code. Real-time: YouTube API polling + queue (SQS). | **Reliability**: Health checks, rollbacks. **Scalability**: Auto-scaling groups. **Maintainability**: Blue-green deploys. **Adaptability**: Serverless for extension updates. |
+| CRISP-DM Stage                  | Objective                                                    | Key Deliverables                                                                                       | MLOps Integrations                            |
+| ------------------------------- | ------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------ | --------------------------------------------- |
+| **1. Business Understanding**   | Define problem scope, success metrics, and system goals.     | - Problem statement<br>- KPI definition (accuracy, latency, uptime)<br>- System architecture blueprint | GitHub README, system design diagram          |
+| **2. Data Understanding**       | Collect, explore, and validate text data (YouTube comments). | - EDA notebook<br>- Data validation checks (missing, imbalance)<br>- DVC data versioning               | DVC tracking, `data/raw`, `data/interim`      |
+| **3. Data Preparation**         | Clean, preprocess, and feature-engineer text data.           | - Tokenization, stopword removal<br>- TF-IDF and BERT embeddings<br>- Balanced training set            | Modular `src/features/` scripts, DVC pipeline |
+| **4. Modeling**                 | Train baseline and advanced models, log experiments.         | - Baseline Logistic Regression<br>- Transformer-based fine-tuning<br>- Hyperparameter optimization     | MLflow experiment tracking, Optuna            |
+| **5. Evaluation**               | Validate models using consistent metrics.                    | - Model report (F1, Precision, Recall)<br>- Model card (metadata)                                      | MLflow model registry, automated evaluation   |
+| **6. Deployment**               | Serve model via API and integrate with Chrome extension.     | - REST API (FastAPI or AWS Lambda)<br>- Docker container                                               | Docker + CI/CD (GitHub Actions + AWS ECR/ECS) |
+| **7. Monitoring & Maintenance** | Track performance drift and retrain as needed.               | - Drift detection<br>- Model version updates<br>- Scheduled retraining                                 | MLflow + DVC + AWS CloudWatch/Lambda triggers |
 
-This workflow includes iterative loops (e.g., back to Data Preparation post-evaluation) and MLOps layers: version control (Git/DVC), automation (CI/CD), monitoring (MLflow + AWS CloudWatch).
+---
 
-### Expected Deliverables
+## 🏗️ 2. System Architecture Overview
 
-- **Codebase**: Updated folder structure with scripts (e.g., `src/chrome_extension/` for JS bundle; `docker-compose.yml` for local stack).
-- **Documentation**: Enhanced README.md (setup, run instructions); API docs (e.g., Swagger for inference); architecture diagram in `reports/figures/`.
-- **Artifacts**: Versioned datasets (DVC); MLflow runs DB; Docker images; Deployed AWS resources (e.g., API Gateway endpoint); Functional Chrome extension (.crx file).
-- **Reports**: Jupyter notebooks for exploration; evaluation summary (HTML/PDF) with metrics tables/ROC curves.
-- **CI/CD Pipeline**: GitHub Actions YAML for linting, testing, building, deploying.
+### **High-Level Flow**
 
-### Potential Starting Points for Next Steps
+1. **Chrome Extension** → Captures YouTube comments (via DOM scraping or API).
+2. **Backend API (FastAPI)** → Sends comment data to the inference endpoint.
+3. **Model Service (Containerized)** → Predicts sentiment using the deployed model.
+4. **Data Lake (S3)** → Stores raw & processed comment data.
+5. **Pipeline Orchestration** → DVC + MLflow automate preprocessing, training, and deployment.
+6. **CI/CD** → GitHub Actions for testing, training triggers, Docker builds, and AWS deployment.
 
-1. **Environment Setup**: Install uv (`pip install uv`), then `uv init` in project root; add deps to `pyproject.toml` (e.g., pandas, mlflow). Run `uv sync` and test `download_dataset.py`.
-2. **Data Ingestion Prototype**: Extend `download_dataset.py` for YouTube API (via .env keys); commit to Git and track with DVC (`dvc init`, `dvc add data/raw`).
-3. **Exploratory Notebook**: Create `notebooks/1.0-initial-exploration.ipynb` to load Reddit data, visualize distributions (e.g., category histogram), and baseline clean.
-4. **Tool Onboarding**: Spin up local MLflow (`mlflow ui`); draft a simple GitHub Actions workflow for data download on push.
+### **Technology Stack**
+
+| Layer                      | Tool                              | Purpose                             |
+| -------------------------- | --------------------------------- | ----------------------------------- |
+| **Data Versioning**        | DVC                               | Track raw → processed data lineage  |
+| **Experiment Tracking**    | MLflow                            | Log parameters, metrics, models     |
+| **Environment Management** | `uv` + `pyproject.toml`           | Reproducible and lightweight        |
+| **Model Serving**          | FastAPI + Docker                  | Production-ready sentiment API      |
+| **Orchestration**          | GitHub Actions                    | Continuous Integration and Delivery |
+| **Cloud Infrastructure**   | AWS (S3, Lambda, ECS, CloudWatch) | Deployment & monitoring             |
+| **Storage**                | PostgreSQL / S3                   | Store model metadata and datasets   |
+
+---
+
+## ⚙️ 3. MLOps Pipeline Design
+
+Each pipeline step will be modular and tracked via **DVC + MLflow**:
+
+```bash
+dvc.yaml
+├── stages:
+│   ├── data_ingestion:
+│   │     cmd: python src/data/download_dataset.py
+│   │     outs: data/raw/
+│   ├── data_preprocessing:
+│   │     cmd: python src/data/make_dataset.py
+│   │     deps: [data/raw/]
+│   │     outs: data/processed/
+│   ├── feature_engineering:
+│   │     cmd: python src/features/feature_engineering.py
+│   │     outs: models/features/
+│   ├── train_model:
+│   │     cmd: python src/models/advanced_training.py
+│   │     deps: [data/processed/]
+│   │     outs: models/advanced/
+│   ├── evaluate_model:
+│   │     cmd: python src/models/model_evaluation.py
+│   │     deps: [models/advanced/]
+│   └── deploy_model:
+│         cmd: python src/models/register_model.py
+│         deps: [models/advanced/]
+```
+
+---
+
+## 📦 4. Infrastructure and Automation
+
+### **CI/CD Workflow (GitHub Actions)**
+
+* **CI Stage**:
+
+  * Run linting (flake8, black)
+  * Execute unit tests (pytest)
+  * Validate DVC stages
+* **CD Stage**:
+
+  * Build Docker image → push to AWS ECR
+  * Deploy container to ECS or Lambda
+  * Register model version in MLflow registry
+
+### **Dockerization**
+
+* Base image: `python:3.11-slim`
+* Layers:
+
+  * Install system deps
+  * Install uv + dependencies
+  * Copy source code
+  * Expose FastAPI port
+* Use multi-stage builds for lightweight production images.
+
+---
+
+## 🧩 5. Design Requirements Integration
+
+| Design Requirement  | How It’s Achieved                                                                             |
+| ------------------- | --------------------------------------------------------------------------------------------- |
+| **Reliability**     | Version control (Git/DVC), testing suite, monitoring via CloudWatch                           |
+| **Scalability**     | Modular pipeline, AWS ECS auto-scaling, distributed training (Accelerate)                     |
+| **Maintainability** | Clean code, clear module boundaries, logging system (`src/utils/logger.py`)                   |
+| **Adaptability**    | Config-driven pipeline (`params.yaml`), easily swap BERT/TF-IDF, flexible retraining triggers |
+
+---
+
+## 🧠 6. Planned Modules (Implementation Phases)
+
+| Phase       | Component                       | Focus                                                             |
+| ----------- | ------------------------------- | ----------------------------------------------------------------- |
+| **Phase 1** | Data ingestion & preprocessing  | Automate dataset download, cleaning, and validation (DVC tracked) |
+| **Phase 2** | Feature engineering             | TF-IDF + BERT comparison (feature performance analysis)           |
+| **Phase 3** | Modeling                        | Baseline → Transformer fine-tuning + Optuna optimization          |
+| **Phase 4** | Experiment tracking             | Integrate MLflow logging and registry                             |
+| **Phase 5** | Deployment                      | Dockerize FastAPI inference service                               |
+| **Phase 6** | CI/CD pipeline                  | GitHub Actions + AWS deployment automation                        |
+| **Phase 7** | Real-time inference integration | Connect Chrome extension → inference API                          |
+| **Phase 8** | Monitoring & retraining loop    | Detect drift, retrain via DVC + MLflow automation                 |
+
+---
+
+## 📋 7. Documentation and Governance
+
+* **README.md** → Project overview, setup, and contribution guidelines.
+* **Reports/** → Contain experiment results and data visualizations.
+* **References/** → Include ML design document, model card, and system diagram.
+* **Logging & Config Management**:
+
+  * `.env` → API keys and secrets
+  * `params.yaml` → Centralized hyperparameters/configuration
+  * `src/utils/logger.py` → Unified logging for all modules
+
+---
+
+### ✅ Next Steps (Before Implementation)
+
+1. Define **project KPIs** (accuracy target, latency, API response time).
+2. Design **system architecture diagram** (logical + infrastructure).
+3. Finalize **data versioning policy** (e.g., keep only 3 latest processed versions).
+4. Prepare **DVC pipeline skeleton** (no execution yet).
+5. Create **MLflow tracking server** setup plan (local first, then AWS S3 backend).

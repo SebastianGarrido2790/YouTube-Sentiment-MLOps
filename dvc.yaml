@@ -1,6 +1,9 @@
 stages:
   data_ingestion:
-    cmd: uv run python -m src.data.download_dataset --url ${data_ingestion.url} --output_path ${data_ingestion.output_path}
+    cmd: >
+      uv run python -m src.data.download_dataset
+      --url ${data_ingestion.url} 
+      --output_path ${data_ingestion.output_path}
     deps:
       - src/data/download_dataset.py
       - src/utils/logger.py
@@ -9,7 +12,10 @@ stages:
       - data/raw/reddit_comments.csv
 
   data_preparation:
-    cmd: uv run python -m src.data.make_dataset --test_size ${data_preparation.test_size} --random_state ${data_preparation.random_state}
+    cmd: >
+      uv run python -m src.data.make_dataset 
+      --test_size ${data_preparation.test_size} 
+      --random_state ${data_preparation.random_state}
     deps:
       - data/raw/reddit_comments.csv
       - src/data/make_dataset.py
@@ -23,15 +29,22 @@ stages:
       - data/processed/val.parquet
       - data/processed/test.parquet
 
+  # Transient processing stage for feature comparison (no outs)
   feature_comparison:
-    cmd: uv run python -m src.features.tfidf_vs_bert --ngram_ranges ${feature_comparison.ngram_ranges} --max_features ${feature_comparison.max_features} --batch_size ${feature_comparison.batch_size} --n_estimators ${feature_comparison.n_estimators} --max_depth ${feature_comparison.max_depth}
+    cmd: >
+      uv run python -m src.features.tfidf_vs_bert
+      --ngram_ranges ${feature_comparison.ngram_ranges}
+      --max_features ${feature_comparison.max_features}
+      --batch_size ${feature_comparison.batch_size}
+      --n_estimators ${feature_comparison.n_estimators}
+      --max_depth ${feature_comparison.max_depth}
+      --use_bert ${feature_comparison.use_bert}
     deps:
       - data/processed/train.parquet
-      - data/processed/test.parquet
+      - data/processed/val.parquet
       - src/features/tfidf_vs_bert.py
-      - src/utils/mlflow_config.py
       - src/utils/logger.py
-      - src/utils/paths.py
+      - src/features/helpers/feature_utils.py
     params:
       - feature_comparison.mlflow_uri
       - feature_comparison.ngram_ranges
@@ -39,19 +52,21 @@ stages:
       - feature_comparison.batch_size
       - feature_comparison.n_estimators
       - feature_comparison.max_depth
-    outs:
-      - reports/figures/tfidf_vs_bert/
-      - models/features/tfidf_vs_bert/
 
   feature_tuning:
-    cmd: uv run python -m src.features.tfidf_max_features --max_features_values ${feature_tuning.max_features_values} --ngram_range ${feature_tuning.best_ngram_range} --n_estimators ${feature_tuning.n_estimators} --max_depth ${feature_tuning.max_depth}
+    cmd: >
+      uv run python -m src.features.tfidf_max_features 
+      --max_features_values ${feature_tuning.max_features_values} 
+      --ngram_range ${feature_tuning.best_ngram_range} 
+      --n_estimators ${feature_tuning.n_estimators} 
+      --max_depth ${feature_tuning.max_depth}
     deps:
       - data/processed/train.parquet
-      - data/processed/test.parquet
+      - data/processed/val.parquet
       - src/features/tfidf_max_features.py
-      - src/utils/mlflow_config.py
       - src/utils/logger.py
       - src/utils/paths.py
+      - src/features/helpers/feature_utils.py
     params:
       - feature_tuning.max_features_values
       - feature_tuning.best_ngram_range
@@ -59,18 +74,23 @@ stages:
       - feature_tuning.max_depth
     outs:
       - reports/figures/tfidf_max_features/
-      - models/features/tfidf_max_features/
 
   imbalance_tuning:
     # Notice the quotes around imbalance_methods. This ensures DVC passes the entire list string correctly to Python.
-    cmd: uv run python -m src.features.imbalance_tuning --imbalance_methods "${imbalance_tuning.imbalance_methods}" --max_features ${imbalance_tuning.best_max_features} --ngram_range ${imbalance_tuning.best_ngram_range} --n_estimators ${imbalance_tuning.rf_n_estimators} --max_depth ${imbalance_tuning.rf_max_depth}
+    cmd: >
+      uv run python -m src.features.imbalance_tuning 
+      --imbalance_methods "${imbalance_tuning.imbalance_methods}" 
+      --max_features ${imbalance_tuning.best_max_features} 
+      --ngram_range ${imbalance_tuning.best_ngram_range} 
+      --n_estimators ${imbalance_tuning.rf_n_estimators} 
+      --max_depth ${imbalance_tuning.rf_max_depth}
     deps:
     - data/processed/train.parquet
-    - data/processed/test.parquet
+    - data/processed/val.parquet
     - src/features/imbalance_tuning.py
-    - src/utils/mlflow_config.py
     - src/utils/logger.py
     - src/utils/paths.py
+    - src/features/helpers/feature_utils.py
     params:
     - imbalance_tuning.imbalance_methods
     - imbalance_tuning.best_max_features
@@ -78,11 +98,15 @@ stages:
     - imbalance_tuning.rf_n_estimators
     - imbalance_tuning.rf_max_depth
     outs:
-    - reports/figures/imbalance_tuning/
-    - models/features/imbalance_tuning/
+    - reports/figures/imbalance_methods/
 
   feature_engineering:
-    cmd: uv run python -m src.features.feature_engineering --use_bert ${feature_engineering.use_bert} --max_features ${imbalance_tuning.best_max_features} --ngram_range ${imbalance_tuning.best_ngram_range} --bert_batch_size ${feature_engineering.bert_batch_size}
+    cmd: >
+      uv run python -m src.features.feature_engineering 
+      --use_bert ${feature_engineering.use_bert} 
+      --max_features ${imbalance_tuning.best_max_features} 
+      --ngram_range ${imbalance_tuning.best_ngram_range} 
+      --bert_batch_size ${feature_engineering.bert_batch_size}
     deps:
       - data/processed/train.parquet
       - data/processed/val.parquet
@@ -90,6 +114,7 @@ stages:
       - src/features/feature_engineering.py
       - src/utils/logger.py
       - src/utils/paths.py
+      - src/features/helpers/feature_utils.py
     params:
       - feature_engineering.use_bert
       - feature_engineering.bert_batch_size
@@ -97,18 +122,18 @@ stages:
       - imbalance_tuning.best_max_features
       - imbalance_tuning.best_ngram_range
     outs:
-      - models/features/engineered_features/
+      - models/features/
 
   baseline_model:
     cmd: uv run python -m src.models.baseline_logistic
     deps:
-      - models/features/engineered_features/X_train.npz
-      - models/features/engineered_features/X_val.npz
-      - models/features/engineered_features/X_test.npz
-      - models/features/engineered_features/y_train.npy
-      - models/features/engineered_features/y_val.npy
-      - models/features/engineered_features/y_test.npy
-      - models/features/engineered_features/label_encoder.pkl
+      - models/features/X_train.npz
+      - models/features/X_val.npz
+      - models/features/X_test.npz
+      - models/features/y_train.npy
+      - models/features/y_val.npy
+      - models/features/y_test.npy
+      - models/features/label_encoder.pkl
       - src/models/baseline_logistic.py
       - src/models/helpers/data_loader.py
       - src/models/helpers/train_utils.py
@@ -126,13 +151,13 @@ stages:
       - src/models/helpers/train_utils.py
       - src/utils/mlflow_config.py
       - src/utils/logger.py
-      - models/features/engineered_features/X_train.npz
-      - models/features/engineered_features/X_val.npz
-      - models/features/engineered_features/y_train.npy
-      - models/features/engineered_features/y_val.npy
+      - models/features/X_train.npz
+      - models/features/X_val.npz
+      - models/features/y_train.npy
+      - models/features/y_val.npy
 
     outs:
-      - models/advanced/xgboost_best.pkl
+      - models/advanced/xgboost_model.pkl
     params:
       - train.xgboost.n_trials
     metrics:
@@ -146,12 +171,12 @@ stages:
       - src/models/helpers/train_utils.py
       - src/utils/mlflow_config.py
       - src/utils/logger.py
-      - models/features/engineered_features/X_train.npz
-      - models/features/engineered_features/X_val.npz
-      - models/features/engineered_features/y_train.npy
-      - models/features/engineered_features/y_val.npy
+      - models/features/X_train.npz
+      - models/features/X_val.npz
+      - models/features/y_train.npy
+      - models/features/y_val.npy
     outs:
-      - models/advanced/lightgbm_best.pkl
+      - models/advanced/lightgbm_model.pkl
     params:
       - train.lightgbm.n_trials
     metrics:
@@ -169,7 +194,7 @@ stages:
       - data/processed/train.parquet
       - data/processed/val.parquet
     outs:
-      - models/advanced/bert_best.pkl
+      - models/advanced/bert_model.pkl
       - models/advanced/bert_results
     params:
       - train.bert.n_trials
@@ -178,3 +203,25 @@ stages:
       - train.bert.weight_decay
     metrics:
       - models/advanced/bert_metrics.json
+
+  model_evaluation:
+    cmd: uv run python -m src.models.model_evaluation
+    deps:
+      - src/models/model_evaluation.py
+      - src/utils/mlflow_config.py
+      - src/utils/logger.py
+      - src/utils/paths.py
+      - src/models/helpers/data_loader.py
+      - src/models/helpers/train_utils.py
+      # The model artifact produced by the training stage
+      - models/advanced/lightgbm_model.pkl
+      # The features for the test set
+      - models/features/X_test.npz
+      - models/features/y_test.npy
+      # The LabelEncoder is bundled with feature files in load_feature_data
+      - models/features/label_encoder.pkl 
+    outs:
+      # Output file for the next stage (registration)
+      - models/advanced/lightgbm_evaluation_run.json
+    metrics:
+      - models/advanced/lightgbm_test_metrics.json  # DVC tracks test F1 score

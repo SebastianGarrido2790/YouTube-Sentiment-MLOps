@@ -20,7 +20,8 @@ from src.utils.mlflow_config import get_mlflow_uri
 from src.models.helpers.data_loader import load_feature_data, apply_adasyn
 from src.models.helpers.train_utils import (
     setup_experiment,
-    save_best_params,
+    save_hyperparams_bundle,
+    save_model_object,
     save_metrics_json,
 )
 
@@ -101,9 +102,15 @@ if __name__ == "__main__":
 
         mlflow.xgboost.log_model(best_model, artifact_path="best_xgboost_model")
 
-        # Save best parameters AND metrics to disk for DVC tracking
-        save_best_params("xgboost", best_params, best_f1)
-        save_metrics_json("xgboost", best_f1)
+        # Save the actual model object, not just params/score.
+        # ----------------------------------------------------------------
+        save_model_object(best_model, "xgboost")  # <-- SAVES MODEL TO xgboost_model.pkl
+
+        # Save params to a separate file (optional, for logging purposes)
+        save_hyperparams_bundle("xgboost", best_params, best_score)
+
+        # Save score for DVC metrics tracking
+        save_metrics_json("xgboost", best_score)
 
         logger.info(
             f"🎯 Best XGBoost trial ({study.best_trial.number}) logged to MLflow | "
