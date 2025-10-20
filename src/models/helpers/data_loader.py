@@ -21,9 +21,6 @@ from src.utils.logger import get_logger
 
 logger = get_logger(__name__, headline="data_loader.py")
 
-# --- Paths ---
-LOAD_FEATURES_DIR = FEATURES_DIR / "engineered_features"
-
 
 # ============================================================
 #  TF-IDF / Sparse Feature Loading
@@ -39,13 +36,13 @@ def load_feature_data(validate_files: bool = True):
         tuple: (X_train, X_val, X_test, y_train, y_val, y_test, label_encoder)
     """
     feature_files = {
-        "X_train": LOAD_FEATURES_DIR / "X_train.npz",
-        "X_val": LOAD_FEATURES_DIR / "X_val.npz",
-        "X_test": LOAD_FEATURES_DIR / "X_test.npz",
-        "y_train": LOAD_FEATURES_DIR / "y_train.npy",
-        "y_val": LOAD_FEATURES_DIR / "y_val.npy",
-        "y_test": LOAD_FEATURES_DIR / "y_test.npy",
-        "label_encoder": LOAD_FEATURES_DIR / "label_encoder.pkl",
+        "X_train": FEATURES_DIR / "X_train.npz",
+        "X_val": FEATURES_DIR / "X_val.npz",
+        "X_test": FEATURES_DIR / "X_test.npz",
+        "y_train": FEATURES_DIR / "y_train.npy",
+        "y_val": FEATURES_DIR / "y_val.npy",
+        "y_test": FEATURES_DIR / "y_test.npy",
+        "label_encoder": FEATURES_DIR / "label_encoder.pkl",
     }
 
     if validate_files:

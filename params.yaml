@@ -10,6 +10,7 @@ feature_comparison:
   mlflow_uri: http://127.0.0.1:5000 # Local for testing, change to EC2 IP later
   ngram_ranges: '[(1,1),(1,2),(1,3)]'
   max_features: 5000
+  use_bert: false
   batch_size: 32
   n_estimators: 200
   max_depth: 15

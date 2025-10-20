@@ -33,34 +33,32 @@ Outputs:
 """
 
 import argparse
-import ast  # For safe list/tuple parsing from params
 import pickle
-from typing import Tuple, Optional
+from typing import Tuple, Optional, Any, Union
 import numpy as np
 import pandas as pd
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.preprocessing import LabelEncoder
 from scipy.sparse import save_npz, hstack, csr_matrix, issparse
+from scipy.sparse import spmatrix  # Added for improved type hinting
 
 # --- Conditional Imports for BERT ---
-# These are imported only if 'use_bert' is True, but must be defined here for type hinting.
+# Define placeholders if imports fail to prevent NameError outside the try/except block
 try:
     import torch
     from transformers import AutoTokenizer, AutoModel
 except ImportError:
-    # If transformers/torch isn't installed (e.g., lightweight environment)
-    pass
+    torch: Optional[Any] = None
+    AutoTokenizer: Optional[Any] = None
+    AutoModel: Optional[Any] = None
 
 # --- Project Utilities ---
-from src.utils.paths import TRAIN_PATH, VAL_PATH, TEST_PATH, MODELS_DIR, PROJECT_ROOT
+from src.utils.paths import TRAIN_PATH, VAL_PATH, TEST_PATH, FEATURES_DIR, PROJECT_ROOT
 from src.utils.logger import get_logger
+from src.features.helpers.feature_utils import parse_dvc_param
 
 # --- Logging Setup ---
 logger = get_logger(__name__, headline="feature_engineering.py")
-
-# --- Path setup ---
-FEATURES_DIR = MODELS_DIR / "features" / "engineered_features"
-FEATURES_DIR.mkdir(parents=True, exist_ok=True)
 
 
 def _get_bert_embeddings(
@@ -76,10 +74,9 @@ def _get_bert_embeddings(
 
     Returns:
         np.ndarray: Dense embeddings (n_samples, 768).
-
-    (Note: This should be consistent with the implementation in tfidf_vs_bert.py)
     """
-    if "torch" not in globals() or "AutoModel" not in globals():
+    # NOTE: Checks rely on the conditional imports above
+    if torch is None or AutoModel is None:
         raise ImportError("BERT mode requires torch and transformers to be installed.")
 
     device = device or ("cuda" if torch.cuda.is_available() else "cpu")
@@ -161,7 +158,7 @@ def engineer_features(
                 f"Processed data missing: {path}. Run data_preparation first."
             )
         dfs[name] = pd.read_parquet(path)
-        # Ensure 'clean_comment' exists and is not empty (Relying on make_dataset.py for cleaning)
+        # NOTE: Ensure 'clean_comment' exists and is not empty (Relying on make_dataset.py for cleaning)
         if dfs[name]["clean_comment"].empty:
             raise ValueError(f"Clean comments column is empty in {name} split.")
         logger.info(f"{name.capitalize()} set loaded: {dfs[name].shape[0]} samples.")
@@ -182,7 +179,11 @@ def engineer_features(
     y_test = le.transform(dfs["test"]["category"])
 
     # 3. Text Feature Generation (TF-IDF or BERT)
-    vectorizer = None  # Initialize vectorizer placeholder
+    vectorizer: Optional[TfidfVectorizer] = None  # Initialize vectorizer placeholder
+    X_train_text: Union[spmatrix, np.ndarray]
+    X_val_text: Union[spmatrix, np.ndarray]
+    X_test_text: Union[spmatrix, np.ndarray]
+
     if use_bert:
         logger.info("🚀 Generating BERT embeddings (768 dim)...")
         X_train_text = _get_bert_embeddings(train_texts, batch_size=bert_batch_size)
@@ -220,9 +221,10 @@ def engineer_features(
             X_combined = hstack([X_text, X_derived])
         else:
             # Dense (BERT) + Dense (numpy.hstack)
-            X_combined = np.hstack([X_text, X_derived])
+            X_combined_dense = np.hstack([X_text, X_derived])
             # For consistent saving as .npz (sparse format), convert dense numpy array
-            X_combined = csr_matrix(X_combined)
+            # This ensures X_combined is always a sparse matrix type
+            X_combined = csr_matrix(X_combined_dense)
         X_sets.append(X_combined)
 
     # 6. Save Artifacts (Features, Labels, Encoder, Vectorizer)
@@ -254,8 +256,7 @@ def engineer_features(
                 f"Saved TF-IDF Vectorizer to {FEATURES_DIR.relative_to(PROJECT_ROOT) / vectorizer_name}"
             )
     elif use_bert:
-        # Note: BERT tokenizer/model is complex; better to load from HuggingFace later
-        logger.info("Using BERT: Tokenizer/Model names are logged in tuning stage.")
+        logger.info("Using BERT: Tokenizer/Model are sourced from HuggingFace.")
 
     feature_type = "BERT" if use_bert else f"TF-IDF (max_features={max_features})"
     logger.info(
@@ -279,13 +280,13 @@ def main() -> None:
     parser.add_argument(
         "--max_features",
         type=int,
-        default=1000,
+        default=1000,  # Best default based on prior experiments (tfidf_max_features.py)
         help="Max vocabulary for TF-IDF (ignored if use_bert=True).",
     )
     parser.add_argument(
         "--ngram_range",
         type=str,
-        default="(1,2)",
+        default="(1,1)",  # Best default based on prior experiments (tfidf_vs_bert.py)
         help="N-gram range for TF-IDF as string tuple (ignored if use_bert=True).",
     )
     parser.add_argument(
@@ -293,15 +294,14 @@ def main() -> None:
     )
     args = parser.parse_args()
 
-    # Convert string tuple back to a Python tuple
-    try:
-        ngram_range = ast.literal_eval(args.ngram_range.strip())
-        if not isinstance(ngram_range, tuple):
-            raise ValueError
-    except (ValueError, SyntaxError):
-        logger.error(
-            f"Invalid ngram_range format: {args.ngram_range}. Must be '(int,int)'."
-        )
+    # --- Parameter Parsing ---
+    # Replaced manual ast.literal_eval with the helper function
+    ngram_range = parse_dvc_param(
+        args.ngram_range, name="ngram_range", expected_type=tuple
+    )
+
+    if ngram_range is None:
+        # The helper function logs the error and returns None if parsing fails
         return
 
     logger.info("--- Feature Engineering Parameters ---")
