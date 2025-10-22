@@ -5,3 +5,6 @@
 /lightgbm_metrics.json
 /lightgbm_evaluation_run.json
 /lightgbm_test_metrics.json
+/bert_model.pkl
+/bert_results
+/bert_metrics.json

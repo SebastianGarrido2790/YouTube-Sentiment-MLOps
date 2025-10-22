@@ -341,3 +341,32 @@ In the MLflow UI (as shown in your screenshot), the parent "XGBoost_Optuna_Study
 - **DVC Integration**: Since metrics are now in JSON (via `save_metrics_json`), run `dvc metrics diff` post-repro to compare F1 across pipeline versions—practical for model selection.
 
 This structure balances simplicity with depth, prioritizing a clean audit trail. If trials aren't nesting correctly (e.g., due to `mlflow.end_run()` calls), share console output for troubleshooting.
+
+---
+
+## Production-grade FastAPI inference service
+Located at: `src/models/predict_model.py`.
+
+---
+
+### ✅ Design Objectives
+
+| Goal                        | Description                                                                                                              |
+| --------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
+| **Serve predictions**       | Expose a `/predict` endpoint that loads your latest registered model (e.g., LightGBM) and returns sentiment predictions. |
+| **Use MLflow registry**     | Automatically fetch the latest “Production” version (or latest tagged) of the model from MLflow.                         |
+| **CPU-friendly**            | Lightweight, runs even without GPU or transformers dependencies.                                                         |
+| **Decoupled preprocessing** | Reuse your saved `tfidf_vectorizer.pkl` and `label_encoder.pkl` artifacts from `models/features`.                        |
+| **Robust error handling**   | Handle malformed requests, missing artifacts, or registry issues gracefully.                                             |
+
+---
+
+### 🔍 Optional Enhancements
+
+1. **Automatic model reloading** every N minutes (using background tasks).
+2. **Token-based authentication** for production endpoints.
+3. **CORS middleware** for integration with a front-end dashboard.
+4. **Request logging middleware** (structured JSON logs).
+
+---
+

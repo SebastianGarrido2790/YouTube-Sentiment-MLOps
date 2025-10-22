@@ -118,8 +118,8 @@ stages:
       size: 2345
     - path: src/utils/paths.py
       hash: md5
-      md5: 09b7c4d9482ae3428fc2ce03ac156dd0
-      size: 1697
+      md5: c723fe5c11d3e4920067ff204eb5a6f5
+      size: 1764
     params:
       params.yaml:
         feature_tuning.best_ngram_range: (1,1)
@@ -150,8 +150,8 @@ stages:
       size: 499418
     - path: src/features/feature_engineering.py
       hash: md5
-      md5: 75f9febc394686d67e0d6a6581b04540
-      size: 12470
+      md5: a7ce3798f261738dfc0c52446b697c93
+      size: 12447
     - path: src/features/helpers/feature_utils.py
       hash: md5
       md5: e0f9947d31fadd92c998640dda59a078
@@ -173,8 +173,8 @@ stages:
     outs:
     - path: models/features/
       hash: md5
-      md5: 97010c081cc5a1e32f15604753fe7060.dir
-      size: 3053474
+      md5: 1703ebfaf32def81040ebf707da4e20e.dir
+      size: 3053483
       nfiles: 8
   baseline_model:
     cmd: uv run python -m src.models.baseline_logistic
@@ -193,8 +193,8 @@ stages:
       size: 398166
     - path: models/features/label_encoder.pkl
       hash: md5
-      md5: e5c04dce5c4ccd04129e4d80412dcd3e
-      size: 266
+      md5: e4605a38643e9060a9b7203131961036
+      size: 275
     - path: models/features/y_test.npy
       hash: md5
       md5: 3d93b2947650aff2973d57248ddfa80d
@@ -213,12 +213,12 @@ stages:
       size: 5119
     - path: src/models/helpers/data_loader.py
       hash: md5
-      md5: ed7a732ccaefe915ad74a0a0e81efea0
-      size: 4435
+      md5: 7a89b90d5c30a18dd6288af65d98984e
+      size: 4150
     - path: src/models/helpers/train_utils.py
       hash: md5
-      md5: b317ce6ad5af9bffdad1402a7a67e70d
-      size: 4027
+      md5: d13157debc27d5f22d5d7a3b3d9b80ca
+      size: 4602
     - path: src/utils/logger.py
       hash: md5
       md5: 73106bb3de64f8ef8c097a990a6e2f49
@@ -229,8 +229,8 @@ stages:
       size: 3563
     - path: src/utils/paths.py
       hash: md5
-      md5: 09b7c4d9482ae3428fc2ce03ac156dd0
-      size: 1697
+      md5: c723fe5c11d3e4920067ff204eb5a6f5
+      size: 1764
     outs:
     - path: models/baseline/logistic_baseline.pkl
       hash: md5
@@ -314,8 +314,8 @@ stages:
       size: 2345
     - path: src/utils/paths.py
       hash: md5
-      md5: 09b7c4d9482ae3428fc2ce03ac156dd0
-      size: 1697
+      md5: c723fe5c11d3e4920067ff204eb5a6f5
+      size: 1764
     params:
       params.yaml:
         imbalance_tuning.best_max_features: 1000
@@ -393,8 +393,8 @@ stages:
       size: 411831
     - path: models/features/label_encoder.pkl
       hash: md5
-      md5: e5c04dce5c4ccd04129e4d80412dcd3e
-      size: 266
+      md5: e4605a38643e9060a9b7203131961036
+      size: 275
     - path: models/features/y_test.npy
       hash: md5
       md5: 3d93b2947650aff2973d57248ddfa80d
@@ -426,7 +426,7 @@ stages:
     outs:
     - path: models/advanced/evaluation/lightgbm_evaluation_run.json
       hash: md5
-      md5: 2d67009a71d4f8db17b27dde50b6d619
+      md5: 63b99931a3bd631b73da43ea780912f0
       size: 96
     - path: models/advanced/evaluation/lightgbm_test_metrics.json
       hash: md5
@@ -445,8 +445,8 @@ stages:
       size: 499418
     - path: src/models/bert_training.py
       hash: md5
-      md5: fe3e847d759047a8a560b72519cfb8e7
-      size: 6080
+      md5: e532a6be3261dd58deab6829ae164b83
+      size: 6155
     - path: src/models/helpers/data_loader.py
       hash: md5
       md5: 7a89b90d5c30a18dd6288af65d98984e
@@ -499,9 +499,9 @@ stages:
     deps:
     - path: models/advanced/evaluation/
       hash: md5
-      md5: 04bd7e1c49788e4f54e1e7e78a559655.dir
-      size: 24106
-      nfiles: 3
+      md5: ed89ea730c2ac67dd233ee9d74ef5714.dir
+      size: 28858
+      nfiles: 4
     - path: src/models/register_model.py
       hash: md5
       md5: 1fe09b3da09f59ee6ace85eb2e570a1c
@@ -521,8 +521,3 @@ stages:
     params:
       params.yaml:
         register.f1_threshold: 0.75
-    outs:
-    - path: logs/experiments.log
-      hash: md5
-      md5: b3531cb2cf141eb6d5b59471221268ca
-      size: 1257
