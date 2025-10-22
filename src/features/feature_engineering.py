@@ -168,15 +168,13 @@ def engineer_features(
     val_texts = dfs["val"]["clean_comment"].tolist()
     test_texts = dfs["test"]["clean_comment"].tolist()
 
-    # We use the original category for the LabelEncoder fitting
-    y_all = pd.concat([dfs[s]["category"] for s in splits])
-
-    # 2. Label Encoding (fit on combined for consistency)
+    # We use the human-readable sentiment labels for LabelEncoder fitting
+    y_all = pd.concat([dfs[s]["sentiment_label"] for s in splits])
     le = LabelEncoder()
     le.fit(y_all)
-    y_train = le.transform(dfs["train"]["category"])
-    y_val = le.transform(dfs["val"]["category"])
-    y_test = le.transform(dfs["test"]["category"])
+    y_train = le.transform(dfs["train"]["sentiment_label"])
+    y_val = le.transform(dfs["val"]["sentiment_label"])
+    y_test = le.transform(dfs["test"]["sentiment_label"])
 
     # 3. Text Feature Generation (TF-IDF or BERT)
     vectorizer: Optional[TfidfVectorizer] = None  # Initialize vectorizer placeholder
