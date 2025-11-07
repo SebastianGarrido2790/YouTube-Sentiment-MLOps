@@ -15,7 +15,7 @@ import mlflow
 import mlflow.lightgbm
 from sklearn.metrics import f1_score
 from src.utils.logger import get_logger
-from src.utils.mlflow_config import get_mlflow_uri
+from src.utils.paths import get_mlflow_uri
 from src.models.helpers.data_loader import load_feature_data, apply_adasyn
 from src.models.helpers.train_utils import (
     setup_experiment,
