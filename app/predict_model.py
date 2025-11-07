@@ -131,6 +131,11 @@ def predict(data: PredictRequest):
         raise HTTPException(status_code=500, detail=str(e))
 
 
+@app.get("/health", tags=["system"])
+async def health_check():
+    return {"status": "ok", "message": "YouTube Sentiment API is running"}
+
+
 # ============================================================
 # Main Launcher
 # ============================================================

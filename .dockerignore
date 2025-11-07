@@ -1,0 +1,33 @@
+# Python / virtual env
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.venv/
+.env
+.python-version
+
+# Logs and artifacts
+logs/
+mlruns/
+mlflow.db
+mlartifacts/
+*.log
+
+# Data and reports
+data/
+reports/
+notebooks/
+references/
+models/
+.DS_Store
+
+# DVC / Git
+.dvc/
+.dvcignore
+.git/
+.gitignore
+
+# IDE / misc
+.vscode/
+.idea/
