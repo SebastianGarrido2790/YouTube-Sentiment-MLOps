@@ -27,15 +27,12 @@ import os
 import requests
 
 # --- Project Utilities ---
-from src.utils.paths import RAW_DATA_DIR
+from src.utils.paths import RAW_PATH
 from src.utils.logger import get_logger
 
 # --- Logging Setup ---
 logger = get_logger(__name__, headline="download_dataset.py")
 
-# --- File Paths ---
-RAW_PATH = RAW_DATA_DIR / "reddit_comments.csv"
-RAW_DATA_DIR.mkdir(parents=True, exist_ok=True)
 # The URL for the raw Reddit dataset (proxy for YouTube data)
 DEFAULT_DATA_URL = "https://raw.githubusercontent.com/Himanshu-1703/reddit-sentiment-analysis/refs/heads/main/data/reddit.csv"
 

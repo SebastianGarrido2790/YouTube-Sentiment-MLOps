@@ -31,7 +31,7 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.feature_extraction.text import TfidfVectorizer
 
 # --- Project Utilities ---
-from src.utils.paths import FIGURES_DIR
+from src.utils.paths import IMBALANCE_FIGURES_DIR
 from src.utils.logger import get_logger
 from src.features.helpers.feature_utils import (
     setup_mlflow_run,
@@ -42,10 +42,6 @@ from src.features.helpers.feature_utils import (
 
 # --- Logging Setup ---
 logger = get_logger(__name__, headline="imbalance_tuning.py")
-
-# --- Path setup ---
-IMBALANCE_FIGURES_DIR = FIGURES_DIR / "imbalance_methods"
-IMBALANCE_FIGURES_DIR.mkdir(parents=True, exist_ok=True)
 
 
 def run_imbalanced_experiment(

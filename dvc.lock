@@ -6,16 +6,16 @@ stages:
     deps:
     - path: src/data/download_dataset.py
       hash: md5
-      md5: 1d56bf095a1ff2ec3a4a8e6b9ceca44d
-      size: 3665
+      md5: a45d3f80f265ba9bb030d812ee1189c4
+      size: 3541
     - path: src/utils/logger.py
       hash: md5
       md5: 73106bb3de64f8ef8c097a990a6e2f49
       size: 2345
     - path: src/utils/paths.py
       hash: md5
-      md5: c723fe5c11d3e4920067ff204eb5a6f5
-      size: 1764
+      md5: 7b2d73cb9e053c99e1e0296ee965bdff
+      size: 2156
     outs:
     - path: data/raw/reddit_comments.csv
       hash: md5
@@ -31,16 +31,16 @@ stages:
       size: 6888934
     - path: src/data/make_dataset.py
       hash: md5
-      md5: bed42eaa2ecd20dc1bb4721353e85b99
-      size: 5679
+      md5: 1145dd23e809563e1fdc3df32ce6c02f
+      size: 5553
     - path: src/utils/logger.py
       hash: md5
       md5: 73106bb3de64f8ef8c097a990a6e2f49
       size: 2345
     - path: src/utils/paths.py
       hash: md5
-      md5: c723fe5c11d3e4920067ff204eb5a6f5
-      size: 1764
+      md5: 7b2d73cb9e053c99e1e0296ee965bdff
+      size: 2156
     params:
       params.yaml:
         data_preparation.random_state: 42
@@ -110,16 +110,16 @@ stages:
       size: 6654
     - path: src/features/tfidf_max_features.py
       hash: md5
-      md5: 1ae1544349b484f17b935657f12eab32
-      size: 5975
+      md5: d1457c0d782aa1dda22552619e7eeca4
+      size: 5847
     - path: src/utils/logger.py
       hash: md5
       md5: 73106bb3de64f8ef8c097a990a6e2f49
       size: 2345
     - path: src/utils/paths.py
       hash: md5
-      md5: c723fe5c11d3e4920067ff204eb5a6f5
-      size: 1764
+      md5: 7b2d73cb9e053c99e1e0296ee965bdff
+      size: 2156
     params:
       params.yaml:
         feature_tuning.best_ngram_range: (1,1)
@@ -162,8 +162,8 @@ stages:
       size: 2345
     - path: src/utils/paths.py
       hash: md5
-      md5: c723fe5c11d3e4920067ff204eb5a6f5
-      size: 1764
+      md5: 7b2d73cb9e053c99e1e0296ee965bdff
+      size: 2156
     params:
       params.yaml:
         feature_engineering.bert_batch_size: 32
@@ -173,7 +173,7 @@ stages:
     outs:
     - path: models/features/
       hash: md5
-      md5: 1703ebfaf32def81040ebf707da4e20e.dir
+      md5: c06b7bafbeca9fb2488a1168dbd217cc.dir
       size: 3053483
       nfiles: 8
   baseline_model:
@@ -209,8 +209,8 @@ stages:
       size: 44320
     - path: src/models/baseline_logistic.py
       hash: md5
-      md5: 803476c1b0e0400d05a056965f80e2b6
-      size: 5119
+      md5: 6b59d4b0c251bd22429b07cc5d5fdc8b
+      size: 5016
     - path: src/models/helpers/data_loader.py
       hash: md5
       md5: 7a89b90d5c30a18dd6288af65d98984e
@@ -225,12 +225,12 @@ stages:
       size: 2345
     - path: src/utils/mlflow_config.py
       hash: md5
-      md5: 84fe1a1f71567d2cd5522fe674160f25
-      size: 4869
+      md5: 80c4e94241c5d684a2e28ce2456005eb
+      size: 4882
     - path: src/utils/paths.py
       hash: md5
-      md5: c723fe5c11d3e4920067ff204eb5a6f5
-      size: 1764
+      md5: 7b2d73cb9e053c99e1e0296ee965bdff
+      size: 2156
     outs:
     - path: models/baseline/logistic_baseline.pkl
       hash: md5
@@ -273,20 +273,20 @@ stages:
       size: 2345
     - path: src/utils/mlflow_config.py
       hash: md5
-      md5: 84fe1a1f71567d2cd5522fe674160f25
-      size: 4869
+      md5: 80c4e94241c5d684a2e28ce2456005eb
+      size: 4882
     params:
       params.yaml:
         train.xgboost.n_trials: 30
     outs:
     - path: models/advanced/xgboost_metrics.json
       hash: md5
-      md5: d0327a6a203a759980ea13b2d9c0d3e3
+      md5: 521b4f481d20cf782e6e316a071549a1
       size: 44
     - path: models/advanced/xgboost_model.pkl
       hash: md5
-      md5: 9f16fb33c2abd640ce4d4aad67d918b1
-      size: 1519937
+      md5: 4fe3e88dd447a78f18eb078fec88d886
+      size: 1088061
   imbalance_tuning:
     cmd: "uv run python -m src.features.imbalance_tuning  --imbalance_methods \"['class_weights','oversampling','adasyn','undersampling','smote_enn']\"\
       \  --max_features 1000  --ngram_range (1,1)  --n_estimators 200  --max_depth
@@ -306,16 +306,16 @@ stages:
       size: 6654
     - path: src/features/imbalance_tuning.py
       hash: md5
-      md5: 7a714a09a5b40c140e040efd33aa5f68
-      size: 8638
+      md5: 8a3aa5508e5fa8e95c6bfd5169e495e1
+      size: 8507
     - path: src/utils/logger.py
       hash: md5
       md5: 73106bb3de64f8ef8c097a990a6e2f49
       size: 2345
     - path: src/utils/paths.py
       hash: md5
-      md5: c723fe5c11d3e4920067ff204eb5a6f5
-      size: 1764
+      md5: 7b2d73cb9e053c99e1e0296ee965bdff
+      size: 2156
     params:
       params.yaml:
         imbalance_tuning.best_max_features: 1000
@@ -366,27 +366,27 @@ stages:
       size: 2345
     - path: src/utils/mlflow_config.py
       hash: md5
-      md5: 84fe1a1f71567d2cd5522fe674160f25
-      size: 4869
+      md5: 80c4e94241c5d684a2e28ce2456005eb
+      size: 4882
     params:
       params.yaml:
         train.lightgbm.n_trials: 30
     outs:
     - path: models/advanced/lightgbm_metrics.json
       hash: md5
-      md5: 6a50f4f4d01eb68f536ed1b06b7f32e1
+      md5: e7e5552fe55700a1771822fc512f8b1e
       size: 44
     - path: models/advanced/lightgbm_model.pkl
       hash: md5
-      md5: 41f4591b989010ab62a836d47ff3a487
-      size: 1693221
+      md5: 063a94ac7c077d4e4b8e5a35815486bf
+      size: 1530346
   model_evaluation:
     cmd: uv run python -m src.models.model_evaluation
     deps:
     - path: models/advanced/lightgbm_model.pkl
       hash: md5
-      md5: 41f4591b989010ab62a836d47ff3a487
-      size: 1693221
+      md5: 7d76ba5a2f85c1c23b2fdb9b12b16446
+      size: 1485657
     - path: models/features/X_test.npz
       hash: md5
       md5: 5ad9362bddb9771a265e72d40a3e568c
@@ -409,16 +409,16 @@ stages:
       size: 4602
     - path: src/models/model_evaluation.py
       hash: md5
-      md5: 63a66caac50c577682daef80aaa179eb
-      size: 7803
+      md5: 9d13c3627582b976f61ef4a47b128586
+      size: 8506
     - path: src/utils/logger.py
       hash: md5
       md5: 73106bb3de64f8ef8c097a990a6e2f49
       size: 2345
     - path: src/utils/mlflow_config.py
       hash: md5
-      md5: 84fe1a1f71567d2cd5522fe674160f25
-      size: 4869
+      md5: 80c4e94241c5d684a2e28ce2456005eb
+      size: 4882
     - path: src/utils/paths.py
       hash: md5
       md5: c723fe5c11d3e4920067ff204eb5a6f5
@@ -426,12 +426,24 @@ stages:
     outs:
     - path: models/advanced/evaluation/lightgbm_evaluation_run.json
       hash: md5
-      md5: e4d83fc0bf047d515cf5591c115542ed
+      md5: 707e388994c6c230e9b8e15975b1fdc8
       size: 96
     - path: models/advanced/evaluation/lightgbm_test_metrics.json
       hash: md5
-      md5: 9536b715473851ff76c58432c5108e94
+      md5: e1c3e9bf4a6a6c0808696fdb260171bd
       size: 45
+    - path: reports/figures/lightgbm_confusion_matrix.png
+      hash: md5
+      md5: 8cdb18e7ce8a500f78ed9c327ccc98b0
+      size: 27047
+    - path: reports/figures/lightgbm_roc_curve.png
+      hash: md5
+      md5: 1711b403d33a88445034e841490117e1
+      size: 52247
+    - path: reports/lightgbm_evaluation_report.md
+      hash: md5
+      md5: f8f0eb301955e0e7508db9b99a2ce110
+      size: 619
   train_bert:
     cmd: uv run python -m src.models.bert_training
     deps:
@@ -461,12 +473,12 @@ stages:
       size: 2345
     - path: src/utils/mlflow_config.py
       hash: md5
-      md5: 84fe1a1f71567d2cd5522fe674160f25
-      size: 4869
+      md5: 80c4e94241c5d684a2e28ce2456005eb
+      size: 4882
     - path: src/utils/paths.py
       hash: md5
-      md5: c723fe5c11d3e4920067ff204eb5a6f5
-      size: 1764
+      md5: 7b2d73cb9e053c99e1e0296ee965bdff
+      size: 2156
     params:
       params.yaml:
         train.bert.batch_size:
@@ -499,8 +511,8 @@ stages:
     deps:
     - path: models/advanced/evaluation/
       hash: md5
-      md5: b664e33bca15e213186f1f8b2853ee6d.dir
-      size: 30335
+      md5: 6c5ca7134930758eac69c953af3f5dff.dir
+      size: 30612
       nfiles: 4
     - path: src/models/register_model.py
       hash: md5
@@ -512,8 +524,8 @@ stages:
       size: 2345
     - path: src/utils/mlflow_config.py
       hash: md5
-      md5: 84fe1a1f71567d2cd5522fe674160f25
-      size: 4869
+      md5: 80c4e94241c5d684a2e28ce2456005eb
+      size: 4882
     - path: src/utils/paths.py
       hash: md5
       md5: c723fe5c11d3e4920067ff204eb5a6f5
@@ -521,3 +533,113 @@ stages:
     params:
       params.yaml:
         register.f1_threshold: 0.75
+  hyperparameter_tuning_lightgbm:
+    cmd: uv run python -m src.models.hyperparameter_tuning --model lightgbm
+    deps:
+    - path: models/features/X_train.npz
+      hash: md5
+      md5: 0da3db618a4facc78e97d864e1962590
+      size: 1911617
+    - path: models/features/X_val.npz
+      hash: md5
+      md5: 262666f9552c8532a609e22fbaae5631
+      size: 398166
+    - path: models/features/y_train.npy
+      hash: md5
+      md5: ff2992f566f145e0dabff508b76fd5de
+      size: 206344
+    - path: models/features/y_val.npy
+      hash: md5
+      md5: 6170668e1d3ef3e4b157d5a76a85299e
+      size: 44320
+    - path: src/models/helpers/data_loader.py
+      hash: md5
+      md5: 7a89b90d5c30a18dd6288af65d98984e
+      size: 4150
+    - path: src/models/helpers/train_utils.py
+      hash: md5
+      md5: d13157debc27d5f22d5d7a3b3d9b80ca
+      size: 4602
+    - path: src/models/hyperparameter_tuning.py
+      hash: md5
+      md5: 093f54eaf35365f89661ad9ee838181e
+      size: 7917
+    - path: src/utils/logger.py
+      hash: md5
+      md5: 73106bb3de64f8ef8c097a990a6e2f49
+      size: 2345
+    - path: src/utils/mlflow_config.py
+      hash: md5
+      md5: 80c4e94241c5d684a2e28ce2456005eb
+      size: 4882
+    params:
+      params.yaml:
+        hyperparameter_tuning.lightgbm.n_trials: 30
+    outs:
+    - path: models/advanced/lightgbm_best_hyperparams.pkl
+      hash: md5
+      md5: bb4dab8f9b86f015fcef6eaff2a8814a
+      size: 152
+    - path: models/advanced/lightgbm_metrics.json
+      hash: md5
+      md5: d130e379875adf8586b84ad0eb4eca79
+      size: 44
+    - path: models/advanced/lightgbm_model.pkl
+      hash: md5
+      md5: 688df1ac6cf807675cc186bd27443494
+      size: 1189858
+  hyperparameter_tuning_xgboost:
+    cmd: uv run python -m src.models.hyperparameter_tuning --model xgboost
+    deps:
+    - path: models/features/X_train.npz
+      hash: md5
+      md5: 0da3db618a4facc78e97d864e1962590
+      size: 1911617
+    - path: models/features/X_val.npz
+      hash: md5
+      md5: 262666f9552c8532a609e22fbaae5631
+      size: 398166
+    - path: models/features/y_train.npy
+      hash: md5
+      md5: ff2992f566f145e0dabff508b76fd5de
+      size: 206344
+    - path: models/features/y_val.npy
+      hash: md5
+      md5: 6170668e1d3ef3e4b157d5a76a85299e
+      size: 44320
+    - path: src/models/helpers/data_loader.py
+      hash: md5
+      md5: 7a89b90d5c30a18dd6288af65d98984e
+      size: 4150
+    - path: src/models/helpers/train_utils.py
+      hash: md5
+      md5: d13157debc27d5f22d5d7a3b3d9b80ca
+      size: 4602
+    - path: src/models/hyperparameter_tuning.py
+      hash: md5
+      md5: 093f54eaf35365f89661ad9ee838181e
+      size: 7917
+    - path: src/utils/logger.py
+      hash: md5
+      md5: 73106bb3de64f8ef8c097a990a6e2f49
+      size: 2345
+    - path: src/utils/mlflow_config.py
+      hash: md5
+      md5: 80c4e94241c5d684a2e28ce2456005eb
+      size: 4882
+    params:
+      params.yaml:
+        hyperparameter_tuning.xgboost.n_trials: 30
+    outs:
+    - path: models/advanced/xgboost_best_hyperparams.pkl
+      hash: md5
+      md5: cb607cb478d5715af954541eba7e5595
+      size: 152
+    - path: models/advanced/xgboost_metrics.json
+      hash: md5
+      md5: ad360ff41d1407ac147cf4b1fe6ede4b
+      size: 44
+    - path: models/advanced/xgboost_model.pkl
+      hash: md5
+      md5: a6d5e5828ebfe4eb13b4864c126828bb
+      size: 1688490

@@ -1,7 +1,9 @@
-├── LICENSE
+YouTube_Sentiment_Analysis
+├── LICENSE.txt
 ├── README.md          <- The top-level README for developers using this project.
 ├── .dvc
 ├── .venv
+├── 🛡️ YouTube_Sentiment_Analysis.code-workspace
 ├── app
 │   ├── inference_utils.py
 │   ├── insights_api.py
@@ -13,32 +15,71 @@
 │   ├── popup.html
 │   ├── popup.js
 │   └── youtube_api.js
-├── github
-├── logs
 ├── data
 │   ├── external       <- Data from third-party sources.
 │   ├── interim        <- Intermediate data that has been transformed.
 │   ├── processed      <- The final, canonical data sets for modeling.
 │   └── raw            <- The original, immutable data dump.
 │
+├── docker        <- Docker setup.
+│   ├── .dockerignore
+│   ├── docker-compose.yml
+│   └── Dockerfile
+│
+├── github
+│   └── workflows
+│       └── ci.yml
+│
+├── logs
+│
+├── mlflow_data        <- Everything MLflow writes (database, artifacts, models).
+│   ├── mlartifacts
+│   ├── mlruns
+│   └── mlflow.db
 │
 ├── models             <- Trained and serialized models, model predictions, or model summaries.
 │   ├── advanced
-│   │    └── evaluation
+│   │   ├── bert_hyperparams.pkl
+│   │   ├── lightgbm_best_hyperparams.pkl
+│   │   ├── xgboost_best_hyperparams.pkl
+│   │   ├── bert_results
+│   │   └── evaluation
+│   │       ├── lightgbm_evaluation_run.json
+│   │       ├── lightgbm_test_metrics.json
+│   │       └── lightgbm_confusion_matrix.png
 │   ├── baseline
 │   └── features
 │
 ├── notebooks          <- Jupyter notebooks. The naming convention is a number (for ordering),
-│                         the creator's initials, and a short `-` delimited description, e.g.
-│                         `1.0-jqp-initial-data-exploration`.
+│   │                     the creator's initials, and a short `-` delimited description, e.g.
+│   │                     `1.0-jqp-initial-data-exploration`.
+│   ├── .gitkeep
+│   └── 1.0-initial-eda.ipynb
 │
 ├── references         <- Data dictionaries, manuals, and all other explanatory materials.
+│   ├── directory_creation.md
+│   ├── env_setup.md
+│   ├── folder_structure.txt
+│   ├── project_overview.md
+│   └── system_architecture_data_flow_you_tube_sentiment_mlops.md
 │
 ├── reports            <- Generated analysis as HTML, PDF, LaTeX, etc.
 │   ├── docs           
+│   │   ├── chrome-extension.md
+│   │   ├── data_splitting.md
+│   │   ├── docker.md
+│   │   ├── eda_findings.md
+│   │   ├── feature_engineering.md
+│   │   └── modeling.md
 │   └── figures        <- Generated graphics and figures to be used in reporting
-│
-├── requirements.txt   <- The requirements file for reproducing the analysis environment.
+│       ├── .gitignore
+│       ├── .gitkeep
+│       ├── imbalance_methods
+│       ├── tfidf_max_features
+│       └── YouTube_API
+│           ├── YouTube_API_1.png
+│           ├── YouTube_API_2.png
+│           └── YouTube_API_3.png
 │
 ├── src                <- Source code for use in this project.
 │   ├── __init__.py    <- Makes src a Python module
@@ -48,38 +89,49 @@
 │   │   └── make_dataset.py
 │   │
 │   ├── features       <- Scripts to turn raw data into features for modeling.
-│   │   ├── helpers
-│   │   │    └── feature_utils.py
+│   │   ├── __init__.py
+│   │   ├── .gitkeep
 │   │   ├── feature_engineering.py
 │   │   ├── imbalanced_tuning.py
 │   │   ├── tfidf_max_features.py
-│   │   └── tfidf_vs_bert.py
+│   │   ├── tfidf_vs_bert.py
+│   │   └── helpers
+│   │       └── __init__.py
+│   │       └── feature_utils.py
 │   │
 │   ├── models         <- Scripts to train models and then use trained models to make predictions.
-│   │   ├── helpers
-│   │   │   ├── __init__.py 
-│   │   │   ├── data_loader.py
-│   │   │   └── train_utils.py
-│   │   ├── bert_training.py
-│   │   ├── lightgbm_training.py
+│   │   ├── __init__.py
+│   │   ├── .gitkeep
 │   │   ├── baseline_logistic.py
+│   │   ├── bert_training.py
+│   │   ├── hyperparameter_tuning.py
 │   │   ├── model_evaluation.py
-│   │   ├── predict_model.py
 │   │   ├── register_model.py
-│   │   └── xgboost_training.py
+│   │   └── helpers
+│   │       ├── __init__.py
+│   │       ├── data_loader.py
+│   │       └── train_utils.py
 │   │
-│   └── utils <- Scripts for reusable helper functions, classes, and modules.
+│   ├── utils          <- Scripts for reusable helper functions, classes, and modules.
+│   │   ├── __init__.py
+│   │   ├── logger.py
+│   │   ├── mlflow_config.py
+│   │   └── paths.py
+│   │
+│   └── visualization  <- Scripts for data visualization and plotting.
 │       ├── __init__.py
-│       ├── logger.py
-│       └── mlflow_config.py
+│       ├── .gitkeep
+│       ├── plot_settings.py
+│       └── visualize.py
 │
 ├── .dvcignore
 ├── .env               <- Environmental variable for APIs.
 ├── .gitignore
 ├── .python-version
-├── mlflow.db
+├── dvc.lock
 ├── dvc.yaml
+├── GEMINI.md
 ├── params.yaml
 ├── pyproject.toml
+├── requirements.txt   <- The requirements file for reproducing the analysis environment.
 └── uv.lock
-

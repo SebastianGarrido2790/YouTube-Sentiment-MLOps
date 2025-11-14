@@ -27,6 +27,7 @@ from packaging import version
 import mlflow
 from mlflow.tracking import MlflowClient
 
+# --- Project Utilities ---
 from src.utils.paths import EVAL_DIR
 from src.utils.logger import get_logger
 from src.utils.mlflow_config import get_mlflow_uri
@@ -37,8 +38,6 @@ logger = get_logger(__name__, headline="register_model.py")
 # =====================================================================
 # Load Best Model from Evaluation
 # =====================================================================
-
-
 def load_best_model_info():
     """
     Loads the best evaluated model and its metrics from EVAL_DIR.
@@ -90,8 +89,6 @@ def load_best_model_info():
 # =====================================================================
 # Register Best Model
 # =====================================================================
-
-
 def register_best_model(
     model_name: str, run_id: str, f1: float, f1_threshold: float = 0.75
 ):
@@ -179,8 +176,6 @@ def register_best_model(
 # =====================================================================
 #  Main Execution
 # =====================================================================
-
-
 def main():
     logger.info("🚀 Starting automated model registration workflow...")
 

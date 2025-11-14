@@ -1,372 +1,192 @@
-### Baseline Model Training Script: src/models/train_model.py
+## Baseline Model Training Script: src/models/baseline_logistic.py
 
-Based on the MLflow metrics from `handling_imbalanced_data.py`, the best imbalance handling method is **RandomUnderSampler** (undersampling), which achieved the highest F1-score for the minority class (negative: 0.605) while maintaining strong performance on neutral (F1: 0.743). This method balances classes by reducing majority samples, improving minority detection without synthetic data artifacts, though it discards information—suitable for this baseline given the dataset size. Alternatives like ADASYN (F1 negative: 0.599) offer higher recall (0.597) but slightly lower precision; iterate in advanced runs.
+Based on the MLflow metrics from imbalance tuning experiments, the baseline uses **class_weight="balanced"** for simple, deterministic imbalance handling. This approach is preferred for baseline models as it's built-in, stable, and fully reproducible without synthetic data generation.
 
-This script loads pre-engineered TF-IDF features (default from `feature_engineering.py`), applies undersampling to the train set, trains a Logistic Regression baseline, and logs to MLflow (accuracy, macro F1, per-class F1). It evaluates on the test set for final metrics. Add `"imbalanced-learn"` and `"scikit-learn"` to `pyproject.toml` if needed (`uv sync`).
+This script loads pre-engineered TF-IDF features from `models/features/`, trains a Logistic Regression baseline with balanced class weights, and logs to MLflow (accuracy, macro F1, per-class F1). It evaluates on train/val/test splits for comprehensive benchmarking.
 
 #### Usage and Best Practices
-- **Run**: Executes training, logs to MLflow (view UI for comparisons), saves model.
-- **Reliability**: Undersampling on train only; stratified splits preserved.
-- **Scalability**: Sparse matrices efficient; extend to GPU for LSTM.
-- **Maintainability**: Modular; DVC add `models/` post-run.
-- **Adaptability**: Swap model (e.g., `from sklearn.ensemble import RandomForestClassifier`); add Optuna for tuning in v2.
+- **Run**: `uv run python -m src.models.baseline_logistic`
+- **Reliability**: Uses deterministic class weights; robust logging of per-class F1.
+- **Scalability**: Sparse matrices efficient; handles large feature spaces.
+- **Maintainability**: Modular design with shared helpers; DVC tracks outputs.
+- **Adaptability**: Simple baseline for comparison with advanced models.
 
-#### Prototype Inference Endpoint
-For quick testing, add this function to `src/models/predict_model.py` (create if needed). It loads the model and preprocesses new YouTube comments via saved vectorizer.
+The baseline establishes a reliable benchmark before applying complex methods like ADASYN or hyperparameter tuning.
 
-This endpoint is callable from the Chrome extension (e.g., via AWS Lambda later). Test locally; deploy next.
+### Advanced Model Training Script: src/models/hyperparameter_tuning.py
 
-### Advanced Model Training Script: src/models/advanced_training.py
+This centralized script handles hyperparameter optimization for multiple models (LightGBM, XGBoost) using Optuna. It tunes TF-IDF features with ADASYN oversampling (best method from imbalance experiments) over 30 trials per model, using validation F1 (macro) as objective. Results logged to MLflow with nested runs for organized tracking.
 
-This script extends the pipeline with advanced models: XGBoost and LightGBM on TF-IDF features (tuned for gradient boosting), and BERT fine-tuning via Hugging Face on raw text (for semantic nuance). Optuna optimizes hyperparameters (e.g., learning rate, depth) over 50 trials, using validation F1 (macro) as objective. Imbalance handled via RandomUnderSampler on train. Results logged to MLflow for comparison; best model saved in `models/advanced/`.
-
-Add to `pyproject.toml`:
+Dependencies are already in `pyproject.toml`:
 ```
 optuna>=3.6
 xgboost>=2.0
 lightgbm>=4.3
-transformers>=4.40
-datasets>=2.20  # For BERT data loading
-accelerate>=0.30  # For distributed training
 ```
-Run `uv sync`. For BERT, GPU recommended (set `device='cuda'`).
 
 #### Usage and Best Practices
-- **Execution**: Runs tuning sequentially (~30-60 min total; BERT longest). Outputs best params/models.
-- **Reliability**: Nested runs in Optuna log trials; undersampling applied consistently.
-- **Scalability**: Optuna parallelizable (`n_jobs=-1`); BERT uses accelerate for multi-GPU.
-- **Maintainability**: Pruning via `Pruner` in Optuna for efficiency; DVC track `models/advanced/`.
-- **Adaptability**: Extend objectives for custom metrics; integrate YouTube data for domain tuning.
+- **Execution**: `uv run python -m src.models.hyperparameter_tuning --model lightgbm` or `--model xgboost`
+- **Reliability**: Parent runs group trials; best parameters saved for final evaluation.
+- **Scalability**: Efficient sparse matrix handling; parallelizable Optuna trials.
+- **Maintainability**: Centralized tuning logic reduces code duplication.
+- **Adaptability**: Easy to extend for new models by adding objective functions.
 
-For innovation, chain Optuna with Bayesian optimization or ensemble best models. Next: Inference prototype or deployment?
+Best models are saved to `models/advanced/` for final evaluation and comparison.
 
-### Troubleshooting BERT training process
+### BERT Training Script: src/models/bert_training.py
 
-The process is failing because the **labels in the dataset are not mapped to the expected range** for the PyTorch cross-entropy loss function.
+BERT fine-tuning is handled separately with proper label encoding (shifting {-1,0,1} to {0,1,2}) for PyTorch compatibility. The script uses Hugging Face transformers with Optuna hyperparameter tuning over learning rate, batch size, and weight decay.
 
-#### 🐛 Root Cause: Label Encoding Mismatch
+#### Usage and Best Practices
+- **Execution**: Controlled via params.yaml (`train.bert.enable: true`)
+- **Reliability**: Proper label encoding prevents PyTorch cross-entropy errors.
+- **Scalability**: GPU recommended; uses `accelerate` for distributed training.
+- **Maintainability**: Separate script keeps heavy dependencies isolated.
 
-The sentiment labels are $\{-1, 0, 1\}$. The **PyTorch cross-entropy loss function** (which is used internally by the Hugging Face `Trainer`) requires classification targets to be non-negative integers starting from **zero** (i.e., $0, 1, 2, \dots, N-1$).
-
-Since The labels include **$-1$**, the loss function attempts to index into its output distribution at position $-1$, which results in the `IndexError: Target -1 is out of bounds.`
-
-#### ✅ Solution: Shift the Labels to $\{0, 1, 2\}$
-
-Shift all the labels so the minimum value is $0$. Since the original labels are $\{-1, 0, 1\}$, adding $1$ to each will correctly map them to $\{0, 1, 2\}$.
-
-**Action:** Modify the `bert_objective` function to shift the labels immediately after loading and renaming.
-
-By shifting the labels, the data will be compatible with the standard PyTorch classification loss, allowing the BERT tuning to proceed. The model will now learn to predict $\{0, 1, 2\}$, corresponding to $\{-1, 0, 1\}$.
+BERT training is optional and disabled by default based on current pipeline configuration.
 
 ---
 
-### Rationale for Focusing on F1-Score in Sentiment Analysis
+### Model Evaluation Script: src/models/model_evaluation.py
 
-In this pipeline, the F1-score (harmonic mean of precision and recall) is prioritized as the primary evaluation metric due to the dataset's inherent class imbalance (Negative: 22.22%, Neutral: 35.28%, Positive: 42.50%) and the task's practical demands. Below, I outline the key reasons, structured for clarity.
+The final evaluation script loads the best LightGBM model from hyperparameter tuning and evaluates it on the held-out test set. It generates comprehensive metrics, confusion matrices, ROC curves, and markdown reports for stakeholder review.
 
-#### 1. **Handling Imbalance Robustly**
-   - **Accuracy Pitfalls**: Simple accuracy favors the majority class (e.g., predicting all samples as Positive yields ~42.5% accuracy, masking poor minority performance). This is unreliable for real-world YouTube sentiment, where negatives (e.g., toxic comments) are underrepresented but critical.
-   - **F1's Balance**: F1 penalizes imbalances in precision (TP / (TP + FP)) and recall (TP / (TP + FN)), ensuring models detect rare classes without excessive false alarms. Macro-F1 (unweighted average across classes) further equalizes treatment, amplifying minority class contributions—essential here for equitable evaluation.
+#### Key Features
+- **Comprehensive Evaluation**: Test set evaluation with classification reports, confusion matrices, and ROC curves
+- **Artifact Generation**: Saves plots and metrics for DVC tracking and reporting
+- **MLflow Integration**: Logs final test metrics for model registry decisions
+- **Report Generation**: Creates markdown evaluation reports with visualizations
 
-#### 2. **Alignment with Task Requirements**
-   - **Sentiment Nuances**: In video comment analysis, false negatives (missing a negative comment) could overlook harmful content, while false positives dilute trust in positive signals. F1 directly optimizes this trade-off, unlike precision (ignores missed detections) or recall (ignores false alarms).
-   - **Multi-Class Suitability**: For three classes, macro-F1 provides a holistic score, while per-class F1 (logged in MLflow) enables granular insights (e.g., boosting Negative F1 from ~0.37 in baselines to ~0.60 with undersampling).
-
-#### 3. **MLOps and Optimization Fit**
-   - **Tuning and Selection**: Optuna uses macro-F1 as the objective for hyperparameter search, as it correlates with deployment KPIs (e.g., Chrome extension reliability). Cross-validation on F1 ensures generalizability.
-   - **Comparability**: It standardizes A/B testing across models (Logistic Regression, XGBoost, BERT), facilitating selection of the best (e.g., via MLflow UI).
-
-#### Practical Recommendations
-- **Thresholding**: In production, adjust decision thresholds per class (e.g., lower for negatives) to fine-tune F1 components.
-- **Innovation Opportunity**: Experiment with weighted F1 (emphasizing negatives) or custom metrics (e.g., incorporating latency for real-time inference). Track via MLflow to iterate empirically.
-
-This focus ensures reliable, balanced performance, directly supporting the pipeline's reliability and adaptability goals. If needed, pivot to AUC-PR for probabilistic outputs in advanced iterations.
+#### Usage
+- **Execution**: `uv run python -m src.models.model_evaluation`
+- **Outputs**: Evaluation report, confusion matrix, ROC curve, test metrics JSON
+- **Integration**: Prepares model for registration stage with performance thresholds
 
 ---
  
-### Models Performance
+### Current Model Performance
 
-The **macro F1 score** is the primary metric for comparing the performance of these models, as it handles class imbalance better than simple accuracy.
+Based on hyperparameter tuning experiments with ADASYN oversampling and optimal TF-IDF features (max_features=1000, ngram_range=(1,1)):
 
-| Model | Best Macro F1 Score |
-| :--- | :--- |
-| **LightGBM** | **0.79986** (from `LightGBM_Trial_18`) |
-| **Logistic Regression** | **0.78679** (from `macro_f1`) |
-| **XGBoost** | **0.78317** (from `XGBoost_Trial_22`) |
-
-***
-
-## Performance Summary
-
-| Model | Best Macro F1 Score | Notes |
+| Model | Best Macro F1 Score | Validation Method |
 | :--- | :--- | :--- |
-| **LightGBM** | **0.79986** | Achieved the highest performance during Optuna tuning. |
-| **Logistic Regression** | 0.78679 | A strong baseline model, performing better than XGBoost. |
-| **XGBoost** | 0.78317 | Achieved a high score, but was slightly outperformed by both LightGBM and the Logistic Regression baseline. |
+| **LightGBM** | **~0.80** | Optuna tuning with 30 trials |
+| **Logistic Regression** | **~0.79** | Baseline with class_weight="balanced" |
+| **XGBoost** | **~0.78** | Optuna tuning with 30 trials |
 
-**LightGBM's best trial achieved a Macro F1 score of 0.79986, making it the top-performing model.**
+**LightGBM achieved the highest performance** during Optuna hyperparameter optimization, making it the selected model for final evaluation and potential deployment.
 
----
+### Rationale for F1-Score Focus
 
-## Imbalance Technique
-### Choosing Between `class_weight="balanced"` and ADASYN for Baseline Logistic Regression
-
-Excellent question — this is precisely the kind of trade-off thinking that separates **experimentation design** from **production MLOps**.
-
-Let’s analyze both options systematically across **four key criteria** relevant to our current stage:
-simplicity, reliability, reproducibility, and signal fidelity (how well the model captures patterns in imbalanced data).
+Macro F1-score is prioritized due to class imbalance (Negative: ~22%, Neutral: ~35%, Positive: ~43%) and the need for balanced performance across all sentiment classes. This metric:
+- **Handles imbalance** better than accuracy by balancing precision and recall
+- **Aligns with task requirements** for detecting both positive and negative sentiment accurately
+- **Supports MLOps** by providing a single metric for model comparison and selection
 
 ---
 
-## ⚖️ 1. **Purpose of a Baseline Model**
+## DVC Pipeline Integration
 
-A **baseline model** serves to:
+The modeling pipeline is fully integrated with DVC for reproducible execution:
 
-* Establish a *minimal viable benchmark* for downstream models.
-* Be *simple, deterministic, and fast to train*.
-* Represent the **“expected floor”** of performance before applying complex methods.
+```yaml
+# Baseline model training
+baseline_model:
+  cmd: uv run python -m src.models.baseline_logistic
+  deps:
+    - models/features/X_train.npz
+    - models/features/y_train.npy
+    - src/models/baseline_logistic.py
+  outs:
+    - models/baseline/logistic_baseline.pkl
 
-Hence, your baseline should emphasize **simplicity and reliability**, not raw performance.
+# Hyperparameter tuning for advanced models
+hyperparameter_tuning_lightgbm:
+  cmd: uv run python -m src.models.hyperparameter_tuning --model lightgbm
+  params:
+    - hyperparameter_tuning.lightgbm.n_trials
+  outs:
+    - models/advanced/lightgbm_model.pkl
+    - models/advanced/lightgbm_best_hyperparams.pkl
+  metrics:
+    - models/advanced/lightgbm_metrics.json
 
----
-
-## 🔹 Option A — `class_weight="balanced"`
-
-**Mechanism:**
-The model adjusts the contribution of each class’s loss term inversely proportional to its frequency.
-Mathematically:
-[
-w_i = \frac{n_{\text{samples}}}{n_{\text{classes}} \times n_i}
-]
-No resampling, just weighted learning.
-
-**Pros**
-
-* ✅ *Built-in and stable*: native to scikit-learn; minimal risk of data leakage.
-* ✅ *Lightweight*: no memory overhead, no synthetic data generation.
-* ✅ *Deterministic*: consistent across runs; no random neighbor synthesis.
-* ✅ *Ideal for baselines*: interpretable and fast to compute.
-
-**Cons**
-
-* ❌ May underperform in extreme imbalance when minority class signals are very weak.
-* ❌ Does not modify class distributions (model still sees the same imbalance in data).
-
----
-
-## 🔹 Option B — **ADASYN**
-
-**Mechanism:**
-Adaptive Synthetic Sampling (He et al., 2008) generates new samples in feature space for underrepresented classes, prioritizing difficult-to-learn regions.
-
-**Pros**
-
-* ✅ Often yields **higher recall and F1**, especially for non-linear models.
-* ✅ Can reveal potential upper bounds on what resampling can achieve.
-
-**Cons**
-
-* ❌ Adds synthetic data, increasing memory and CPU cost.
-* ❌ Introduces stochasticity — even with fixed random seeds, results can vary slightly.
-* ❌ Not ideal for baseline reproducibility (extra data transformations).
-* ❌ Risk of minor overfitting or distorted class boundaries with linear models like Logistic Regression.
-
----
-
-## 📊 Empirical Context — Your Logs
-
-| Method            | Accuracy | Recall | Precision | F1         |
-| :---------------- | :------- | :----- | :-------- | :--------- |
-| **Class weights** | 0.6758   | 0.9560 | 0.5886    | **0.7286** |
-| **ADASYN**        | 0.6814   | 0.9245 | 0.6076    | **0.7333** |
-
-ADASYN slightly outperforms class weights (+0.0047 F1), but both are close — and that’s crucial.
-
----
-
-## 🧠 3. **Strategic Recommendation**
-
-| Goal                                     | Recommended Approach                                             | Rationale                                                                        |
-| ---------------------------------------- | ---------------------------------------------------------------- | -------------------------------------------------------------------------------- |
-| **For Baseline (Current Stage)**         | ✅ `class_weight="balanced"`                                      | Simpler, native, fully deterministic, and strong enough to establish a baseline. |
-| **For Advanced Model Training / Tuning** | ✅ ADASYN (or SMOTE variants)                                     | Use in experimentation stages once the pipeline baseline is fixed.               |
-| **For Deployment / Production**          | ⚙️ Use whatever imbalance method generalizes best on unseen data | After formal model evaluation and registry comparison.                           |
-
----
-
-## 🧩 4. Practical Implementation Choice
-
-In our `baseline_logistic.py`, replace ADASYN with the native weight balancing:
-
-```python
-model = LogisticRegression(
-    C=1.0,
-    max_iter=2000,
-    solver="liblinear",
-    class_weight="balanced",
-    random_state=42
-)
+# Model evaluation on test set
+model_evaluation:
+  cmd: uv run python -m src.models.model_evaluation
+  deps:
+    - models/advanced/lightgbm_model.pkl
+    - models/features/X_test.npz
+    - models/features/y_test.npy
+  outs:
+    - models/advanced/evaluation/lightgbm_evaluation_run.json
+    - reports/lightgbm_evaluation_report.md
+  metrics:
+    - models/advanced/evaluation/lightgbm_test_metrics.json
 ```
 
-That way:
+This structure ensures:
+- **Reproducibility**: All dependencies and parameters are tracked
+- **Modularity**: Each stage can run independently
+- **Metrics Tracking**: DVC tracks key performance metrics across runs
+- **Pipeline Orchestration**: Clear dependency chain from data to evaluation
 
-* We keep the **baseline concept pure** (no data resampling).
-* Future stages (e.g., `model_experiments.py`) can explicitly explore ADASYN and SMOTE variants for improved recall.
+## MLflow Logging Architecture
 
----
+The hyperparameter tuning scripts use a nested MLflow logging structure that creates:
 
-## ✅ Final Answer
+- **Parent Runs**: "LightGBM_Optuna_Study" and "XGBoost_Optuna_Study" encapsulate entire optimization studies
+- **Child Trials**: Individual trials logged as nested runs (e.g., "LightGBM_Trial_0", "LightGBM_Trial_1")
 
-> For a **baseline model**, we should use `class_weight="balanced"`.
-> It’s simpler, more reliable, fully reproducible, and perfectly suited for establishing our project’s initial benchmark.
->
-> Reserve **ADASYN** and other resampling techniques for subsequent **model improvement experiments**, not the baseline stage.
+This design prevents UI clutter while maintaining organized experiment tracking:
 
----
+| Level | Contents | Purpose |
+|-------|----------|---------|
+| **Parent** | Best parameters, aggregated metrics, study tags | High-level study comparison and audit trail |
+| **Child** | Trial-specific parameters, per-trial metrics | Detailed hyperparameter exploration and analysis |
 
-| Aspect                   | Benefit                                                                          |
-| ------------------------ | -------------------------------------------------------------------------------- |
-| **Maintainability**      | Easier to modify or debug one model’s code without affecting others.             |
-| **Performance**          | Only imports required libraries (e.g., BERT’s heavy dependencies stay isolated). |
-| **Pipeline Integration** | Each script can be a separate DVC/MLflow job.                                    |
-| **Testing**              | Each model’s training and data loader can be unit tested independently.          |
-| **CI/CD**                | CI can run tests only for changed components.                                    |
-
-| Feature             | Implementation                                             |
-| ------------------- | ---------------------------------------------------------- |
-| **Reliability**     | Centralized logging, controlled imports, error handling    |
-| **Scalability**     | Independent DVC/CI pipeline stages per model               |
-| **Maintainability** | Shared helper modules (`data_loader.py`, `train_utils.py`) |
-| **Adaptability**    | Easy to add new models or retrain specific ones            |
-| **Reproducibility** | MLflow + Optuna integration with saved parameters          |
+Benefits:
+- **Organization**: 30 trials grouped under single parent run
+- **Comparability**: Easy cross-model study comparison at parent level
+- **Reproducibility**: Complete parameter and metric history preserved
+- **DVC Integration**: JSON metrics enable `dvc metrics diff` for pipeline version comparison
 
 ---
 
-## Data Handling Consistency AcrossPpipeline Stages
+## Production Inference Service
 
-Let’s clarify the design difference between the **baseline model** and the **advanced models**, and why the data loading logic diverges.
+### FastAPI Service: app/predict_model.py
 
----
-
-### 🔹 1. Purpose Difference: Benchmark vs. Optimization
-
-| Model Type                                    | Objective                                                                                  | Data Handling                                                                                                        |
-| --------------------------------------------- | ------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------- |
-| **Baseline (Logistic Regression)**            | Establish a *reliable benchmark* that fully represents the data distribution and encoding. | Uses **all splits (train/val/test)** and the **label encoder** for clean benchmarking and reporting across datasets. |
-| **Advanced Models (XGBoost, LightGBM, BERT)** | Optimize for *validation performance* through hyperparameter tuning and resampling.        | Focuses on **train/val** only (test kept untouched). ADASYN is applied on `train` to balance classes dynamically.    |
-
-The **baseline** aims for **end-to-end evaluation**, while **advanced models** are still in the **experimentation phase** — they are not yet “final models,” so we don’t test them against the held-out test set at each trial.
-
----
-
-### 🔹 2. Why Baseline Uses the Label Encoder (`le`)
-
-The baseline model:
-
-* Operates directly on **encoded labels** (e.g., `[-1, 0, 1] → [0, 1, 2]`),
-* Then decodes them back for **readable reporting** (`Negative`, `Neutral`, `Positive`),
-* Logs per-class F1 metrics to MLflow.
-
-Advanced models don’t need that yet because:
-
-* During tuning, they only need numeric labels for optimization.
-* Label decoding and human-readable metrics come later in the **model evaluation and registration** stage.
-
----
-
-### 🔹 3. Why Advanced Models Skip the Test Set
-
-Hyperparameter optimization (Optuna) is a **search process**, not a final evaluation:
-
-* Each trial should be scored on a **validation set**, not the test set.
-* The **test set** is reserved for *final model evaluation* after choosing the best parameters.
-* This prevents **information leakage** — using test data during tuning would bias results.
-
-After tuning completes:
-
-1. The best params (`xgboost_best.pkl`, `lightgbm_best.pkl`) are stored.
-2. A **final evaluation script** (e.g., `model_evaluation.py`) loads those parameters,
-   retrains on `train + val`, and evaluates on the **test set** once.
-
----
-
-### 🔹 4. Architectural Summary
-
-| Model Stage             | Splits Used        | Encoder | Balancing                 | Purpose                     |
-| ----------------------- | ------------------ | ------- | ------------------------- | --------------------------- |
-| **Baseline**            | Train + Val + Test | ✅ Yes   | `class_weight="balanced"` | Reliable benchmark          |
-| **Advanced (XGB/LGBM)** | Train + Val        | ❌ No    | ✅ ADASYN                  | Hyperparameter optimization |
-| **Final Evaluation**    | Train + Val + Test | ✅ Yes   | ✅ (best method)           | Final model registration    |
-
----
-
-### ✅ Next Step
-
-When you implement the **final evaluation and registration stage** (`src/models/model_evaluation.py`), that script will:
-
-* Reuse the stored best parameters (`*_best.pkl`),
-* Load the **label encoder**,
-* Train on the combined train + val set,
-* Evaluate and log performance on the **test set** for fair comparison with the baseline.
-
----
-
-### Explanation of MLflow Logging Structure in `xgboost_training.py` and `lightgbm_training.py`
-
-The logging pattern in your script creates a single parent run named "XGBoost_Optuna_Study" and "LightGBM_Optuna_Study" for the entire Optuna hyperparameter search (50 trials), with each individual trial logged as a **nested child run** (e.g., "XGBoost_Trial_0", "XGBoost_Trial_1", etc.). This is a deliberate design choice aligned with MLflow best practices for hyperparameter optimization workflows. Here's a breakdown:
-
-#### Why a Single Parent Run?
-- **Organization and Grouping**: The parent run encapsulates the full study, serving as a high-level container for all trials. This prevents the MLflow UI from being cluttered with 50+ independent runs, making it easier to:
-  - Track the overall experiment (e.g., start/end time, aggregated metrics like "best_val_macro_f1").
-  - Compare studies across models (e.g., XGBoost vs. LightGBM) at the parent level.
-  - Use MLflow's hierarchy: Parent runs provide context (e.g., tags like "experiment_type: advanced_tuning"), while children detail per-trial params/metrics.
-- **Efficiency in Nested Mode**: By setting `nested=True` in the trial's `mlflow.start_run()`, MLflow automatically associates child runs with the active parent. This leverages MLflow's run nesting feature, avoiding manual parent-child linking and ensuring traceability without redundant setup.
-- **Reproducibility and Auditing**: The parent run logs study-level artifacts (e.g., best params via `mlflow.log_params(best_params)`), while trials log granular details (e.g., per-trial F1). This mirrors CRISP-DM's evaluation phase, where the "study" is the meta-experiment.
-
-#### What Gets Logged Where?
-| Level          | Run Name Example          | Contents                                                                 | Purpose |
-|----------------|---------------------------|--------------------------------------------------------------------------|---------|
-| **Parent**    | XGBoost_Optuna_Study      | - Best params/metrics (e.g., `best_val_macro_f1: 0.7508`).<br>- Tags (e.g., "model_type: XGBoost").<br>- Best model artifact (`best_xgboost_model`). | Summarizes the study; enables cross-study comparisons. |
-| **Child (Trials)** | XGBoost_Trial_{n}        | - Trial-specific params (e.g., `max_depth: 8`).<br>- Per-trial metric (`val_macro_f1`).<br>- Trial model artifact (`xgboost_model`). | Details hyperparameter exploration; supports drill-down analysis. |
-
-In the MLflow UI (as shown in your screenshot), the parent "XGBoost_Optuna_Study" appears as the primary run, with child trials expandable under it (via the "Runs" view or search filters like "Run Name contains 'Trial'"). If only the parent is visible at top-level, expand the run tree or filter by tags/experiment.
-
-#### Potential Drawbacks and Alternatives
-- **Visibility**: If trials feel "hidden," switch to flat runs by removing `nested=True`—each trial becomes a top-level sibling under the experiment. However, this increases clutter (50+ runs) and loses hierarchy.
-- **Customization**: For more granularity, add trial artifacts (e.g., Optuna's `plot_param_importances(study)` as a PNG logged via `mlflow.log_artifact` in the parent).
-
-#### Recommendations
-- **Immediate Check**: In MLflow UI, filter runs by "Parent Run ID" matching the study's run ID to view all 50 trials.
-- **Enhancement for Innovation**: Extend `train_utils.py` with a `log_study_summary` function to auto-generate a JSON/CSV of all trial params/metrics, logged as a parent artifact. This enables external analysis (e.g., via Pandas in a notebook) without UI reliance.
-- **DVC Integration**: Since metrics are now in JSON (via `save_metrics_json`), run `dvc metrics diff` post-repro to compare F1 across pipeline versions—practical for model selection.
-
-This structure balances simplicity with depth, prioritizing a clean audit trail. If trials aren't nesting correctly (e.g., due to `mlflow.end_run()` calls), share console output for troubleshooting.
-
----
-
-## Production-grade FastAPI inference service
-Located at: `src/models/predict_model.py`.
-
----
-
-### ✅ Design Objectives
+The production inference service is implemented as a FastAPI application located in the `app/` directory with the following design objectives:
 
 | Goal                        | Description                                                                                                              |
 | --------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
-| **Serve predictions**       | Expose a `/predict` endpoint that loads your latest registered model (e.g., LightGBM) and returns sentiment predictions. |
-| **Use MLflow registry**     | Automatically fetch the latest “Production” version (or latest tagged) of the model from MLflow.                         |
-| **CPU-friendly**            | Lightweight, runs even without GPU or transformers dependencies.                                                         |
-| **Decoupled preprocessing** | Reuse your saved `tfidf_vectorizer.pkl` and `label_encoder.pkl` artifacts from `models/features`.                        |
-| **Robust error handling**   | Handle malformed requests, missing artifacts, or registry issues gracefully.                                             |
+| **Serve predictions**       | Expose a `/predict` endpoint that loads the best model and returns sentiment predictions. |
+| **Use MLflow registry**     | Fetch the latest registered model from MLflow model registry. |
+| **CPU-friendly**            | Lightweight, runs without GPU dependencies. |
+| **Decoupled preprocessing** | Reuse saved `tfidf_vectorizer.pkl` and `label_encoder.pkl` artifacts from `models/features/`. |
+| **Robust error handling**   | Handle malformed requests, missing artifacts, or registry issues gracefully. |
 
----
+#### Usage
+- **Local development**: `uv run python -m app.predict_model`
+- **Docker deployment**: Multi-stage Dockerfile with `uv` for dependency management
+- **API endpoint**: `POST /predict` with JSON payload containing text comments
 
-### 🔍 Optional Enhancements
+#### Optional Enhancements
+1. **Automatic model reloading** every N minutes (using background tasks)
+2. **Token-based authentication** for production endpoints
+3. **CORS middleware** for Chrome extension integration
+4. **Request logging middleware** (structured JSON logs)
+5. **Health check endpoint** for monitoring
 
-1. **Automatic model reloading** every N minutes (using background tasks).
-2. **Token-based authentication** for production endpoints.
-3. **CORS middleware** for integration with a front-end dashboard.
-4. **Request logging middleware** (structured JSON logs).
+### Chrome Extension Integration
 
----
+The inference service is designed to integrate with the Chrome extension (`chrome-extension/`) for real-time YouTube comment sentiment analysis:
+
+- **Content Script**: `youtube_api.js` extracts comments from YouTube pages
+- **Popup Interface**: `popup.html` + `popup.js` provides user interface
+- **API Communication**: Direct calls to FastAPI service for predictions
+- **Deployment**: Can be deployed via AWS Lambda, ECS, or standalone containers
+
+This creates a complete end-to-end pipeline from YouTube comment extraction to real-time sentiment prediction.
 

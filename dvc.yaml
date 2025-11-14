@@ -143,10 +143,10 @@ stages:
     outs:
       - models/baseline/logistic_baseline.pkl
 
-  train_xgboost:
-    cmd: uv run python -m src.models.xgboost_training
+  hyperparameter_tuning_lightgbm:
+    cmd: uv run python -m src.models.hyperparameter_tuning --model lightgbm
     deps:
-      - src/models/xgboost_training.py
+      - src/models/hyperparameter_tuning.py
       - src/models/helpers/data_loader.py
       - src/models/helpers/train_utils.py
       - src/utils/mlflow_config.py
@@ -155,32 +155,33 @@ stages:
       - models/features/X_val.npz
       - models/features/y_train.npy
       - models/features/y_val.npy
-
-    outs:
-      - models/advanced/xgboost_model.pkl
     params:
-      - train.xgboost.n_trials
-    metrics:
-      - models/advanced/xgboost_metrics.json
-
-  train_lightgbm:
-    cmd: uv run python -m src.models.lightgbm_training
-    deps:
-      - src/models/lightgbm_training.py
-      - src/models/helpers/data_loader.py
-      - src/models/helpers/train_utils.py
-      - src/utils/mlflow_config.py
-      - src/utils/logger.py
-      - models/features/X_train.npz
-      - models/features/X_val.npz
-      - models/features/y_train.npy
-      - models/features/y_val.npy
+      - hyperparameter_tuning.lightgbm.n_trials
     outs:
       - models/advanced/lightgbm_model.pkl
-    params:
-      - train.lightgbm.n_trials
+      - models/advanced/lightgbm_best_hyperparams.pkl
     metrics:
       - models/advanced/lightgbm_metrics.json
+
+  hyperparameter_tuning_xgboost:
+    cmd: uv run python -m src.models.hyperparameter_tuning --model xgboost
+    deps:
+      - src/models/hyperparameter_tuning.py
+      - src/models/helpers/data_loader.py
+      - src/models/helpers/train_utils.py
+      - src/utils/mlflow_config.py
+      - src/utils/logger.py
+      - models/features/X_train.npz
+      - models/features/X_val.npz
+      - models/features/y_train.npy
+      - models/features/y_val.npy
+    params:
+      - hyperparameter_tuning.xgboost.n_trials
+    outs:
+      - models/advanced/xgboost_model.pkl
+      - models/advanced/xgboost_best_hyperparams.pkl
+    metrics:
+      - models/advanced/xgboost_metrics.json
 
   train_bert:
     cmd: uv run python -m src.models.bert_training
@@ -205,7 +206,7 @@ stages:
       - models/advanced/bert_metrics.json
 
   model_evaluation:
-    cmd: uv run python -m src.models.model_evaluation
+    cmd: uv run python -m src.models.model_evaluation --models lightgbm xgboost
     deps:
       - src/models/model_evaluation.py
       - src/utils/mlflow_config.py
@@ -213,29 +214,27 @@ stages:
       - src/utils/paths.py
       - src/models/helpers/data_loader.py
       - src/models/helpers/train_utils.py
-      # The model artifact produced by the training stage
+      # The model artifacts produced by the training stages
       - models/advanced/lightgbm_model.pkl
+      - models/advanced/xgboost_model.pkl
       # The features for the test set
       - models/features/X_test.npz
       - models/features/y_test.npy
-      # The LabelEncoder is bundled with feature files in load_feature_data
-      - models/features/label_encoder.pkl 
+      - models/features/label_encoder.pkl
     outs:
       # Output file for the next stage (registration)
-      - models/advanced/evaluation/lightgbm_evaluation_run.json
-    metrics:
-      - models/advanced/evaluation/lightgbm_test_metrics.json  # DVC tracks test F1 score
-
-  model_registration:
-    cmd: uv run python -m src.models.register_model
-    deps:
-      - src/models/register_model.py
-      - src/utils/logger.py
-      - src/utils/mlflow_config.py
-      - src/utils/paths.py
-      - models/advanced/evaluation/  # Watch all evaluated models automatically
+      - models/advanced/evaluation/best_model_run_info.json
+      
+      # Corrected paths to match script output (reports/figures/evaluation/)
+      - models/advanced/evaluation/lightgbm_test_metrics.json
+      - models/advanced/evaluation/xgboost_test_metrics.json
+      
+      - reports/figures/evaluation/lightgbm_confusion_matrix.png  # <-- FIXED
+      - reports/figures/evaluation/xgboost_confusion_matrix.png    # <-- FIXED
+      - reports/figures/evaluation/comparative_roc_curve.png     # <-- FIXED
     params:
-      - register.f1_threshold
+      - model_evaluation.models
+
     
 
 
