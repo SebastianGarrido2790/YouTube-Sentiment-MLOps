@@ -27,7 +27,7 @@ from sklearn.feature_extraction.text import TfidfVectorizer
 from scipy.sparse import spmatrix  # For sparse matrix type hint
 
 # --- Project Utilities ---
-from src.utils.paths import FIGURES_DIR
+from src.utils.paths import TFIDF_FIGURES_DIR
 from src.utils.logger import get_logger
 from src.features.helpers.feature_utils import (
     setup_mlflow_run,
@@ -38,10 +38,6 @@ from src.features.helpers.feature_utils import (
 
 # --- Logging Setup ---
 logger = get_logger(__name__, headline="tfidf_max_features.py")
-
-# --- Path setup ---
-TFIDF_FIGURES_DIR = FIGURES_DIR / "tfidf_max_features"
-TFIDF_FIGURES_DIR.mkdir(parents=True, exist_ok=True)
 
 
 def run_max_features_experiment(

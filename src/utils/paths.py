@@ -21,19 +21,27 @@ RAW_DATA_DIR = DATA_DIR / "raw"
 PROCESSED_DATA_DIR = DATA_DIR / "processed"
 INTERIM_DATA_DIR = DATA_DIR / "interim"
 EXTERNAL_DATA_DIR = DATA_DIR / "external"
+RAW_PATH = RAW_DATA_DIR / "reddit_comments.csv"
 
 # --- Train and Test Data Paths ---
 TRAIN_PATH = PROCESSED_DATA_DIR / "train.parquet"
 TEST_PATH = PROCESSED_DATA_DIR / "test.parquet"
 VAL_PATH = PROCESSED_DATA_DIR / "val.parquet"
 
+
 # --- Model, Reports, Evaluation, and Artifacts ---
 MODELS_DIR = PROJECT_ROOT / "models"
+BASELINE_MODEL_DIR = MODELS_DIR / "baseline"
+ADVANCED_DIR = MODELS_DIR / "advanced"
 REPORTS_DIR = PROJECT_ROOT / "reports"
 FIGURES_DIR = REPORTS_DIR / "figures"
-FEATURES_DIR = MODELS_DIR / "features"
-ADVANCED_DIR = MODELS_DIR / "advanced"
 EVAL_DIR = ADVANCED_DIR / "evaluation"
+EVAL_FIG_DIR = FIGURES_DIR / "evaluation"
+
+# --- Features ---
+FEATURES_DIR = MODELS_DIR / "features"
+TFIDF_FIGURES_DIR = FIGURES_DIR / "tfidf_max_features"
+IMBALANCE_FIGURES_DIR = FIGURES_DIR / "imbalance_methods"
 
 # --- Logs and MLflow ---
 # Use system-specific log directory if running in production
@@ -48,12 +56,17 @@ MLRUNS_DIR = PROJECT_ROOT / "mlruns"
 for path in [
     RAW_DATA_DIR,
     PROCESSED_DATA_DIR,
+    INTERIM_DATA_DIR,
+    EXTERNAL_DATA_DIR,
     MODELS_DIR,
     REPORTS_DIR,
     FIGURES_DIR,
     LOGS_DIR,
     FEATURES_DIR,
+    TFIDF_FIGURES_DIR,
+    BASELINE_MODEL_DIR,
     ADVANCED_DIR,
     EVAL_DIR,
+    EVAL_FIG_DIR,
 ]:
     path.mkdir(parents=True, exist_ok=True)

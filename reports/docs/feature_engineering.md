@@ -1,36 +1,28 @@
 ## Feature Engineering Script: src/features/feature_engineering.py
 
-This script loads the prepared Parquet splits from `data/processed/`, engineers features for sentiment analysis, and saves feature matrices (X) and labels (y) as compressed NumPy arrays in `data/processed/features/`. Features include:
-- **Text-based**: TF-IDF vectors (unigrams/bigrams, max features=5000 for scalability).
-- **Derived**: Text length (chars/words), sentiment-specific ratios (e.g., positive word proportion).
-- **Preprocessing**: Uses the existing `clean_text` from `make_dataset.py`; vectorizes consistently across splits.
+This script loads the prepared Parquet splits from `data/processed/`, engineers features for sentiment analysis, and saves feature matrices (X) and labels (y) as compressed NumPy arrays in `models/features/`. Features include:
+- **Text-based**: TF-IDF vectors (unigrams/bigrams, max features=1000 based on tuning) or BERT embeddings (768-dimensional).
+- **Derived**: Text length (chars/words), sentiment-specific ratios (e.g., positive/negative word proportions).
+- **Preprocessing**: Uses the existing `clean_comment` from `make_dataset.py`; vectorizes consistently across splits.
 
-This ensures reproducibility (fit on train only) and adaptability (configurable via params).
+This ensures reproducibility (fit on train only) and adaptability (configurable via params.yaml).
 
-To incorporate BERT embeddings as a swappable option, for the script to accept a `use_bert` flag (default: False). When `True`, it replaces TF-IDF with mean-pooled embeddings from a pre-trained BERT model (`bert-base-uncased`), yielding 768-dimensional vectors per comment. This enhances semantic capture for nuanced sentiments but increases compute (recommend GPU for large datasets). Derived features (lengths, ratios) remain appended for hybrid utility.
-
-Add dependencies to `pyproject.toml`:
-```
-transformers>=4.30
-torch>=2.0
-accelerate>=0.20  # For efficient inference
-```
-Then run `uv sync`. For innovation, this enables easy A/B testing (e.g., BERT vs. TF-IDF in MLflow); extend to domain-specific fine-tuning later.
+The script accepts a `use_bert` flag (default: False from params.yaml). When `True`, it replaces TF-IDF with mean-pooled embeddings from a pre-trained BERT model (`bert-base-uncased`), yielding 768-dimensional vectors per comment. This enhances semantic capture for nuanced sentiments but increases compute (recommend GPU for large datasets). Derived features (lengths, ratios) remain appended for hybrid utility.
 
 ### Usage and Best Practices
-- Run TF-IDF: `uv run python src/features/feature_engineering.py`.
-- Run BERT: Edit `__main__` to `engineer_features(use_bert=True)` and rerun.
-- Outputs: Updated `.npz`/`.pkl` files; BERT adds tokenizer/model saves for inference.
-- **Reliability**: Batch processing mitigates OOM; test on subsets first.
-- **Scalability**: BERT is ~10x slower—use AWS SageMaker for production.
-- **Maintainability**: Flag enables branching in CI/CD; DVC tracks changes.
-- **Adaptability**: Innovate by fine-tuning BERT on Reddit data for politics-specific lift.
+- Run via DVC: `dvc repro feature_engineering` (uses params.yaml configuration).
+- Run directly: `uv run python -m src.features.feature_engineering --use_bert False --max_features 1000 --ngram_range "(1,1)" --bert_batch_size 32`
+- Outputs: Updated `.npz`/`.pkl` files in `models/features/`; BERT uses HuggingFace models directly.
+- **Reliability**: Batch processing mitigates OOM; validates data existence and shapes.
+- **Scalability**: BERT is ~10x slower—use GPU for large datasets.
+- **Maintainability**: Flag enables branching in CI/CD; DVC tracks changes via params.yaml.
+- **Adaptability**: Easy A/B testing (TF-IDF vs. BERT) via MLflow; extend to domain-specific fine-tuning.
 
 ---
 
 ### Necessity of Saving Feature Matrices and Labels as Compressed NumPy Arrays
 
-Saving feature matrices (X) and labels (y) as compressed NumPy arrays in `../../models/features/` is a core MLOps practice for ensuring reproducibility, efficiency, and modularity in the pipeline. It decouples data preparation from modeling, allowing independent iteration without redundant computations.
+Saving feature matrices (X) and labels (y) as compressed NumPy arrays in `models/features/` is a core MLOps practice for ensuring reproducibility, efficiency, and modularity in the pipeline. It decouples data preparation from modeling, allowing independent iteration without redundant computations.
 
 #### Why Necessary?
 - **Reproducibility**: Features (e.g., TF-IDF vectors or BERT embeddings) are deterministic once fitted on the train set. Saving them prevents recomputation on every run, reducing errors from environmental variations (e.g., random seeds in embeddings). This aligns with DVC versioning, where changes in raw data trigger re-engineering without manual intervention.
@@ -43,7 +35,7 @@ Without this, pipelines risk data leakage, high compute costs, and debugging ove
 #### How It Works?
 - **Format Choice**:
   - **y (.npy)**: Dense 1D NumPy arrays for labels (e.g., shape: (n_samples,)). Simple, uncompressed serialization via `np.save()`. Loading: `y = np.load('y_train.npy')`.
-  - **X (.npz)**: Compressed archive for sparse matrices (SciPy CSR format), via `save_npz()`. Handles TF-IDF sparsity efficiently; BERT (dense) is sparsified post-hstack for consistency. Loading: `X = load_npz('X_train.npz')`.
+  - **X (.npz)**: Compressed archive for sparse matrices (SciPy CSR format), via `save_npz()`. Handles TF-IDF sparsity efficiently; BERT (dense) is converted to sparse for consistency. Loading: `X = load_npz('X_train.npz')`.
 - **Process in Script**:
   1. Engineer X (sparse/dense text features + dense derived) and y (encoded labels).
   2. Save with `save_npz()`/`np.save()`—NumPy's binary format is platform-independent and fast.
@@ -125,85 +117,20 @@ You can address the poor recall for negative samples using one or several of the
 
 ---
 
-## src\features\imbalance_tuning.py
-We have successfully run the imbalance tuning experiments using various techniques to handle class imbalance in our sentiment analysis task. The results have been logged to MLflow for easy comparison. Our DVC + MLflow pipeline is working perfectly, and now we have the full experimental comparison across all imbalance methods.
+## Integration with DVC Pipeline
 
-Let’s interpret the results objectively and select the best approach based on our metrics.
+The feature engineering stage is integrated into the DVC pipeline (`dvc.yaml`) and configured via `params.yaml`:
 
----
+```yaml
+feature_engineering:
+  cmd: >
+    uv run python -m src.features.feature_engineering
+    --use_bert ${feature_engineering.use_bert}
+    --max_features ${imbalance_tuning.best_max_features}
+    --ngram_range ${imbalance_tuning.best_ngram_range}
+    --bert_batch_size ${feature_engineering.bert_batch_size}
+  outs:
+    - models/features/
+```
 
-Based on the `Exp - Imbalance Handling` logs, the **ADASYN** (Adaptive Synthetic Sampling) method is the best imbalance handling technique, as it achieved the highest performance across the key metrics.
-
-Here is a summary of the validation metrics for each tested method (using `max_features=1000` and `(1,1)` n-grams):
-
-| Imbalance Method | Experiment Name | Val F1-Score (Macro) | Val Accuracy |
-| :--- | :--- | :--- | :--- |
-| **ADASYN** | `Imb_adasyn_Feat_1000` | **0.6637** | **0.6881** |
-| Class Weights | `Imb_class_weights_Feat_1000` | 0.6582 | 0.6834 |
-| Undersampling | `Imb_undersampling_Feat_1000` | 0.6519 | 0.6763 |
-| Oversampling | `Imb_oversampling_Feat_1000` | 0.6504 | 0.6756 |
-| SMOTE-ENN | `Imb_smote_enn_Feat_1000` | 0.2074 | 0.2710 |
-
-The **ADASYN** method results in the optimal balance between precision and recall across all classes, indicated by the highest **Macro F1-Score (0.6637)**, while also yielding the highest **Validation Accuracy (0.6881)**.
-
-Note that the **SMOTE-ENN** method performed significantly worse than all others, likely due to aggressively cleaning the data, which removed too much information relevant to all classes.
-
----
-
-## 🧠 Interpretation
-
-### 🔹 1. **SMOTE+ENN failed badly**
-
-SMOTE+ENN underperformed (Accuracy ≈ 0.27), which means the combined synthetic/cleaning process destroyed class structure — common when:
-
-* Text embeddings are sparse (TF-IDF).
-* Boundary samples overlap heavily.
-* You have a large class imbalance and few minority examples.
-
-→ **Drop this method** for text classification unless you switch to dense embeddings (e.g., BERT).
-
----
-
-### 🔹 2. **ADASYN outperformed slightly**
-
-ADASYN achieved:
-
-* Best **accuracy (0.6814)**
-* Best **F1 score (0.7333)**
-
-Because it focuses on generating synthetic samples *only around hard-to-learn regions*, it adapts better to nonlinear class boundaries typical in sentiment data.
-
-→ **Best overall trade-off** between balance and generalization.
-
----
-
-### 🔹 3. **Class Weights** remain a strong baseline
-
-* No data alteration.
-* Stable performance (F1 ≈ 0.7286).
-* Ideal for reproducibility and quick training.
-
-→ Recommended if you prioritize **simplicity and speed**.
-
----
-
-## 🏆 Final Recommendation
-
-| Goal                                               | Best Method       | Reason                                      |
-| -------------------------------------------------- | ----------------- | ------------------------------------------- |
-| **Best performance (balanced recall + precision)** | **ADASYN**        | Improves minority class learning adaptively |
-| **Most stable & production-ready**                 | **Class Weights** | No synthetic noise, simpler reproducibility |
-| **Fast & low-resource**                            | **Undersampling** | Useful for quick prototyping                |
-
----
-
-## 🔍 Next step
-
-You can confirm this choice in MLflow visually:
-
-1. Open your local MLflow UI (`http://127.0.0.1:5000`).
-2. Compare all runs under `imbalance_tuning`.
-3. Sort by **F1 score** or **accuracy**.
-4. Export the ADASYN model as your baseline for the next stage (e.g., hyperparameter tuning or embedding-level model).
-
----
+This ensures reproducibility and tracks changes through DVC versioning.

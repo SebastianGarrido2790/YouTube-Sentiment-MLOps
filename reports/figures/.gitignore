@@ -1,2 +1,4 @@
 /tfidf_max_features
 /imbalance_methods
+/lightgbm_confusion_matrix.png
+/lightgbm_roc_curve.png

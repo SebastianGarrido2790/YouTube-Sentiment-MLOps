@@ -28,7 +28,7 @@ from nltk.corpus import stopwords
 from nltk.tokenize import word_tokenize
 
 # --- Project Utilities ---
-from src.utils.paths import RAW_DATA_DIR, TRAIN_PATH, VAL_PATH, TEST_PATH
+from src.utils.paths import RAW_PATH, TRAIN_PATH, VAL_PATH, TEST_PATH
 from src.utils.logger import get_logger
 
 # --- Logging Setup ---
@@ -37,10 +37,6 @@ logger = get_logger(__name__, headline="make_dataset.py")
 # --- NLTK Setup ---
 nltk.download("punkt_tab", quiet=True)
 nltk.download("stopwords", quiet=True)
-
-# --- File Paths ---
-RAW_PATH = RAW_DATA_DIR / "reddit_comments.csv"
-RAW_DATA_DIR.mkdir(parents=True, exist_ok=True)
 
 
 def clean_text(text: str, stop_words: Optional[set] = None) -> str:
