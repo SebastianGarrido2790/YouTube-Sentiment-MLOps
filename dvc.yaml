@@ -142,6 +142,8 @@ stages:
       - src/utils/paths.py
     outs:
       - models/baseline/logistic_baseline.pkl
+    metrics:
+      - models/baseline/baseline_metrics.json
 
   hyperparameter_tuning_lightgbm:
     cmd: uv run python -m src.models.hyperparameter_tuning --model lightgbm
@@ -224,17 +226,29 @@ stages:
     outs:
       # Output file for the next stage (registration)
       - models/advanced/evaluation/best_model_run_info.json
-      
       # Corrected paths to match script output (reports/figures/evaluation/)
       - models/advanced/evaluation/lightgbm_test_metrics.json
       - models/advanced/evaluation/xgboost_test_metrics.json
-      
-      - reports/figures/evaluation/lightgbm_confusion_matrix.png  # <-- FIXED
-      - reports/figures/evaluation/xgboost_confusion_matrix.png    # <-- FIXED
-      - reports/figures/evaluation/comparative_roc_curve.png     # <-- FIXED
+      # Visualizations
+      - reports/figures/evaluation/lightgbm_confusion_matrix.png  
+      - reports/figures/evaluation/xgboost_confusion_matrix.png   
+      - reports/figures/evaluation/comparative_roc_curve.png     
     params:
       - model_evaluation.models
 
+  register_model:
+    cmd: uv run python -m src.models.register_model
+    deps:
+      - src/models/register_model.py
+      - src/utils/mlflow_config.py
+      - src/utils/logger.py
+      - src/utils/paths.py
+      # Depends on the champion file and metrics from the evaluation stage
+      - models/advanced/evaluation/best_model_run_info.json
+      - models/advanced/evaluation/lightgbm_test_metrics.json
+      - models/advanced/evaluation/xgboost_test_metrics.json
+    params:
+      - register.f1_threshold
     
 
 
