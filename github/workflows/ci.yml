@@ -24,6 +24,17 @@ jobs:
       - name: Sync dependencies
         run: uv sync --frozen --no-dev
 
+      - name: Install Ruff
+        run: uv pip install ruff
+      
+      - name: Run Ruff Linter
+        # Check for linting errors and formatting issues without fixing them
+        run: uv run ruff check .
+      
+      - name: Run Ruff Formatter Check
+        # Check that all files are correctly formatted
+        run: uv run ruff format . --check
+
       - name: Run unit tests
         run: uv run pytest -v app/test_inference.py
 

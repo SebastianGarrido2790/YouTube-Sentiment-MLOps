@@ -208,7 +208,7 @@ stages:
       - models/advanced/bert_metrics.json
 
   model_evaluation:
-    cmd: uv run python -m src.models.model_evaluation --models lightgbm xgboost
+    cmd: uv run python -m src.models.model_evaluation --models lightgbm xgboost logistic_baseline
     deps:
       - src/models/model_evaluation.py
       - src/utils/mlflow_config.py
@@ -219,6 +219,11 @@ stages:
       # The model artifacts produced by the training stages
       - models/advanced/lightgbm_model.pkl
       - models/advanced/xgboost_model.pkl
+      # Baseline model artifact
+      - models/baseline/logistic_baseline.pkl
+      # BERT model artifact
+      - models/advanced/bert_model.pkl
+      - models/advanced/bert_results
       # The features for the test set
       - models/features/X_test.npz
       - models/features/y_test.npy
@@ -229,6 +234,8 @@ stages:
       # Corrected paths to match script output (reports/figures/evaluation/)
       - models/advanced/evaluation/lightgbm_test_metrics.json
       - models/advanced/evaluation/xgboost_test_metrics.json
+      - models/advanced/evaluation/logistic_baseline_test_metrics.json
+      # - models/advanced/evaluation/bert_test_metrics.json
       # Visualizations
       - reports/figures/evaluation/lightgbm_confusion_matrix.png  
       - reports/figures/evaluation/xgboost_confusion_matrix.png   
@@ -247,6 +254,7 @@ stages:
       - models/advanced/evaluation/best_model_run_info.json
       - models/advanced/evaluation/lightgbm_test_metrics.json
       - models/advanced/evaluation/xgboost_test_metrics.json
+      - models/advanced/evaluation/logistic_baseline_test_metrics.json
     params:
       - register.f1_threshold
     
