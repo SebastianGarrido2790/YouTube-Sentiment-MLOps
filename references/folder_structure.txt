@@ -31,11 +31,11 @@ YouTube_Sentiment_Analysis
 │       └── ci.yml
 │
 ├── logs
+│   └── experiments.log
 │
-├── mlflow_data        <- Everything MLflow writes (database, artifacts, models).
-│   ├── mlartifacts
-│   ├── mlruns
-│   └── mlflow.db
+├── mlartifacts
+├── mlruns
+├── mlflow.db
 │
 ├── models             <- Trained and serialized models, model predictions, or model summaries.
 │   ├── advanced

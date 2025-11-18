@@ -1,20 +1,27 @@
 services:
   api:
     build:
-      context: .
-      dockerfile: Dockerfile
+      context: ..
+      dockerfile: docker/Dockerfile
     container_name: youtube_sentiment_api
     ports:
       - "8000:8000"
+    # env_file path to look one directory up (project root)
     env_file:
-      - .env
+      - ../.env
+    environment:
+      # Explicitly override the MLFLOW_TRACKING_URI for the container to use
+      # the internal Docker service name (mlflow), good for connection issues.
+      - MLFLOW_TRACKING_URI=http://mlflow:5000
     volumes:
-      - ./app:/app/app
-      - ./src:/app/src
-      - ./data:/app/data
-      - ./models:/app/models
-      - ./mlruns:/app/mlruns
-      - ./mlflow.db:/app/mlflow.db
+      # Code path mounting (relative to docker/ folder)
+      - ../app:/app/app
+      - ../src:/app/src
+      # Add dependency files for uvicorn's --reload to function correctly
+      - ../pyproject.toml:/app/pyproject.toml
+      - ../uv.lock:/app/uv.lock
+      # NOTE: Removed mounts for /data, /models, /mlruns, /mlflow.db
+      # The API must load the model from the MLflow Server, not the local file system.
     command: >
       uv run uvicorn app.predict_model:app
       --host 0.0.0.0 --port 8000 --reload
@@ -34,12 +41,13 @@ services:
       --default-artifact-root /app/mlruns
       --host 0.0.0.0
       --port 5000
+      --allowed-hosts *
+    # Use a named volume for persistent MLflow data
     volumes:
       - ./mlruns:/app/mlruns
       - ./mlflow.db:/app/mlflow.db
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:5000"]
-      interval: 10s
-      timeout: 5s
-      retries: 6
-      start_period: 10s
+
+# Define the named volume for MLflow persistence
+volumes:
+  mlflow_data:
+    driver: local

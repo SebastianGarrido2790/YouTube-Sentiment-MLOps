@@ -1,4 +1,6 @@
-# Python / virtual env
+# ------------------------------------------------------------
+# 1. Python Environment & Build Artifacts (Necessary Exclusions)
+# ------------------------------------------------------------
 __pycache__/
 *.pyc
 *.pyo
@@ -6,28 +8,39 @@ __pycache__/
 .venv/
 .env
 .python-version
+.vscode/
 
-# Logs and artifacts
-logs/
-mlruns/
+# ------------------------------------------------------------
+# 2. DVC / MLflow / MLOps Artifacts (Primary Cause of Large Context)
+# ------------------------------------------------------------
+# Exclude ALL directories containing large, generated files, data, and models.
+# The model will be loaded from the MLflow Registry, not from local files.
+data/         # Contains raw, interim, and processed datasets (Gigabytes)
+models/       # Contains trained models, evaluation artifacts (large files)
+mlruns/       # MLflow run metadata and artifacts
+mlflow_data/  # Includes mlruns, mlartifacts, and mlflow.db
 mlflow.db
-mlartifacts/
-*.log
+logs/         # Application logs
+reports/      # Generated analysis, figures, docs
 
-# Data and reports
-data/
-reports/
-notebooks/
-references/
-models/
-.DS_Store
-
-# DVC / Git
+# DVC/Git-related files
 .dvc/
+dvc.lock
 .dvcignore
 .git/
 .gitignore
 
-# IDE / misc
-.vscode/
-.idea/
+# ------------------------------------------------------------
+# 3. Development/Documentation/Tooling Files
+# ------------------------------------------------------------
+notebooks/    # Jupyter notebooks
+references/   # Data dictionaries, manuals, design docs
+reset-venv-full.ps1
+GEMINI.md
+.DS_Store
+
+# We keep:
+# - pyproject.toml / uv.lock (for dependency installation)
+# - src/ and app/ (for source code)
+# - params.yaml (for runtime configuration)
+# - docker/ (for the Dockerfile/docker-compose, though they don't get copied into the image, they are needed for context)

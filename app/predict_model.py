@@ -20,11 +20,6 @@ Response Example:
       "encoded_labels": [2],
       "feature_shape": [1, 1004]
     }
-
-NOTE:
-    - To use the registry, ensure you set a model alias:
-        client.set_registered_model_alias("youtube_sentiment_lightgbm", "Production", 2)
-    - For URI handling, see: src/utils/mlflow_config.py
 """
 
 from fastapi import FastAPI, HTTPException
@@ -33,6 +28,7 @@ import pandas as pd
 from scipy.sparse import hstack
 import joblib
 import numpy as np
+import xgboost as xgb
 
 # --- Project Utilities ---
 from src.utils.logger import get_logger
@@ -47,7 +43,7 @@ app = FastAPI(title="YouTube Sentiment Prediction API", version="1.0")
 # Artifact Loading (Run on startup only)
 # ============================================================
 
-# The model object (MLflow pyfunc or local LightGBM)
+# The model object (MLflow pyfunc or local best model)
 try:
     model = load_production_model()
 
@@ -96,10 +92,18 @@ def predict(data: PredictRequest):
         X_derived = build_derived_features(df_input)
 
         # Combine TF-IDF + Derived
-        X = hstack([X_tfidf, X_derived])
+        X = hstack([X_tfidf, X_derived])  # X is a scipy sparse matrix
 
-        # Predict
-        preds = model.predict(X)
+        # Convert the scipy sparse matrix (X) to DMatrix as required by the XGBoost model.
+        dmatrix_X = xgb.DMatrix(X)
+
+        # Predict - Get the raw output, which is a (N, C) array of scores/probs
+        raw_preds = model.predict(dmatrix_X)  # Use the DMatrix for prediction
+
+        # Convert 2D score/probability array (N, C) to 1D class label array (N,).
+        # This is necessary for multi-class models where 'predict' returns probabilities.
+        preds = np.argmax(raw_preds, axis=1)
+
         decoded_preds = label_encoder.inverse_transform(preds)
         # probs = (
         #     model.predict_proba(X).tolist() if hasattr(model, "predict_proba") else None
@@ -109,11 +113,13 @@ def predict(data: PredictRequest):
 
         def _safe_to_list(x):
             """Convert numpy/scipy objects to Python lists safely."""
+            # NOTE: issparse needs to be imported: `from scipy.sparse import issparse`
             from scipy.sparse import issparse
 
             if isinstance(x, list):
                 return x
             if issparse(x):
+                # .toarray() converts the sparse matrix to a dense NumPy array
                 return x.toarray().tolist()
             if isinstance(x, np.ndarray):
                 return x.tolist()
@@ -131,6 +137,9 @@ def predict(data: PredictRequest):
         raise HTTPException(status_code=500, detail=str(e))
 
 
+# ============================================================
+# Health Check Endpoint
+# ============================================================
 @app.get("/health", tags=["system"])
 async def health_check():
     return {"status": "ok", "message": "YouTube Sentiment API is running"}

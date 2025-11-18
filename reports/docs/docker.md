@@ -341,6 +341,13 @@ docker builder prune -af && docker system prune -af --volumes
 
 # 3. Rebuild & start
 docker compose build --no-cache && docker compose up
+
+# Go to the project root (if you are in the docker/ folder) and run:
+cd ..
+# Take down any existing containers first
+docker compose -f docker/docker-compose.yml down
+# Run the build command, specifying the compose file's location
+docker compose -f docker/docker-compose.yml build && docker compose -f docker/docker-compose.yml up
 ```
 
 Your API will start and connect to MLflow at `host.docker.internal:5000`.
