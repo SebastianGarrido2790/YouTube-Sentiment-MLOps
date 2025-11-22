@@ -34,6 +34,8 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
 from typing import List, Dict, Any
+import numpy as np
+import nltk
 
 matplotlib.use("Agg")  # Non-interactive backend
 
@@ -56,6 +58,27 @@ from nltk.corpus import stopwords
 from nltk.stem import WordNetLemmatizer
 
 logger = get_logger(__name__, headline="insights_api.py")
+
+
+# ============================================================
+# NLTK Dependency Check (Fix for 'Resource wordnet not found')
+# ============================================================
+def check_and_download_nltk_data():
+    """Ensure NLTK data is present for preprocessing steps."""
+    resources = ["wordnet", "stopwords"]
+    for resource in resources:
+        try:
+            # Check if the resource is already available
+            nltk.data.find(f"corpora/{resource}")
+        except LookupError:
+            print(f"Downloading missing NLTK '{resource}' corpus...")
+            nltk.download(resource, quiet=True)
+    logger.info("✅ NLTK data check complete.")
+
+
+# Run the check at startup for reliability
+check_and_download_nltk_data()
+
 
 app = FastAPI(title="YouTube Sentiment Insights API", version="1.0")
 
@@ -177,8 +200,16 @@ def predict_internal(comments: List[str]) -> List[int]:
     X_derived = build_derived_features(df)
     X = hstack([X_tfidf, X_derived])
 
-    # Predict (encoded: 0,1,2)
-    preds_encoded = model.predict(X)
+    # Predict (raw output, typically NxC array of probabilities/scores)
+    raw_preds = model.predict(X)
+
+    # Convert 2D score/probability array (N, C) to 1D class label array (N,).
+    # This aligns the logic with predict_model.py and fixes the scalar error.
+    if raw_preds.ndim > 1 and raw_preds.shape[1] > 1:
+        preds_encoded = np.argmax(raw_preds, axis=1)
+    else:
+        # For binary or direct label output
+        preds_encoded = raw_preds
 
     # Map to original numeric (-1,0,1)
     preds_numeric = [_SENTIMENT_MAP.get(int(p), 0) for p in preds_encoded]

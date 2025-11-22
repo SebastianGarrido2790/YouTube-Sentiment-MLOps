@@ -15,6 +15,7 @@ import pandas as pd
 import numpy as np
 import json
 from typing import Any, Set
+from scipy.sparse import issparse
 
 # --- Project Utilities ---
 from src.utils.logger import get_logger
@@ -176,3 +177,25 @@ def build_derived_features(df: pd.DataFrame) -> np.ndarray:
 
     # Return as a numpy array of features
     return df[["char_len", "word_len", "pos_ratio", "neg_ratio"]].values
+
+
+def safe_to_list(x: Any) -> list:
+    """
+    Safely convert different data types (NumPy arrays, SciPy sparse matrices)
+    to a standard Python list. Handles basic lists, NumPy arrays, and sparse matrices.
+
+    Args:
+        x: The input data to convert. Can be a list, np.ndarray, or scipy.sparse matrix.
+
+    Returns:
+        A Python list representation of the input.
+    """
+    if isinstance(x, list):
+        return x
+    if issparse(x):
+        # Converts sparse matrix to dense NumPy array, then to list
+        return x.toarray().tolist()
+    if isinstance(x, np.ndarray):
+        return x.tolist()
+    # Fallback for single, non-list items
+    return [x]
