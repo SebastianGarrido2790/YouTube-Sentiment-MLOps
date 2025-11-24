@@ -3,14 +3,14 @@ Feature Engineering Module for Sentiment Analysis
 =================================================
 
 Generates and saves reusable feature matrices (X) and labels (y) as compressed
-NumPy arrays for efficient downstream modeling. Supports both TF-IDF and BERT
+NumPy arrays for efficient downstream modeling. Supports both TF-IDF and DistilBERT
 representations, along with simple derived features. Integrates with MLOps via logging and paths.
 
 Saves feature matrices as compressed NumPy sparse arrays (.npz) and labels
 as NumPy arrays (.npy) to the models/features directory.
 
 Usage (DVC pulls parameters from params.yaml):
-    uv run python -m src.features.feature_engineering --use_bert False --max_features 1000 --ngram_range (1,1)
+    uv run python -m src.features.feature_engineering --use_distilbert False --max_features 1000 --ngram_range (1,1)
 
 Requirements:
     - Processed data in data/processed/.
@@ -18,7 +18,7 @@ Requirements:
 
 Design Goals:
     - Reliability: Validations, consistent outputs, structured logging.
-    - Scalability: Sparse TF-IDF, batched BERT embeddings, compressed storage.
+    - Scalability: Sparse TF-IDF, batched DistilBERT embeddings, compressed storage.
     - Maintainability: Modular, documented, centralized configuration.
     - Adaptability: Easily switch vectorization techniques or feature sets.
 
@@ -29,7 +29,7 @@ Outputs:
         ├── X_test.npz  / y_test.npy
         ├── vectorizer.pkl (TF-IDF)
         ├── label_encoder.pkl
-        └── tokenizer.pkl / bert_model.pth (if use_bert=True)
+        └── tokenizer.pkl / distilbert_model.pth (if use_distilbert=True)
 """
 
 import argparse
@@ -42,7 +42,7 @@ from sklearn.preprocessing import LabelEncoder
 from scipy.sparse import save_npz, hstack, csr_matrix, issparse
 from scipy.sparse import spmatrix  # Added for improved type hinting
 
-# --- Conditional Imports for BERT ---
+# --- Conditional Imports for DistilBERT ---
 # Define placeholders if imports fail to prevent NameError outside the try/except block
 try:
     import torch
@@ -61,11 +61,11 @@ from src.features.helpers.feature_utils import parse_dvc_param
 logger = get_logger(__name__, headline="feature_engineering.py")
 
 
-def _get_bert_embeddings(
+def _get_distilbert_embeddings(
     texts: list, device: Optional[str] = None, batch_size: int = 32
 ) -> np.ndarray:
     """
-    Generate mean-pooled BERT embeddings for a list of texts. Helper function.
+    Generate mean-pooled DistilBERT embeddings for a list of texts. Helper function.
 
     Args:
         texts (list): Cleaned text samples.
@@ -77,12 +77,14 @@ def _get_bert_embeddings(
     """
     # NOTE: Checks rely on the conditional imports above
     if torch is None or AutoModel is None:
-        raise ImportError("BERT mode requires torch and transformers to be installed.")
+        raise ImportError(
+            "DistilBERT mode requires torch and transformers to be installed."
+        )
 
     device = device or ("cuda" if torch.cuda.is_available() else "cpu")
-    logger.info(f"BERT Inference: Using device: {device}")
-    tokenizer = AutoTokenizer.from_pretrained("bert-base-uncased")
-    model = AutoModel.from_pretrained("bert-base-uncased").to(device)
+    logger.info(f"DistilBERT Inference: Using device: {device}")
+    tokenizer = AutoTokenizer.from_pretrained("distilbert-base-uncased")
+    model = AutoModel.from_pretrained("distilbert-base-uncased").to(device)
     model.eval()
 
     embeddings = []
@@ -134,19 +136,19 @@ def _add_derived_features(df: pd.DataFrame) -> np.ndarray:
 
 
 def engineer_features(
-    use_bert: bool,
+    use_distilbert: bool,
     max_features: int,
     ngram_range: Tuple[int, int],
-    bert_batch_size: int,
+    distilbert_batch_size: int,
 ) -> None:
     """
     Generates final feature matrices (X) and labels (y) based on selected parameters.
 
     Args:
-        use_bert (bool): If True, use BERT embeddings.
+        use_distilbert (bool): If True, use DistilBERT embeddings.
         max_features (int): Max vocabulary for TF-IDF.
         ngram_range (Tuple[int, int]): N-gram range for TF-IDF.
-        bert_batch_size (int): Batch size for BERT inference.
+        distilbert_batch_size (int): Batch size for DistilBERT inference.
     """
 
     # 1. Load Data
@@ -176,17 +178,23 @@ def engineer_features(
     y_val = le.transform(dfs["val"]["sentiment_label"])
     y_test = le.transform(dfs["test"]["sentiment_label"])
 
-    # 3. Text Feature Generation (TF-IDF or BERT)
+    # 3. Text Feature Generation (TF-IDF or DistilBERT)
     vectorizer: Optional[TfidfVectorizer] = None  # Initialize vectorizer placeholder
     X_train_text: Union[spmatrix, np.ndarray]
     X_val_text: Union[spmatrix, np.ndarray]
     X_test_text: Union[spmatrix, np.ndarray]
 
-    if use_bert:
-        logger.info("🚀 Generating BERT embeddings (768 dim)...")
-        X_train_text = _get_bert_embeddings(train_texts, batch_size=bert_batch_size)
-        X_val_text = _get_bert_embeddings(val_texts, batch_size=bert_batch_size)
-        X_test_text = _get_bert_embeddings(test_texts, batch_size=bert_batch_size)
+    if use_distilbert:
+        logger.info("🚀 Generating DistilBERT embeddings (768 dim)...")
+        X_train_text = _get_distilbert_embeddings(
+            train_texts, batch_size=distilbert_batch_size
+        )
+        X_val_text = _get_distilbert_embeddings(
+            val_texts, batch_size=distilbert_batch_size
+        )
+        X_test_text = _get_distilbert_embeddings(
+            test_texts, batch_size=distilbert_batch_size
+        )
 
     else:
         logger.info(
@@ -218,7 +226,7 @@ def engineer_features(
             # Sparse (TF-IDF) + Dense (hstack converts result to sparse)
             X_combined = hstack([X_text, X_derived])
         else:
-            # Dense (BERT) + Dense (numpy.hstack)
+            # Dense (DistilBERT) + Dense (numpy.hstack)
             X_combined_dense = np.hstack([X_text, X_derived])
             # For consistent saving as .npz (sparse format), convert dense numpy array
             # This ensures X_combined is always a sparse matrix type
@@ -253,10 +261,12 @@ def engineer_features(
             logger.info(
                 f"Saved TF-IDF Vectorizer to {FEATURES_DIR.relative_to(PROJECT_ROOT) / vectorizer_name}"
             )
-    elif use_bert:
-        logger.info("Using BERT: Tokenizer/Model are sourced from HuggingFace.")
+    elif use_distilbert:
+        logger.info("Using DistilBERT: Tokenizer/Model are sourced from HuggingFace.")
 
-    feature_type = "BERT" if use_bert else f"TF-IDF (max_features={max_features})"
+    feature_type = (
+        "DistilBERT" if use_distilbert else f"TF-IDF (max_features={max_features})"
+    )
     logger.info(
         f"✅ Features engineered successfully | Type: {feature_type} | "
         f"Shapes → Train: {X_train.shape}, Val: {X_val.shape}, Test: {X_test.shape}"
@@ -270,25 +280,28 @@ def main() -> None:
     )
     # NOTE: DVC will pass the best parameters found in the previous stages here
     parser.add_argument(
-        "--use_bert",
+        "--use_distilbert",
         type=lambda x: x.lower() == "true",
         default=False,
-        help="If True, use BERT embeddings; otherwise use TF-IDF.",
+        help="If True, use DistilBERT embeddings; otherwise use TF-IDF.",
     )
     parser.add_argument(
         "--max_features",
         type=int,
         default=1000,  # Best default based on prior experiments (tfidf_max_features.py)
-        help="Max vocabulary for TF-IDF (ignored if use_bert=True).",
+        help="Max vocabulary for TF-IDF (ignored if use_distilbert=True).",
     )
     parser.add_argument(
         "--ngram_range",
         type=str,
         default="(1,1)",  # Best default based on prior experiments (tfidf_vs_bert.py)
-        help="N-gram range for TF-IDF as string tuple (ignored if use_bert=True).",
+        help="N-gram range for TF-IDF as string tuple (ignored if use_distilbert=True).",
     )
     parser.add_argument(
-        "--bert_batch_size", type=int, default=32, help="Batch size for BERT inference."
+        "--distilbert_batch_size",
+        type=int,
+        default=32,
+        help="Batch size for DistilBERT inference.",
     )
     args = parser.parse_args()
 
@@ -304,10 +317,10 @@ def main() -> None:
 
     logger.info("--- Feature Engineering Parameters ---")
     engineer_features(
-        use_bert=args.use_bert,
+        use_distilbert=args.use_distilbert,
         max_features=args.max_features,
         ngram_range=ngram_range,
-        bert_batch_size=args.bert_batch_size,
+        distilbert_batch_size=args.distilbert_batch_size,
     )
 
 

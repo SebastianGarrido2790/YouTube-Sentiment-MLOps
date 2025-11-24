@@ -4,6 +4,7 @@ Includes MLflow setup, data loading, DVC parameter parsing,
 and standardized model evaluation with logging."""
 
 import ast
+import argparse
 import json
 from pathlib import Path
 from typing import Any, Dict, Tuple, Union, Optional
@@ -18,42 +19,25 @@ from sklearn.base import ClassifierMixin
 from scipy.sparse import spmatrix
 
 # --- Project Utilities ---
-from src.utils.paths import TRAIN_PATH, VAL_PATH
+from src.utils.paths import TRAIN_PATH, VAL_PATH, PROJECT_ROOT
 from src.utils.logger import get_logger
-from src.utils.mlflow_config import get_mlflow_uri
 
 # Setup logger for the utility module
 logger = get_logger(__name__)
 
 
-def setup_mlflow_run(experiment_name: str, params_path: str = "params.yaml") -> None:
-    """
-    Standardizes MLflow configuration (URI and Experiment).
-    Takes the URI string from get_mlflow_uri and executes the global MLflow setup commands
-    (mlflow.set_tracking_uri, mlflow.set_experiment).
-    It manages the global state of the MLflow client.
-    This should be called once at the start of a script.
-
-    Args:
-        experiment_name (str): Name of the MLflow experiment to use or create.
-        params_path (str): Path to params.yaml for fallback URI (default: project root).
-
-    Maintainability: It enforces the correct sequence of setting the URI, setting the experiment, and logging the action.
-    """
-    mlflow_uri = get_mlflow_uri(params_path)
-    mlflow.set_tracking_uri(mlflow_uri)
-    mlflow.set_experiment(experiment_name)
-    logger.info(f"MLflow URI set to: {mlflow_uri}")
-    logger.info(f"MLflow Experiment set to: {experiment_name}")
-
-
+# ============================================================
+#  Data Loading
+# ============================================================
 def load_train_val_data() -> Tuple[pd.DataFrame, pd.DataFrame]:
     """
     Loads and returns the processed train and validation datasets from Parquet files.
 
     Reliability: Includes robust error handling for missing files.
     """
-    logger.info(f"Loading data from {TRAIN_PATH} and {VAL_PATH}...")
+    logger.info(
+        f"Loading data from {TRAIN_PATH.relative_to(PROJECT_ROOT)} and {VAL_PATH.relative_to(PROJECT_ROOT)}..."
+    )
     try:
         train_df = pd.read_parquet(TRAIN_PATH)
         val_df = pd.read_parquet(VAL_PATH)
@@ -68,6 +52,9 @@ def load_train_val_data() -> Tuple[pd.DataFrame, pd.DataFrame]:
         raise
 
 
+# ============================================================
+#  DVC Parameter Parsing
+# ============================================================
 def parse_dvc_param(param_value: str, name: str, expected_type: type = str) -> Any:
     """
     Safely converts string parameters passed from DVC (params.yaml) into their
@@ -100,6 +87,9 @@ def parse_dvc_param(param_value: str, name: str, expected_type: type = str) -> A
         ) from e
 
 
+# ============================================================
+#  Model Evaluation and Logging
+# ============================================================
 def evaluate_and_log(
     model: ClassifierMixin,
     X_val: Union[np.ndarray, spmatrix],
@@ -172,3 +162,18 @@ def evaluate_and_log(
         logger.info("Trained model logged to MLflow Model Registry.")
 
     return metrics
+
+
+# ============================================================
+# Helper function to convert string to boolean
+# ============================================================
+def str2bool(v):
+    if isinstance(v, bool):
+        return v
+    if v.lower() in ("yes", "true", "t", "y", "1"):
+        return True
+    elif v.lower() in ("no", "false", "f", "n", "0"):
+        return False
+    else:
+        # Ensures the pipeline fails fast if an invalid value is in params.yaml
+        raise argparse.ArgumentTypeError("Boolean value expected.")
