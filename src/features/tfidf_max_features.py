@@ -29,8 +29,9 @@ from scipy.sparse import spmatrix  # For sparse matrix type hint
 # --- Project Utilities ---
 from src.utils.paths import TFIDF_FIGURES_DIR
 from src.utils.logger import get_logger
+from src.utils.mlflow_config import get_mlflow_uri
+from src.models.helpers.mlflow_tracking_utils import setup_experiment
 from src.features.helpers.feature_utils import (
-    setup_mlflow_run,
     load_train_val_data,
     parse_dvc_param,
     evaluate_and_log,
@@ -146,7 +147,8 @@ def main() -> None:
     args = parser.parse_args()
 
     # --- MLflow Setup ---
-    setup_mlflow_run(experiment_name="Exp - TFIDF Max Features")
+    mlflow_uri = get_mlflow_uri()
+    setup_experiment("Exp - TFIDF Max Features", mlflow_uri)
 
     # --- Parameter Parsing ---
     max_features_values = parse_dvc_param(
@@ -157,7 +159,7 @@ def main() -> None:
     )
 
     logger.info(
-        f"--- Running TF-IDF tuning for max_features: {max_features_values} with n-gram {ngram_range} ---"
+        f"🚀 Running TF-IDF tuning for max_features: {max_features_values} with n-gram {ngram_range}"
     )
 
     for max_features in max_features_values:
