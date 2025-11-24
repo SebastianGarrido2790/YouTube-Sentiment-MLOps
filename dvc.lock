@@ -16,6 +16,11 @@ stages:
       hash: md5
       md5: 7b2d73cb9e053c99e1e0296ee965bdff
       size: 2156
+    params:
+      params.yaml:
+        data_ingestion.output_path: data/raw/reddit_comments.csv
+        data_ingestion.url: 
+          https://raw.githubusercontent.com/Himanshu-1703/reddit-sentiment-analysis/refs/heads/main/data/reddit.csv
     outs:
     - path: data/raw/reddit_comments.csv
       hash: md5
@@ -59,9 +64,9 @@ stages:
       md5: c55232be629f4fba0cdc3cce4329c594
       size: 499418
   feature_comparison:
-    cmd: "uv run python -m src.features.tfidf_vs_bert --ngram_ranges [(1,1),(1,2),(1,3)]
-      --max_features 5000 --batch_size 32 --n_estimators 200 --max_depth 15 --use_bert
-      false\n"
+    cmd: "uv run python -m src.features.tfidf_vs_distilbert --ngram_ranges [(1,1),(1,2),(1,3)]
+      --max_features 5000 --batch_size 32 --n_estimators 200 --max_depth 15 --use_distilbert
+      true\n"
     deps:
     - path: data/processed/train.parquet
       hash: md5
@@ -73,12 +78,12 @@ stages:
       size: 499418
     - path: src/features/helpers/feature_utils.py
       hash: md5
-      md5: e0f9947d31fadd92c998640dda59a078
-      size: 6654
-    - path: src/features/tfidf_vs_bert.py
+      md5: f9730f34b1a910c7ba2aa8b3fb82d1a5
+      size: 6731
+    - path: src/features/tfidf_vs_distilbert.py
       hash: md5
-      md5: 076cf6e4dde89dc3215179da7c9fc5f3
-      size: 10496
+      md5: 29c480cd620183cdbf61ef958593da04
+      size: 11482
     - path: src/utils/logger.py
       hash: md5
       md5: 73106bb3de64f8ef8c097a990a6e2f49
@@ -106,12 +111,12 @@ stages:
       size: 499418
     - path: src/features/helpers/feature_utils.py
       hash: md5
-      md5: e0f9947d31fadd92c998640dda59a078
-      size: 6654
+      md5: f9730f34b1a910c7ba2aa8b3fb82d1a5
+      size: 6731
     - path: src/features/tfidf_max_features.py
       hash: md5
-      md5: d1457c0d782aa1dda22552619e7eeca4
-      size: 5847
+      md5: 9e5f311d620af1219c384420f98e3093
+      size: 5975
     - path: src/utils/logger.py
       hash: md5
       md5: 73106bb3de64f8ef8c097a990a6e2f49
@@ -133,8 +138,8 @@ stages:
       size: 353869
       nfiles: 10
   feature_engineering:
-    cmd: "uv run python -m src.features.feature_engineering  --use_bert False  --max_features
-      1000  --ngram_range (1,1)  --bert_batch_size 32\n"
+    cmd: "uv run python -m src.features.feature_engineering  --use_distilbert False\
+      \  --max_features 1000  --ngram_range (1,1)  --distilbert_batch_size 32\n"
     deps:
     - path: data/processed/test.parquet
       hash: md5
@@ -150,12 +155,12 @@ stages:
       size: 499418
     - path: src/features/feature_engineering.py
       hash: md5
-      md5: a7ce3798f261738dfc0c52446b697c93
-      size: 12447
+      md5: 2cbfcf59c71976dd668168998a733062
+      size: 12841
     - path: src/features/helpers/feature_utils.py
       hash: md5
-      md5: e0f9947d31fadd92c998640dda59a078
-      size: 6654
+      md5: f9730f34b1a910c7ba2aa8b3fb82d1a5
+      size: 6731
     - path: src/utils/logger.py
       hash: md5
       md5: 73106bb3de64f8ef8c097a990a6e2f49
@@ -166,14 +171,14 @@ stages:
       size: 2156
     params:
       params.yaml:
-        feature_engineering.bert_batch_size: 32
-        feature_engineering.use_bert: 'False'
+        feature_engineering.distilbert_batch_size: 32
+        feature_engineering.use_distilbert: 'False'
         imbalance_tuning.best_max_features: 1000
         imbalance_tuning.best_ngram_range: (1,1)
     outs:
     - path: models/features/
       hash: md5
-      md5: c06b7bafbeca9fb2488a1168dbd217cc.dir
+      md5: 6622650635efc6409ee45dde8b192cf5.dir
       size: 3053483
       nfiles: 8
   baseline_model:
@@ -231,6 +236,12 @@ stages:
       hash: md5
       md5: 7b2d73cb9e053c99e1e0296ee965bdff
       size: 2156
+    params:
+      params.yaml:
+        train.logistic_baseline.class_weight: balanced
+        train.logistic_baseline.max_iter: 2000
+        train.logistic_baseline.model_type: LogisticRegression
+        train.logistic_baseline.solver: liblinear
     outs:
     - path: models/baseline/baseline_metrics.json
       hash: md5
@@ -306,12 +317,12 @@ stages:
       size: 499418
     - path: src/features/helpers/feature_utils.py
       hash: md5
-      md5: e0f9947d31fadd92c998640dda59a078
-      size: 6654
+      md5: f9730f34b1a910c7ba2aa8b3fb82d1a5
+      size: 6731
     - path: src/features/imbalance_tuning.py
       hash: md5
-      md5: 8a3aa5508e5fa8e95c6bfd5169e495e1
-      size: 8507
+      md5: 68dbe27e8e227247c96101648c20e92d
+      size: 8638
     - path: src/utils/logger.py
       hash: md5
       md5: 73106bb3de64f8ef8c097a990a6e2f49
@@ -388,23 +399,23 @@ stages:
     cmd: uv run python -m src.models.model_evaluation --models lightgbm xgboost 
       logistic_baseline
     deps:
-    - path: models/advanced/bert_model.pkl
+    - path: models/advanced/distilbert_model.pkl
       hash: md5
       md5: d41d8cd98f00b204e9800998ecf8427e
       size: 0
-    - path: models/advanced/bert_results
+    - path: models/advanced/distilbert_results
       hash: md5
       md5: d751713988987e9331980363e24189ce.dir
       size: 0
       nfiles: 0
     - path: models/advanced/lightgbm_model.pkl
       hash: md5
-      md5: 5223d57229a87f4bd6f46387dc3173db
-      size: 1114992
+      md5: 6b7db60078a480bd58a65b0647cd3fad
+      size: 1008000
     - path: models/advanced/xgboost_model.pkl
       hash: md5
-      md5: 72f20730e3b0dac90a8cd9216f45f0d0
-      size: 1656628
+      md5: 311a18a184126b2ada01497aeadda877
+      size: 3102238
     - path: models/baseline/logistic_baseline.pkl
       hash: md5
       md5: 044600b82899fb34284a4867eecf3c7e
@@ -454,11 +465,11 @@ stages:
     outs:
     - path: models/advanced/evaluation/best_model_run_info.json
       hash: md5
-      md5: 5dfdd85932413e1e84194ff9f1fde277
-      size: 184
+      md5: e659b028074774f78d4ab5ff61b847c0
+      size: 185
     - path: models/advanced/evaluation/lightgbm_test_metrics.json
       hash: md5
-      md5: 92747aee099cee9f07275aa695bf1a90
+      md5: d84c918646cda2ea1c9eb0011de3fef8
       size: 90
     - path: models/advanced/evaluation/logistic_baseline_test_metrics.json
       hash: md5
@@ -466,20 +477,20 @@ stages:
       size: 90
     - path: models/advanced/evaluation/xgboost_test_metrics.json
       hash: md5
-      md5: 797402143174afb91b773e8e7721ca56
-      size: 88
+      md5: 5f8800d10385bf31863285718c42759f
+      size: 90
     - path: reports/figures/evaluation/comparative_roc_curve.png
       hash: md5
-      md5: 126a780df6fac9a14e4b048d74d453da
-      size: 89981
+      md5: 8c6aecd688f82cbf383e5d6dcd800881
+      size: 89772
     - path: reports/figures/evaluation/lightgbm_confusion_matrix.png
       hash: md5
-      md5: ee889e06f6177746e8c90a97605756cd
-      size: 31673
+      md5: a3587ad2cbe99adfe281c0f81bc31483
+      size: 31993
     - path: reports/figures/evaluation/xgboost_confusion_matrix.png
       hash: md5
-      md5: 5977b5f10e2091c723303fece99fee01
-      size: 31996
+      md5: 74747dfaf9b42bc39629a0039964eb92
+      size: 34123
   train_bert:
     cmd: uv run python -m src.models.bert_training
     deps:
@@ -610,20 +621,21 @@ stages:
       size: 4882
     params:
       params.yaml:
-        hyperparameter_tuning.lightgbm.n_trials: 30
+        train.hyperparameter_tuning.lightgbm:
+          n_trials: 30
     outs:
     - path: models/advanced/lightgbm_best_hyperparams.pkl
       hash: md5
-      md5: c473f2af3a9a66aa1f1f873a71db3dca
+      md5: a8ba4cd43d033aa0376d093a764488e1
       size: 152
     - path: models/advanced/lightgbm_metrics.json
       hash: md5
-      md5: 5fdec4ae46b3cb048be8413679fb434a
+      md5: 3018e2ce2fd4dd3addb218944d256299
       size: 44
     - path: models/advanced/lightgbm_model.pkl
       hash: md5
-      md5: 5223d57229a87f4bd6f46387dc3173db
-      size: 1114992
+      md5: 6b7db60078a480bd58a65b0647cd3fad
+      size: 1008000
   hyperparameter_tuning_xgboost:
     cmd: uv run python -m src.models.hyperparameter_tuning --model xgboost
     deps:
@@ -665,30 +677,31 @@ stages:
       size: 4882
     params:
       params.yaml:
-        hyperparameter_tuning.xgboost.n_trials: 30
+        train.hyperparameter_tuning.xgboost:
+          n_trials: 30
     outs:
     - path: models/advanced/xgboost_best_hyperparams.pkl
       hash: md5
-      md5: 998cb2f87c8a8bb48ea2220d2e62a56f
+      md5: d30d6d07035292adad40d11ef02eab04
       size: 152
     - path: models/advanced/xgboost_metrics.json
       hash: md5
-      md5: 774295e07f7d771e0a307f7977cd8bd5
+      md5: 7e8037fec39a5e591303da1284126811
       size: 44
     - path: models/advanced/xgboost_model.pkl
       hash: md5
-      md5: 72f20730e3b0dac90a8cd9216f45f0d0
-      size: 1656628
+      md5: 311a18a184126b2ada01497aeadda877
+      size: 3102238
   register_model:
     cmd: uv run python -m src.models.register_model
     deps:
     - path: models/advanced/evaluation/best_model_run_info.json
       hash: md5
-      md5: 5dfdd85932413e1e84194ff9f1fde277
-      size: 184
+      md5: e659b028074774f78d4ab5ff61b847c0
+      size: 185
     - path: models/advanced/evaluation/lightgbm_test_metrics.json
       hash: md5
-      md5: 92747aee099cee9f07275aa695bf1a90
+      md5: d84c918646cda2ea1c9eb0011de3fef8
       size: 90
     - path: models/advanced/evaluation/logistic_baseline_test_metrics.json
       hash: md5
@@ -696,8 +709,8 @@ stages:
       size: 90
     - path: models/advanced/evaluation/xgboost_test_metrics.json
       hash: md5
-      md5: 797402143174afb91b773e8e7721ca56
-      size: 88
+      md5: 5f8800d10385bf31863285718c42759f
+      size: 90
     - path: src/models/register_model.py
       hash: md5
       md5: ae2da260eaaee80371f3ec9f6be2d7d6
@@ -717,3 +730,65 @@ stages:
     params:
       params.yaml:
         register.f1_threshold: 0.75
+  train_distilbert:
+    cmd: uv run python -m src.models.distilbert_training
+    deps:
+    - path: data/processed/train.parquet
+      hash: md5
+      md5: ef9df44b106362663b835efdefe950c3
+      size: 2394224
+    - path: data/processed/val.parquet
+      hash: md5
+      md5: c55232be629f4fba0cdc3cce4329c594
+      size: 499418
+    - path: src/models/distilbert_training.py
+      hash: md5
+      md5: 300b3bdb990af7db0df3818009f0da2b
+      size: 7449
+    - path: src/models/helpers/data_loader.py
+      hash: md5
+      md5: 7a89b90d5c30a18dd6288af65d98984e
+      size: 4150
+    - path: src/models/helpers/train_utils.py
+      hash: md5
+      md5: 4faff6a55ee646192baff189b1fb276d
+      size: 4913
+    - path: src/utils/logger.py
+      hash: md5
+      md5: 73106bb3de64f8ef8c097a990a6e2f49
+      size: 2345
+    - path: src/utils/mlflow_config.py
+      hash: md5
+      md5: 80c4e94241c5d684a2e28ce2456005eb
+      size: 4882
+    - path: src/utils/paths.py
+      hash: md5
+      md5: 7b2d73cb9e053c99e1e0296ee965bdff
+      size: 2156
+    params:
+      params.yaml:
+        train.distilbert.batch_size:
+        - 8
+        - 16
+        - 32
+        train.distilbert.lr:
+        - 1e-05
+        - 5e-05
+        train.distilbert.n_trials: 20
+        train.distilbert.weight_decay:
+        - 0.001
+        - 0.1
+    outs:
+    - path: models/advanced/distilbert_metrics.json
+      hash: md5
+      md5: dc0d9ce7dab44784d6f81ab8636b646e
+      size: 22
+    - path: models/advanced/distilbert_model.pkl
+      hash: md5
+      md5: d41d8cd98f00b204e9800998ecf8427e
+      size: 0
+    - path: models/advanced/distilbert_results
+      hash: md5
+      md5: d751713988987e9331980363e24189ce.dir
+      size: 0
+      nfiles: 0
