@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>YouTube Sentiment ABSA</title>
+  <link rel="stylesheet" href="popup.css" />
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>YouTube Sentiment ABSA</h1>
+      <small id="video-status">No video detected</small>
+      <small id="videoId" style="display: none; color: var(--muted); font-style: italic;"></small>
+    </header>
+
+    <!-- ======================= -->
+    <!-- CONTROL SECTION -->
+    <!-- ======================= -->
+    <section class="controls">
+      <label for="numComments">Comments to analyze:</label>
+      <input id="numComments" type="number" min="10" max="1000" value="20" />
+      <button id="analyzeBtn">Analyze Comments</button>
+    </section>
+
+    <!-- ======================= -->
+    <!-- LOADING STATE -->
+    <!-- ======================= -->
+    <section id="loading" class="hidden">
+      <div class="spinner"></div>
+      <div id="loadingText">Analyzing comments...</div>
+    </section>
+
+    <!-- ======================= -->
+    <!-- RESULTS SECTION -->
+    <!-- ======================= -->
+    <section id="results" class="hidden">
+      <div id="absa-results">
+        <!-- ABSA results will be dynamically inserted here -->
+      </div>
+    </section>
+
+    <!-- ======================= -->
+    <!-- ERROR SECTION -->
+    <!-- ======================= -->
+    <section id="error" class="hidden error"></section>
+
+    <!-- ======================= -->
+    <!-- FOOTER -->
+    <!-- ======================= -->
+    <footer>
+      <small>Sentiment API: <span id="backendUrl">http://127.0.0.1:8000</span></small>
+    </footer>
+  </div>
+
+  <script src="popup.js" type="module"></script>
+</body>
+</html>
