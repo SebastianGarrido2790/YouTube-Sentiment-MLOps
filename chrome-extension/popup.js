@@ -7,7 +7,7 @@ import { fetchYouTubeComments } from "./youtube_api.js";
 // ========================
 // CONFIGURATION
 // ========================
-const API_KEY = "AIzaSyA3cnCtBOXx_6G8zvxm3Y-OFpjRWD7I_VU";  // Replace with your YouTube API key
+const API_KEY = "";  // Use your YouTube API key
 const INSIGHTS_URL = "http://127.0.0.1:8001";                   // Insights API base URL (port 8001)
 
 // ========================
