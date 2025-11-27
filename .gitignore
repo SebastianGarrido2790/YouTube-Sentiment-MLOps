@@ -113,6 +113,7 @@ venv.bak/
 # IDEs
 .idea/
 .vscode/
+YouTube_Sentiment_Analysis.code-workspace
 
 # mypy / pyre / pytype
 .mypy_cache/
