@@ -23,7 +23,7 @@ services:
       # NOTE: Removed mounts for /data, /models, /mlruns, /mlflow.db
       # The API must load the model from the MLflow Server, not the local file system.
     command: >
-      uv run uvicorn app.predict_model:app
+      uv run uvicorn app.main:app
       --host 0.0.0.0 --port 8000 --reload
     extra_hosts:
       - "host.docker.internal:host-gateway"

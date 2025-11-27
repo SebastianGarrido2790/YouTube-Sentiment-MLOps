@@ -39,4 +39,4 @@ ENV MLFLOW_TRACKING_URI=http://127.0.0.1:5000 \
     ENV=production
 
 # Default command (production mode)
-CMD ["uv", "run", "uvicorn", "app.predict_model:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["uv", "run", "uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
