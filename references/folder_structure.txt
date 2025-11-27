@@ -7,14 +7,24 @@ YouTube_Sentiment_Analysis
 ├── app
 │   ├── inference_utils.py
 │   ├── insights_api.py
+│   ├── predict_model_absa.py
 │   ├── predict_model.py
 │   └── test_inference.py
+│
 ├── chrome-extension
 │   ├── manifest.json
 │   ├── popup.css
 │   ├── popup.html
 │   ├── popup.js
 │   └── youtube_api.js
+│
+├── chrome-extension-absa
+│   ├── manifest.json
+│   ├── popup.css
+│   ├── popup.html
+│   ├── popup.js
+│   └── youtube_api.js
+│
 ├── data
 │   ├── external       <- Data from third-party sources.
 │   ├── interim        <- Intermediate data that has been transformed.
@@ -23,6 +33,7 @@ YouTube_Sentiment_Analysis
 │
 ├── docker        <- Docker configuration files.
 │   ├── .dockerignore
+│   ├── docker-compose.dev.yml
 │   ├── docker-compose.yml
 │   └── Dockerfile
 │
@@ -35,7 +46,6 @@ YouTube_Sentiment_Analysis
 │
 ├── mlartifacts
 ├── mlruns
-├── mlflow.db
 │
 ├── models             <- Trained and serialized models, model predictions, or model summaries.
 │   ├── advanced
@@ -57,7 +67,6 @@ YouTube_Sentiment_Analysis
 │   └── 1.0-initial-eda.ipynb
 │
 ├── references         <- Data dictionaries, manuals, and all other explanatory materials.
-│   ├── directory_creation.md
 │   ├── env_setup.md
 │   ├── folder_structure.txt
 │   ├── project_overview.md
@@ -66,20 +75,28 @@ YouTube_Sentiment_Analysis
 ├── reports            <- Generated analysis as HTML, PDF, LaTeX, etc.
 │   ├── docs           
 │   │   ├── chrome-extension.md
+│   │   ├── ci_cd_pipeline.md
 │   │   ├── data_splitting.md
-│   │   ├── docker.md
+│   │   ├── docker_setup.md
+│   │   ├── dvc_mlflow_integration.md
 │   │   ├── eda_findings.md
 │   │   ├── feature_engineering.md
-│   │   └── modeling.md
+│   │   ├── modeling.md
+│   │   └── reset_.venv.md
 │   └── figures        <- Generated graphics and figures to be used in reporting
 │       ├── .gitignore
 │       ├── .gitkeep
+│       ├── evaluation
 │       ├── imbalance_methods
 │       ├── tfidf_max_features
 │       └── YouTube_API
-│           ├── YouTube_API_1.png
-│           ├── YouTube_API_2.png
-│           └── YouTube_API_3.png
+│           ├── aspect_based_sentiment
+│           │   ├── YouTube_API_4.png
+│           │   └── YouTube_API_5.png
+│           └── sentiment_prediction
+│               ├── YouTube_API_1.png
+│               ├── YouTube_API_2.png
+│               └── YouTube_API_3.png
 │
 ├── src                <- Source code for use in this project.
 │   ├── __init__.py    <- Makes src a Python module
@@ -102,8 +119,9 @@ YouTube_Sentiment_Analysis
 │   ├── models         <- Scripts to train models and then use trained models to make predictions.
 │   │   ├── __init__.py
 │   │   ├── .gitkeep
+│   │   ├── absa_model.py
 │   │   ├── baseline_logistic.py
-│   │   ├── bert_training.py
+│   │   ├── distilbert_training.py
 │   │   ├── hyperparameter_tuning.py
 │   │   ├── model_evaluation.py
 │   │   ├── register_model.py
