@@ -1,5 +1,5 @@
 // ==========================================================
-// YouTube Sentiment Chrome Extension - Enhanced Insights
+// YouTube Sentiment Chrome Extension - Insights
 // ==========================================================
 
 import { fetchYouTubeComments } from "./youtube_api.js";
