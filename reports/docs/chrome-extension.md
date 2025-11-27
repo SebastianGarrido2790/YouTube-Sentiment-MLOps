@@ -1,51 +1,66 @@
-# Chrome Extension for YouTube Sentiment Analysis
+# Chrome Extensions for YouTube Sentiment Analysis
 
 ## 1. Overview
 
-The Chrome extension is the user-facing component of the YouTube Sentiment Analysis project. It provides a simple interface to analyze the sentiment of comments on any YouTube video in real-time. The extension extracts comments from the video page, sends them to our FastAPI backend for analysis, and then displays a summary of the sentiments (Positive, Neutral, Negative) along with a pie chart visualization.
+This project includes two user-facing Chrome extensions for real-time sentiment analysis of YouTube comments. Each extension provides a simple interface to analyze comments, but they target different levels of detail:
 
-This document provides a guide for setting up, running, and developing the Chrome extension.
+1.  **Standard Sentiment Analysis Extension:** Provides a high-level summary of sentiments (Positive, Neutral, Negative) for all comments.
+2.  **Aspect-Based Sentiment Analysis (ABSA) Extension:** Offers a more granular analysis by identifying sentiment towards specific topics or "aspects" (e.g., "video quality," "presenter") defined by the user.
 
-## 2. Core Components and Architecture
+This document provides a guide for setting up, running, and developing both extensions.
 
-The extension is built with vanilla JavaScript, HTML, and CSS to keep it lightweight and secure. It consists of the following core files located in the `chrome-extension/` directory:
+## 2. Available Extensions
 
--   `manifest.json`: The extension's manifest file (V3), which defines its permissions and components.
+### Standard Sentiment Analysis Extension (`chrome-extension/`)
+
+This extension gives a general overview of the sentiment expressed in the comments section. It's ideal for quickly gauging the overall community reaction to a video.
+
+-   **Functionality:** Extracts comments, sends them to the `/predict` endpoint, and visualizes the aggregated results (Positive, Neutral, Negative) in a pie chart.
+-   **Location:** `chrome-extension/`
+
+### Aspect-Based Sentiment Analysis (ABSA) Extension (`chrome-extension-absa/`)
+
+This advanced extension allows users to analyze sentiment with respect to specific features or topics mentioned in the comments. For example, you can check what users think about the "audio quality" or the "host" of a podcast.
+
+-   **Functionality:** Extracts comments, combines them into a single text block, and sends it to the `/predict_absa` endpoint along with a list of user-defined aspects. It then displays the sentiment for each aspect.
+-   **Location:** `chrome-extension-absa/`
+
+## 3. Core Components and Architecture
+
+Both extensions are built with vanilla JavaScript, HTML, and CSS to keep them lightweight and secure. They share an identical file structure:
+
+-   `manifest.json`: The extension's manifest file (V3), defining its permissions and components.
 -   `popup.html`: The HTML structure for the extension's popup UI.
 -   `popup.css`: The styles for the popup UI.
 -   `popup.js`: The main logic for the UI, including fetching comments and communicating with the backend.
--   `content_script.js`: A script that is injected into the YouTube video page to extract comments from the DOM.
--   `background.js`: A minimal service worker for future background tasks (optional for the current functionality).
+-   `youtube_api.js`: Contains a sample implementation for using the official YouTube Data API (currently not the primary method).
 
 ### Data Flow
 
-The extension's architecture follows a simple data flow:
+1.  The user clicks the "Analyze" button in the extension popup.
+2.  `popup.js` uses Chrome's scripting API to execute a function that scrapes comments from the page.
+3.  The scraped comments are sent to the appropriate FastAPI endpoint (`/predict` or `/predict_absa`).
+4.  The backend service returns the sentiment predictions.
+5.  `popup.js` receives the predictions and updates the UI to display the results.
 
-1.  The user clicks the "Analyze Comments" button in the extension popup.
-2.  `popup.js` sends a message to `content_script.js`.
-3.  `content_script.js` scrapes the comments from the current YouTube page and sends them back to `popup.js`.
-4.  `popup.js` sends the collected comments to the FastAPI `/predict` endpoint.
-5.  The backend service processes the comments and returns sentiment predictions.
-6.  `popup.js` receives the predictions and updates the UI to display the sentiment breakdown and pie chart.
+## 4. Local Development Setup
 
-## 3. Local Development Setup
-
-Follow these steps to set up and run the Chrome extension on your local machine for development.
+Follow these steps to set up and run the extensions on your local machine.
 
 ### Prerequisites
 
-The backend services (FastAPI and MLflow) must be running. You can start them using Docker Compose:
+The backend services must be running. You can start them using the appropriate prediction script (e.g., `predict_model_absa.py` which serves both endpoints):
 
 ```bash
-# Run this command from the project root directory
-docker compose -f docker/docker-compose.yml up --build -d
+# Ensure you are in the project root directory
+uv run python -m app.predict_model_absa
 ```
 
 ### Installation Steps
 
 1.  **Configure CORS in the Backend**
 
-    For the extension to be able to communicate with your local FastAPI server, you need to enable Cross-Origin Resource Sharing (CORS). Add the following middleware to `app/predict_model.py`:
+    For the extensions to communicate with your local server, you must enable Cross-Origin Resource Sharing (CORS) in your FastAPI application. Add the middleware to `app/predict_model_absa.py`:
 
     ```python
     from fastapi.middleware.cors import CORSMiddleware
@@ -60,45 +75,48 @@ docker compose -f docker/docker-compose.yml up --build -d
     )
     ```
 
-2.  **Add Placeholder Icons**
-
-    Chrome requires the icon files referenced in `manifest.json` to exist. Create an `icons` folder inside `chrome-extension/` and add placeholder PNG images (e.g., `icon16.png`, `icon48.png`, `icon128.png`).
-
-3.  **Load the Extension in Chrome**
+2.  **Load the Extensions in Chrome**
     -   Open Google Chrome and navigate to `chrome://extensions`.
     -   Enable "Developer mode" using the toggle in the top-right corner.
     -   Click the "Load unpacked" button.
-    -   Select the `chrome-extension` folder from this project.
+    -   **To load the standard extension:** Select the `chrome-extension` folder.
+    -   **To load the ABSA extension:** Click "Load unpacked" again and select the `chrome-extension-absa` folder.
 
-The extension should now be installed and visible in your Chrome toolbar.
+You should now see both extensions in your Chrome toolbar.
 
-## 4. How to Use
+## 5. How to Use
+
+### Standard Extension
 
 1.  Navigate to any YouTube video page with comments.
-2.  Click on the YouTube Sentiment Analysis extension icon in the Chrome toolbar.
+2.  Click on the standard extension icon.
 3.  Click the "Analyze Comments" button.
-4.  The extension will display the sentiment analysis results in the popup.
+4.  View the aggregated sentiment results in the pie chart.
 
-## 5. Development and Configuration
+### ABSA Extension
+
+1.  Navigate to any YouTube video page.
+2.  Click on the ABSA extension icon.
+3.  In the input field, enter the aspects you want to analyze, separated by commas (e.g., `video quality, presenter, audio`).
+4.  Click the "Analyze Aspects" button.
+5.  View the sentiment breakdown for each aspect.
+
+## 6. Development and Configuration
 
 ### Backend Endpoint
 
-The extension is configured to communicate with a backend running at `http://127.0.0.1:8000`. If you deploy the API to a different URL, you will need to update the `BACKEND_URL` constant in `popup.js` and the `host_permissions` in `manifest.json`.
+The extensions are configured to communicate with a backend at `http://127.0.0.1:8000`. This URL is defined in the respective `popup.js` files.
+
+-   **Standard Extension:** Communicates with the `/predict` endpoint.
+-   **ABSA Extension:** Communicates with the `/predict_absa` endpoint.
 
 ### API Contract
 
-The extension expects the `/predict` endpoint to accept a JSON payload with a `texts` field containing a list of comment strings:
-
-```json
-{
-  "texts": ["This is a great video!", "I did not like this."]
-}
-```
-
-The API should return a JSON object containing a `predictions` field with a list of sentiment labels.
+-   The `/predict` endpoint expects `{"texts": ["comment1", "comment2"]}`.
+-   The `/predict_absa` endpoint expects `{"text": "full comments text", "aspects": ["aspect1", "aspect2"]}`.
 
 ### Data Source (DOM Scraping vs. YouTube Data API)
 
-The current version of the extension **scrapes comments directly from the page's DOM**. This method is simple and does not require an API key.
+Both extensions currently **scrape comments directly from the page's DOM**. This method is simple and avoids the need for an API key.
 
-However, for a more robust and compliant solution, future development should consider using the official **YouTube Data API**. This would require obtaining an API key and managing quotas but would provide more reliable access to comments and other video metadata. The `youtube_api.js` file contains a sample implementation for this approach.
+For a more robust and compliant solution, future development could use the official **YouTube Data API**. This would provide more reliable access to comments. The `youtube_api.js` file in each extension directory contains a sample implementation for this approach.
