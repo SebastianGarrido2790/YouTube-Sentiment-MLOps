@@ -33,15 +33,15 @@ def load_champion_model_name():
     """
     Loads the champion model name from 'best_model_run_info.json' for dynamic MLflow loading.
 
-    Crucially, it prepends 'youtube_sentiment_' to the model name (e.g., 'xgboost'
-    becomes 'youtube_sentiment_xgboost') to match the name registered by
+    Crucially, it prepends 'youtube_sentiment_' to the model name (e.g., 'lightgbm'
+    becomes 'youtube_sentiment_lightgbm') to match the name registered by
     src.models.register_model.py.
 
     Returns the full dynamic model name or a hardcoded fallback if the file is not found.
     """
     info_path = EVAL_DIR / "best_model_run_info.json"
     # Fallback name matches the common name used by the registration script
-    default_model_name = "youtube_sentiment_xgboost"
+    default_model_name = "youtube_sentiment_lightgbm"
 
     if not info_path.exists():
         logger.warning(
@@ -52,7 +52,7 @@ def load_champion_model_name():
     try:
         with open(info_path, "r") as f:
             data = json.load(f)
-            model_base_name = data["model_name"]  # e.g., 'xgboost'
+            model_base_name = data["model_name"]  # e.g., 'lightgbm'
 
             # Apply the prefix to match the MLflow Registered Model name
             if not model_base_name.startswith("youtube_sentiment_"):
@@ -81,13 +81,13 @@ def load_production_model(alias_name: str = "Production") -> Any:
     file created during the 'model_evaluation' stage.
 
     MLflow Priority:
-        1. Dynamically retrieve the full model name (e.g., 'youtube_sentiment_xgboost').
+        1. Dynamically retrieve the full model name (e.g., 'youtube_sentiment_lightgbm').
         2. Try to load the model artifact from MLflow Model Registry using the
            retrieved name and the '@Production' alias.
 
     Local Fallback:
         If MLflow loading fails, fall back to loading the locally DVC-tracked
-        'xgboost_model.pkl'.
+        'lightgbm_model.pkl'.
 
     Returns:
         Any: The loaded model instance (mlflow.pyfunc.PyFuncModel or scikit-learn model).
@@ -96,7 +96,7 @@ def load_production_model(alias_name: str = "Production") -> Any:
         RuntimeError: If model loading fails from both sources.
     """
     # === STEP 1: Dynamically determine model_name ===
-    # This function will return the full name (e.g., 'youtube_sentiment_xgboost')
+    # This function will return the full name (e.g., 'youtube_sentiment_lightgbm')
     model_name = load_champion_model_name()
 
     # 1. Attempt MLflow Model Registry Load
@@ -118,14 +118,14 @@ def load_production_model(alias_name: str = "Production") -> Any:
     except Exception as e:
         # 2. Local Fallback Load
         # Updated to the expected champion model's local PKL file name
-        model_path = ADVANCED_DIR / "xgboost_model.pkl"
+        model_path = ADVANCED_DIR / "lightgbm_model.pkl"
 
         try:
             # Load the local model artifact
             model = joblib.load(model_path)
             logger.warning(
                 f"⚠️ MLflow registry unavailable or alias not found for **{model_name}**. | "
-                f"Loaded local XGBoost model from {model_path.relative_to(PROJECT_ROOT)}. | "
+                f"Loaded local LightGBM model from {model_path.relative_to(PROJECT_ROOT)}. | "
                 f"Original MLflow error: {e}"
             )
             return model
@@ -137,7 +137,7 @@ def load_production_model(alias_name: str = "Production") -> Any:
             )
             raise RuntimeError(
                 "Failed to load model from both MLflow and local filesystem. | "
-                "Ensure MLflow is running or 'xgboost_model.pkl' is DVC-pulled."
+                "Ensure MLflow is running or 'lightgbm_model.pkl' is DVC-pulled."
             )
 
 
