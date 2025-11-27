@@ -1,0 +1,21 @@
+services:
+  api-dev:
+    build:
+      context: .. # Moves context up to project root
+      dockerfile: docker/Dockerfile
+    container_name: youtube-sentiment-dev
+    ports:
+      - "8000:8000"
+    volumes:
+      # Sync local code to container for hot-reloading
+      - ../app:/app/app
+      - ../src:/app/src
+      # Mount models so you can drop in new .pkl files and test instantly
+      - ../models:/app/models
+    environment:
+      - ENV=development
+      - MLFLOW_TRACKING_URI=http://host.docker.internal:5000
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    # 'uv run uvicorn' to ensure the uvicorn executable is found within the uv environment.
+    command: uv run uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
