@@ -7,7 +7,7 @@ import { fetchYouTubeComments } from "./youtube_api.js";
 // ========================
 // CONFIGURATION
 // ========================
-const API_KEY = "AIzaSyA3cnCtBOXx_6G8zvxm3Y-OFpjRWD7I_VU"; // Replace with your YouTube API key
+const API_KEY = ""; // Use your YouTube API key
 const SENTIMENT_API_URL = "http://127.0.0.1:8000";
 const ASPECTS_TO_ANALYZE = ["video quality", "audio", "content", "presenter"];
 
