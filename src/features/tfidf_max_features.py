@@ -1,44 +1,73 @@
 """
-Tune TF-IDF max_features for sentiment feature engineering (unigrams).
+Tune TF-IDF max_features using DVC parameters.
 
-Loads processed data, varies max_features, trains RandomForest baselines, logs to MLflow,
-and saves artifacts/models using reusable helper functions.
+Loads processed data, iterates through a list of `max_features` values defined in
+`params.yaml`, trains a RandomForest baseline for each, and logs results to MLflow.
 
-Usage:
-    uv run python -m src.features.tfidf_max_features --max_features_values '[1000,2000,3000,4000,5000,6000,7000,8000,9000,10000]'
+Usage (DVC - preferred):
+    uv run dvc repro               # Uses params.yaml → fully reproducible
+    Run specific pipeline stage:
+    uv run dvc repro tfidf_max_features_tuning
+
+Usage (local cli override only):
+    uv run python -m src.features.tfidf_max_features --max_features_values '[500, 1000]'
 
 Requirements:
-    - Processed data in data/processed/.
-    - uv sync (for scikit-learn, mlflow).
-    - MLflow server running (e.g., uv run mlflow server --host 127.0.0.1 --port 5000).
+    - Parameters defined in params.yaml under `tfidf_max_features_tuning`.
+    - Processed data available in data/processed/.
+    - `uv sync` must be run for all dependencies.
+    - MLflow server must be running (e.g., uv run mlflow server --host 127.0.0.1 --port 5000).
 
-Design Considerations:
-- Reliability: Input validation, consistent splits.
-- Scalability: Sparse TF-IDF matrices.
-- Maintainability: Logging, type hints, relative paths.
-- Adaptability: Parameterized via args/params.yaml; extensible to other n-grams.
+Design:
+    - Parameters are read from params.yaml via dvc.api (single source of truth).
+    - CLI arguments are optional and only for quick local testing overrides.
+    - Reproducibility is prioritized by warning users about CLI overrides.
 """
 
 import argparse
-from typing import Tuple, Dict, Any
+from typing import Any, Dict, Tuple
+
+import dvc.api
 import mlflow
+from scipy.sparse import spmatrix  # For sparse matrix type hint
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.feature_extraction.text import TfidfVectorizer
-from scipy.sparse import spmatrix  # For sparse matrix type hint
 
 # --- Project Utilities ---
-from src.utils.paths import TFIDF_FIGURES_DIR
-from src.utils.logger import get_logger
-from src.utils.mlflow_config import get_mlflow_uri
-from src.models.helpers.mlflow_tracking_utils import setup_experiment
 from src.features.helpers.feature_utils import (
+    evaluate_and_log,
     load_train_val_data,
     parse_dvc_param,
-    evaluate_and_log,
 )
+from src.models.helpers.mlflow_tracking_utils import setup_experiment
+from src.utils.logger import get_logger
+from src.utils.mlflow_config import get_mlflow_uri
+from src.utils.paths import TFIDF_FIGURES_DIR
+
 
 # --- Logging Setup ---
 logger = get_logger(__name__, headline="tfidf_max_features.py")
+
+
+def load_params() -> Dict[str, Any]:
+    """
+    Load TF-IDF tuning parameters from params.yaml using DVC.
+    Falls back gracefully if running outside a DVC pipeline.
+    """
+    try:
+        logger.info("Loading params via dvc.api")
+        params = dvc.api.params_show()
+        # Assuming a new section for this specific tuning script
+        return params["tfidf_max_features_tuning"]
+    except Exception as e:
+        logger.warning(f"Could not load params via dvc.api: {e}")
+        logger.warning("Falling back to script defaults (only for local debugging).")
+        return {
+            "max_features_values": "[1000,2000,3000,4000,5000,6000,7000,8000,9000,10000]",
+            "ngram_range": "(1,1)",
+            "n_estimators": 200,
+            "max_depth": 15,
+        }
 
 
 def run_max_features_experiment(
@@ -94,7 +123,7 @@ def run_max_features_experiment(
         # 2. Define Params and Tags for Logging
         params: Dict[str, Any] = {
             "vectorizer": "TF-IDF",
-            "ngram_range": ngram_range,
+            "ngram_range": str(ngram_range),  # Log as string for consistency
             "max_features": max_features,
             "feature_dim": feature_dim,
             "n_estimators": n_estimators,
@@ -127,24 +156,56 @@ def run_max_features_experiment(
 
 
 def main() -> None:
-    """Parse args and run experiments."""
+    """Parse args and run experiments using DVC params as source of truth."""
+    # --- DVC/CLI Parameter Loading ---
+    params = load_params()
     parser = argparse.ArgumentParser(
-        description="Tune TF-IDF max_features using RandomForest baseline with MLflow tracking."
+        description="Tune TF-IDF max_features. Params from params.yaml by default."
     )
+
+    # Define arguments for optional CLI overrides
     parser.add_argument(
         "--max_features_values",
         type=str,
-        default="[1000,2000,3000,4000,5000,6000,7000,8000,9000,10000]",
-        help="Max features values as string list.",
+        required=False,
+        help="Override max_features_values from params.yaml.",
     )
     parser.add_argument(
-        "--ngram_range", type=str, default="(1,1)", help="N-gram range as string tuple."
+        "--ngram_range",
+        type=str,
+        required=False,
+        help="Override ngram_range from params.yaml.",
     )
     parser.add_argument(
-        "--n_estimators", type=int, default=200, help="RF n_estimators."
+        "--n_estimators",
+        type=int,
+        required=False,
+        help="Override n_estimators from params.yaml.",
     )
-    parser.add_argument("--max_depth", type=int, default=15, help="RF max_depth.")
+    parser.add_argument(
+        "--max_depth",
+        type=int,
+        required=False,
+        help="Override max_depth from params.yaml.",
+    )
     args = parser.parse_args()
+
+    # --- Consolidate Parameters (CLI overrides DVC) ---
+    final_params = {}
+    overridden_keys = []
+    for key, default_val in params.items():
+        cli_val = getattr(args, key, None)
+        if cli_val is not None:
+            final_params[key] = cli_val
+            overridden_keys.append(key)
+        else:
+            final_params[key] = default_val
+
+    if overridden_keys:
+        logger.warning(
+            "CLI overrides detected for: %s. This run may not be reproducible with 'dvc repro'.",
+            ", ".join(overridden_keys),
+        )
 
     # --- MLflow Setup ---
     mlflow_uri = get_mlflow_uri()
@@ -152,10 +213,12 @@ def main() -> None:
 
     # --- Parameter Parsing ---
     max_features_values = parse_dvc_param(
-        args.max_features_values, name="max_features_values", expected_type=list
+        final_params["max_features_values"],
+        name="max_features_values",
+        expected_type=list,
     )
     ngram_range = parse_dvc_param(
-        args.ngram_range, name="ngram_range", expected_type=tuple
+        final_params["ngram_range"], name="ngram_range", expected_type=tuple
     )
 
     logger.info(
@@ -166,8 +229,8 @@ def main() -> None:
         run_max_features_experiment(
             max_features=max_features,
             ngram_range=ngram_range,
-            n_estimators=args.n_estimators,
-            max_depth=args.max_depth,
+            n_estimators=final_params["n_estimators"],
+            max_depth=final_params["max_depth"],
         )
 
     logger.info("--- Max features tuning complete. Analyze results in MLflow UI ---")

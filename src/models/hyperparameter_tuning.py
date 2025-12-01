@@ -1,55 +1,68 @@
 """
-Centralized Hyperparameter Optimization Script using Optuna.
+Centralized Hyperparameter Optimization Script using Optuna (DVC-Aware).
 
 This script provides a framework for running hyperparameter tuning for different models.
 It is designed to be adaptable and can be extended to support various models like LightGBM, XGBoost, etc.
 
-- Reads model and search space configuration from params.yaml.
+- Reads model and search space configuration from params.yaml via DVC.
 - Logs experiments to MLflow.
 - Saves best hyperparameters and metrics for DVC tracking.
 
-Usage:
-    uv run python -m src.models.hyperparameter_tuning --model [lightgbm|xgboost]
+Usage (DVC - preferred):
+    uv run dvc repro
+    Run specific pipeline stage:
+    uv run dvc repro hyperparameter_tuning
+
+Usage (local cli override only)
+    uv run python -m src.models.hyperparameter_tuning --model lightgbm --n_trials 10
+
+Requirements:
+    - Processed features in models/features/.
+    - Parameters defined in params.yaml under `train.hyperparameter_tuning`.
+    - MLflow server running.
+
+Note: To run hyperparameter tuning for a specific model, specify the model name using the `--model` argument.
 
 Design Considerations:
-- Adaptability: Can be configured to tune different models by specifying the model name.
-- Maintainability: Centralizes the tuning logic, reducing code duplication.
-- Reproducibility: Logs all trials to MLflow and saves the best results.
+    - Adaptability: Can be configured to tune different models by specifying the model name.
+    - Maintainability: Centralizes the tuning logic, reducing code duplication.
+    - Reproducibility: Logs all trials to MLflow and saves the best results.
+    - Adaptability: Easily extendable to include more models in the future.
 """
 
 import argparse
-import optuna
+from typing import Any, Dict
+
+import dvc.api
+import lightgbm as lgb
 import mlflow
-import yaml
+import numpy as np
+import optuna
+import xgboost as xgb
 from sklearn.metrics import f1_score
 
 # --- Project Utilities ---
-from src.utils.logger import get_logger
-from src.utils.mlflow_config import get_mlflow_uri
-from src.utils.paths import PROJECT_ROOT
-from src.models.helpers.data_loader import load_feature_data, apply_adasyn
+from src.models.helpers.data_loader import apply_adasyn, load_feature_data
+from src.models.helpers.mlflow_tracking_utils import setup_experiment
 from src.models.helpers.train_utils import (
     save_hyperparams_bundle,
-    save_model_object,
     save_metrics_json,
+    save_model_object,
 )
-from src.models.helpers.mlflow_tracking_utils import setup_experiment
-
-# --- Model Specific Imports ---
-import lightgbm as lgb
-import xgboost as xgb
-import numpy as np
+from src.utils.logger import get_logger
+from src.utils.mlflow_config import get_mlflow_uri
 
 logger = get_logger(__name__, headline="hyperparameter_tuning.py")
 
 
-def load_params():
-    """Load project configuration parameters."""
-    params_path = PROJECT_ROOT / "params.yaml"
-    if not params_path.exists():
-        raise FileNotFoundError(f"params.yaml not found at {params_path}")
-    with open(params_path, "r") as f:
-        return yaml.safe_load(f)
+def load_params() -> Dict[str, Any]:
+    """Load project configuration parameters using DVC."""
+    try:
+        logger.info("Loading params via dvc.api")
+        return dvc.api.params_show()
+    except Exception as e:
+        logger.error(f"Failed to load params via dvc.api: {e}")
+        raise
 
 
 def get_objective(model_name: str):
@@ -60,7 +73,6 @@ def get_objective(model_name: str):
         return lightgbm_objective
     elif model_name == "xgboost":
         return xgboost_objective
-    # Add other models here
     else:
         raise ValueError(
             f"Model '{model_name}' is not supported for hyperparameter tuning."
@@ -149,9 +161,14 @@ if __name__ == "__main__":
     model_name = args.model
     logger.info(f"🚀 Starting hyperparameter tuning for {model_name.upper()}...")
 
+    # Load parameters via DVC
     params = load_params()
-    tuning_params = params.get("hyperparameter_tuning", {}).get(model_name, {})
+    # Navigate the nested structure: train -> hyperparameter_tuning -> [model_name]
+    tuning_params = (
+        params.get("train", {}).get("hyperparameter_tuning", {}).get(model_name, {})
+    )
     n_trials = tuning_params.get("n_trials", 20)
+    logger.info(f"Running {n_trials} trials for {model_name}...")
 
     # --- Setup MLflow Experiment ---
     mlflow_uri = get_mlflow_uri()
@@ -182,8 +199,6 @@ if __name__ == "__main__":
             )
         elif model_name == "xgboost":
             # --- Merge static params with best_params ---
-            # best_params only contains tuned values. We must re-add
-            # the objective and other static params for correct retraining.
             static_params = {
                 "objective": "multi:softprob",
                 "num_class": 3,
@@ -192,7 +207,6 @@ if __name__ == "__main__":
             final_params = {**static_params, **best_params}
 
             # Pop 'n_estimators' as it's passed as 'num_boost_round'
-            # This also fixes the "Parameters: { n_estimators } are not used" warning.
             num_boost_round = final_params.pop("n_estimators", 100)
 
             dtrain = xgb.DMatrix(X_res, label=y_res)

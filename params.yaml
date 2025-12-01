@@ -8,9 +8,12 @@ data_preparation:
 
 feature_comparison:
   mlflow_uri: http://127.0.0.1:5000  # Local for testing, change to EC2 IP later
-  ngram_ranges: '[(1,1),(1,2),(1,3)]'
+  ngram_ranges:  # Native YAML list
+    - [1, 1]
+    - [1, 2]
+    - [1, 3]
   max_features: 5000
-  use_distilbert: true  # Whether to include DistilBERT in comparison
+  use_distilbert: false  # Whether to include DistilBERT in comparison
   batch_size: 32
   n_estimators: 200
   max_depth: 15
@@ -47,7 +50,7 @@ train:
       n_trials: 30
 
   distilbert:
-    enable: false  # 👈 Flag to control whether DistilBERT is trained
+    enable: false  # Flag to control whether DistilBERT is trained
     n_trials: 20
     batch_size: [8, 16, 32]
     lr: [1e-5, 5e-5]

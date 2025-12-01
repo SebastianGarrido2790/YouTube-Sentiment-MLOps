@@ -1,5 +1,5 @@
 """
-Automated Model Registration Script.
+Automated Model Registration Script (DVC-Aware).
 
 This module reads the champion model information (selected during the
 'model_evaluation' stage) from 'best_model_run_info.json'.
@@ -7,25 +7,37 @@ This module reads the champion model information (selected during the
 It then:
 1.  Loads the champion's 'run_id' and 'model_name'.
 2.  Loads the champion's corresponding test metrics (e.g., 'lightgbm_test_metrics.json').
-3.  Loads the 'f1_threshold' from 'params.yaml'.
+3.  Loads the 'f1_threshold' from 'params.yaml' using DVC.
 4.  Checks if the champion's F1 score meets the threshold.
 5.  If it passes, registers the model in the MLflow Model Registry.
 6.  Handles modern (tag-based) and legacy (stage-based) MLflow registry workflows.
 
-Usage:
-    uv run python -m src.models.register_model
+Usage (DVC - Preferred):
+    uv run dvc repro
+    Run specific pipeline stage:
+    uv run dvc repro register_model
+
+Usage (local cli override only)
+    uv run python -m src.models.register_model --f1_threshold 0.70
+
+Requirements:
+    - 'best_model_run_info.json' created by 'model_evaluation' stage.
+    - Corresponding test metrics JSON files in 'models/evaluation/'.
+    - Parameters defined in 'params.yaml' under `register.f1_threshold`.
+    - MLflow server running.
 """
 
 import json
-import yaml
-from packaging import version
+
+import dvc.api
 import mlflow
 from mlflow.tracking import MlflowClient
+from packaging import version
 
 # --- Project Utilities ---
-from src.utils.paths import EVAL_DIR, PROJECT_ROOT
 from src.utils.logger import get_logger
 from src.utils.mlflow_config import get_mlflow_uri
+from src.utils.paths import EVAL_DIR
 
 logger = get_logger(__name__, headline="register_model.py")
 
@@ -168,13 +180,9 @@ def main():
     logger.info("🚀 Starting automated model registration workflow...")
 
     try:
-        # --- 1. Load params to get F1 threshold ---
-        params_path = PROJECT_ROOT / "params.yaml"
-        if not params_path.exists():
-            raise FileNotFoundError(f"params.yaml not found at {params_path}")
-
-        with open(params_path, "r") as f:
-            params = yaml.safe_load(f)
+        # --- 1. Load params to get F1 threshold via DVC ---
+        logger.info("Loading params via dvc.api")
+        params = dvc.api.params_show()
         f1_threshold = params.get("register", {}).get("f1_threshold", 0.75)
         logger.info(f"Using F1 threshold for registration: {f1_threshold}")
 
