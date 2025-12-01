@@ -4,39 +4,58 @@ Prepare a processed dataset from raw Reddit data.
 Loads raw CSV, cleans text, engineers labels, performs stratified train/val/test split,
 and saves Parquet files to data/processed/.
 
-Usage:
-    uv run python -m src.data.make_dataset --test_size 0.15 --random_state 42
+Usage (preferred):
+    uv run dvc repro                 # Uses params.yaml → fully reproducible
+    Run specific pipeline stage:
+    uv run dvc repro data_preparation
+
+Usage (local cli override only):
+    uv run python -m src.data.make_dataset --test_size 0.20
 
 Requirements:
     - Raw data at data/raw/reddit_comments.csv (from download_dataset.py).
     - uv sync (for pandas, scikit-learn, nltk).
 
-Design Considerations:
-- Reliability: Input validation, NaN handling, post-split integrity checks.
-- Scalability: Parquet for efficient I/O; vectorized pandas operations.
-- Maintainability: Logging, type hints, modular functions; paths relative to script.
-- Adaptability: Parameterized splits; extensible cleaning (e.g., add lemmatization).
+Design:
+    - Parameters are read from params.yaml via dvc.api
+    - CLI args are optional and only override for quick local testing
+    - All runs are reproducible when using DVC
 """
 
 import argparse
-from typing import Optional
+from typing import Optional, Dict, Any
 import pandas as pd
 import re
 from sklearn.model_selection import train_test_split
 import nltk
 from nltk.corpus import stopwords
 from nltk.tokenize import word_tokenize
+import dvc.api
 
 # --- Project Utilities ---
-from src.utils.paths import RAW_PATH, TRAIN_PATH, VAL_PATH, TEST_PATH
+from src.utils.paths import RAW_PATH, TRAIN_PATH, VAL_PATH, TEST_PATH, PROJECT_ROOT
 from src.utils.logger import get_logger
 
 # --- Logging Setup ---
 logger = get_logger(__name__, headline="make_dataset.py")
 
-# --- NLTK Setup ---
-nltk.download("punkt_tab", quiet=True)
-nltk.download("stopwords", quiet=True)
+
+def load_params() -> Dict[str, Any]:
+    """
+    Load parameters from params.yaml using DVC.
+    Falls back gracefully if running outside DVC (e.g., Jupyter).
+    """
+    try:
+        logger.info("Loading params via dvc.api")
+        params = dvc.api.params_show()
+        return params["data_preparation"]
+    except Exception as e:
+        logger.warning(f"Could not load params via dvc.api: {e}")
+        logger.warning("Falling back to defaults (only for local debugging).")
+        return {
+            "test_size": 0.15,
+            "random_state": 42,
+        }
 
 
 def clean_text(text: str, stop_words: Optional[set] = None) -> str:
@@ -63,7 +82,7 @@ def clean_text(text: str, stop_words: Optional[set] = None) -> str:
     return text
 
 
-def prepare_reddit_dataset(test_size: float = 0.15, random_state: int = 42) -> None:
+def prepare_reddit_dataset(test_size: float, random_state: int) -> None:
     """
     Orchestrate data preparation.
 
@@ -71,13 +90,16 @@ def prepare_reddit_dataset(test_size: float = 0.15, random_state: int = 42) -> N
         test_size (float): Fraction for test split.
         random_state (int): Seed for reproducibility.
     """
+    logger.info("Starting dataset preparation...")
+    logger.info(f"Using test_size={test_size}, random_state={random_state}")
 
     if not RAW_PATH.exists():
         raise FileNotFoundError(
-            f"Raw data missing: {RAW_PATH}. Run data ingestion first."
+            f"Raw data missing: {RAW_PATH.relative_to(PROJECT_ROOT)}. Run 'dvc repro data_ingestion' first."
         )
 
     # Load and initial validation
+    logger.info(f"Loading raw data from {RAW_PATH.relative_to(PROJECT_ROOT)}")
     df = pd.read_csv(RAW_PATH)
     if df.empty or "clean_comment" not in df.columns or "category" not in df.columns:
         raise ValueError("Invalid raw data structure.")
@@ -113,6 +135,11 @@ def prepare_reddit_dataset(test_size: float = 0.15, random_state: int = 42) -> N
     train_val, test = train_test_split(
         df, test_size=test_size, random_state=random_state, stratify=df["category"]
     )
+    # Calculate the proportion of the remaining data (train_val) to be used
+    # validation set, ensuring that the overall validation set size relative
+    # the original dataset matches the desired 'test_size'.
+    # Example: If test_size=0.15, then 15% of data is for test, 85% for train_val.
+    # To get 15% of the *original* data for validation, we need 0.15 / 0.85 train_val.
     val_size = test_size / (1 - test_size)  # ~0.1765 for 15% val from 85%
     train, val = train_test_split(
         train_val,
@@ -142,18 +169,49 @@ def prepare_reddit_dataset(test_size: float = 0.15, random_state: int = 42) -> N
 
 
 def main() -> None:
-    """Parse args and run preparation."""
-    parser = argparse.ArgumentParser(description="Prepare processed dataset.")
-    parser.add_argument(
-        "--test_size", type=float, default=0.15, help="Test split fraction."
+    """Entry point with optional CLI override."""
+    # Ensure NLTK data is available
+    logger.info("Downloading NLTK data (if not already present)...")
+    nltk.download("punkt_tab", quiet=True)
+    nltk.download("stopwords", quiet=True)
+    logger.info("NLTK data download complete.")
+
+    # Load parameters from params.yaml via DVC
+    params = load_params()
+    default_test_size = params["test_size"]
+    default_random_state = params.get("random_state", 42)
+
+    parser = argparse.ArgumentParser(
+        description="Prepare processed dataset. Parameters come from params.yaml by default."
     )
-    parser.add_argument("--random_state", type=int, default=42, help="Random seed.")
+    parser.add_argument(
+        "--test_size",
+        type=float,
+        required=False,
+        help=f"Test split fraction (default: {default_test_size} from params.yaml)",
+    )
+    parser.add_argument(
+        "--random_state",
+        type=int,
+        default=default_random_state,
+        help=f"Random seed (default: {default_random_state})",
+    )
+
     args = parser.parse_args()
 
-    logger.info(
-        f"--- Preparing dataset with test_size={args.test_size} and random_state={args.random_state} ---"
+    # Use CLI override only if provided
+    final_test_size = (
+        args.test_size if args.test_size is not None else default_test_size
     )
-    prepare_reddit_dataset(args.test_size, args.random_state)
+    final_random_state = args.random_state
+
+    if args.test_size is not None:
+        logger.warning(
+            f"CLI override detected: test_size={final_test_size} "
+            "(this run will NOT be reproducible with 'dvc repro' unless params.yaml is updated)"
+        )
+
+    prepare_reddit_dataset(final_test_size, final_random_state)
 
 
 if __name__ == "__main__":

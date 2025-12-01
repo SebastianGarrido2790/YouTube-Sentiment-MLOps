@@ -1,54 +1,77 @@
 """
-Comparative Model Evaluation Script.
+Comparative Model Evaluation Script (DVC-Aware).
 
 Evaluates a list of "champion" models (e.g., LightGBM, XGBoost) on the
 independent test set using their best hyperparameters (as saved model artifacts).
 
-This script is designed for scalability and can evaluate any number of models
-passed via the command line.
+This script is designed for scalability and can evaluate any number of models.
+It prioritizes parameters defined in `params.yaml` via DVC but allows for
+local CLI overrides.
 
 It logs to MLflow in a structured way:
 - A single Parent Run for the comparison.
 - A Child Run for each model, containing its specific metrics and artifacts.
 - A comparative ROC curve artifact logged to the Parent Run.
 
-Usage:
-    uv run python -m src.models.model_evaluation --models lightgbm xgboost logistic_baseline
+Usage (DVC - Preferred):
+    uv run dvc repro
+    Run specific pipeline stage:
+    uv run dvc repro model_evaluation
+
+Usage (local cli override only)
+    uv run python -m src.models.model_evaluation --models lightgbm xgboost
+
+Requirements:
+    - Processed features in models/features/.
+    - Parameters defined in params.yaml under `model_evaluation`.
+    - MLflow server running.
+
+Design Considerations:
+- Scalability: Easily add more models to evaluate via params.yaml or CLI.
+- Maintainability: Centralized evaluation logic reduces duplication.
+- Reproducibility: Logs all evaluations to MLflow with clear parent-child structure.
+- Adaptability: Can handle different model types and evaluation metrics.
 """
 
 import argparse
 import pickle
-import numpy as np
-import matplotlib.pyplot as plt
 from itertools import cycle
+from typing import Any, Dict, List
 
-# --- ML/Scikit-learn Imports ---
+import dvc.api
+import matplotlib.pyplot as plt
 import mlflow
 import mlflow.lightgbm
 import mlflow.xgboost
+import numpy as np
 import xgboost as xgb
 from sklearn.metrics import (
+    auc,
     classification_report,
     confusion_matrix,
-    roc_curve,
-    auc,
     roc_auc_score,
+    roc_curve,
 )
 from sklearn.preprocessing import LabelBinarizer
 
 # --- Project Utilities ---
-from src.utils.paths import ADVANCED_DIR, EVAL_FIG_DIR, PROJECT_ROOT, BASELINE_MODEL_DIR
+from src.models.helpers.data_loader import load_feature_data
+from src.models.helpers.mlflow_tracking_utils import (
+    log_confusion_matrix_as_artifact,
+    log_metrics_to_mlflow,
+    setup_experiment,
+)
+from src.models.helpers.train_utils import (
+    save_best_model_run_info,
+    save_test_metrics_json,
+)
 from src.utils.logger import get_logger
 from src.utils.mlflow_config import get_mlflow_uri
-from src.models.helpers.data_loader import load_feature_data
-from src.models.helpers.train_utils import (
-    save_test_metrics_json,
-    save_best_model_run_info,
-)
-from src.models.helpers.mlflow_tracking_utils import (
-    setup_experiment,
-    log_metrics_to_mlflow,
-    log_confusion_matrix_as_artifact,
+from src.utils.paths import (
+    ADVANCED_DIR,
+    BASELINE_MODEL_DIR,
+    EVAL_FIG_DIR,
+    PROJECT_ROOT,
 )
 
 # --- Configuration ---
@@ -61,6 +84,19 @@ logger = get_logger(__name__, headline="model_evaluation.py")
 # =====================================================================
 #  Core Helper Functions
 # =====================================================================
+def load_params() -> Dict[str, Any]:
+    """Load project configuration parameters using DVC."""
+    try:
+        logger.info("Loading params via dvc.api")
+        return dvc.api.params_show()
+    except Exception as e:
+        logger.error(f"Failed to load params via dvc.api: {e}")
+        # Fallback for purely local/debug runs without DVC context
+        return {
+            "model_evaluation": {"models": ["lightgbm", "xgboost", "logistic_baseline"]}
+        }
+
+
 def load_model_artifact(model_name: str):
     """
     Loads the trained model artifact from the correct directory.
@@ -102,8 +138,12 @@ def load_model_artifact(model_name: str):
             logger.error(f"Baseline model file not found at: {filepath}")
             raise
 
-    elif model_name in ["lightgbm", "xgboost"]:
+    elif model_name in ["lightgbm", "xgboost", "distilbert"]:
         # 2. Advanced models are saved directly as the model object
+        # Note: DistilBERT loading here assumes a pickle artifact, but typically it uses
+        # a directory structure. If DistilBERT is added to evaluation, specific logic
+        # for loading from 'distilbert_results' might be needed or we pickle the wrapper.
+        # For now, we assume standard pickle loading for consistency with the training script.
         filepath = ADVANCED_DIR / f"{model_name}_model.pkl"
         logger.info(
             f"Loading advanced model artifact from: {filepath.relative_to(PROJECT_ROOT)}"
@@ -120,7 +160,7 @@ def load_model_artifact(model_name: str):
 
     else:
         raise ValueError(
-            f"Unknown model name: {model_name}. Must be 'lightgbm', 'xgboost', or 'logistic_baseline'."
+            f"Unknown model name: {model_name}. Must be 'lightgbm', 'xgboost', 'distilbert', or 'logistic_baseline'."
         )
 
 
@@ -139,6 +179,19 @@ def evaluate_model(model, X_test, y_test):
             dtest = xgb.DMatrix(X_test, label=y_test)
             y_pred_proba = model.predict(dtest)
             y_pred = np.argmax(y_pred_proba, axis=1)
+        elif "transformers" in str(type(model)) or "DistilBert" in str(type(model)):
+            # Placeholder for DistilBERT evaluation logic if integrated directly
+            # Typically requires tokenized input, not just X_test features.
+            # For this script, we assume X_test are numerical features.
+            # If DistilBERT is evaluated here, X_test needs to be handled differently
+            # or this function needs to delegate.
+            logger.warning(
+                "DistilBERT evaluation via this script requires compatible input features."
+            )
+            # Raising error to prevent misleading results if not properly implemented
+            raise NotImplementedError(
+                "Direct DistilBERT evaluation not yet implemented in this general evaluator."
+            )
         else:
             # Fallback for standard sklearn-compatible APIs
             logger.warning(f"Unknown model type: {type(model)}. Assuming sklearn API.")
@@ -246,7 +299,7 @@ def log_model_to_mlflow(model, model_name: str):
 # =====================================================================
 #  Main Execution
 # =====================================================================
-def main(model_list: list):
+def main(model_list: List[str]):
     # --- Setup MLflow ---
     mlflow_uri = get_mlflow_uri()
     setup_experiment(EXPERIMENT_NAME, mlflow_uri)
@@ -383,13 +436,35 @@ def main(model_list: list):
 
 
 if __name__ == "__main__":
+    # 1. Load parameters from DVC
+    params = load_params()
+    default_models = params.get("model_evaluation", {}).get("models", [])
+
+    # 2. Parse CLI args (optional overrides)
     parser = argparse.ArgumentParser(description="Comparative Model Evaluation Script")
     parser.add_argument(
         "--models",
         nargs="+",  # Accepts one or more model names
-        required=True,
-        help="List of model names to evaluate (e.g., lightgbm xgboost).",
+        required=False,  # Optional now
+        help="List of model names to evaluate (e.g., lightgbm xgboost). Overrides params.yaml.",
     )
     args = parser.parse_args()
 
-    main(model_list=args.models)
+    # 3. Determine final model list
+    if args.models:
+        model_list = args.models
+        logger.warning(
+            f"CLI override detected: Evaluating models provided via CLI ({model_list}). "
+            "This run may not be fully reproducible via 'dvc repro'."
+        )
+    elif default_models:
+        model_list = default_models
+        logger.info(f"Using model list from params.yaml: {model_list}")
+    else:
+        # Fallback default if neither is provided
+        model_list = ["lightgbm", "xgboost", "logistic_baseline"]
+        logger.warning(
+            f"No models found in params.yaml or CLI. Using hardcoded defaults: {model_list}"
+        )
+
+    main(model_list=model_list)

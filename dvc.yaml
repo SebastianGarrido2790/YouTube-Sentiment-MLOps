@@ -1,9 +1,6 @@
 stages:
   data_ingestion:
-    cmd: >
-      uv run python -m src.data.download_dataset
-      --url ${data_ingestion.url} 
-      --output_path ${data_ingestion.output_path}
+    cmd: uv run python -m src.data.download_dataset
     deps:
       - src/data/download_dataset.py
       - src/utils/logger.py
@@ -15,10 +12,7 @@ stages:
       - data/raw/reddit_comments.csv
 
   data_preparation:
-    cmd: >
-      uv run python -m src.data.make_dataset 
-      --test_size ${data_preparation.test_size} 
-      --random_state ${data_preparation.random_state}
+    cmd: uv run python -m src.data.make_dataset
     deps:
       - data/raw/reddit_comments.csv
       - src/data/make_dataset.py
@@ -34,14 +28,7 @@ stages:
 
   # Transient processing stage for feature comparison (no outs)
   feature_comparison:
-    cmd: >
-      uv run python -m src.features.tfidf_vs_distilbert
-      --ngram_ranges ${feature_comparison.ngram_ranges}
-      --max_features ${feature_comparison.max_features}
-      --batch_size ${feature_comparison.batch_size}
-      --n_estimators ${feature_comparison.n_estimators}
-      --max_depth ${feature_comparison.max_depth}
-      --use_distilbert ${feature_comparison.use_distilbert}
+    cmd: uv run python -m src.features.tfidf_vs_distilbert
     deps:
       - data/processed/train.parquet
       - data/processed/val.parquet
@@ -57,12 +44,7 @@ stages:
       - feature_comparison.max_depth
 
   feature_tuning:
-    cmd: >
-      uv run python -m src.features.tfidf_max_features 
-      --max_features_values ${feature_tuning.max_features_values} 
-      --ngram_range ${feature_tuning.best_ngram_range} 
-      --n_estimators ${feature_tuning.n_estimators} 
-      --max_depth ${feature_tuning.max_depth}
+    cmd: uv run python -m src.features.tfidf_max_features
     deps:
       - data/processed/train.parquet
       - data/processed/val.parquet
@@ -80,13 +62,7 @@ stages:
 
   imbalance_tuning:
     # Notice the quotes around imbalance_methods. This ensures DVC passes the entire list string correctly to Python.
-    cmd: >
-      uv run python -m src.features.imbalance_tuning 
-      --imbalance_methods "${imbalance_tuning.imbalance_methods}" 
-      --max_features ${imbalance_tuning.best_max_features} 
-      --ngram_range ${imbalance_tuning.best_ngram_range} 
-      --n_estimators ${imbalance_tuning.rf_n_estimators} 
-      --max_depth ${imbalance_tuning.rf_max_depth}
+    cmd: uv run python -m src.features.imbalance_tuning
     deps:
     - data/processed/train.parquet
     - data/processed/val.parquet
@@ -104,12 +80,7 @@ stages:
     - reports/figures/imbalance_methods/
 
   feature_engineering:
-    cmd: >
-      uv run python -m src.features.feature_engineering 
-      --use_distilbert ${feature_engineering.use_distilbert} 
-      --max_features ${imbalance_tuning.best_max_features} 
-      --ngram_range ${imbalance_tuning.best_ngram_range} 
-      --distilbert_batch_size ${feature_engineering.distilbert_batch_size}
+    cmd: uv run python -m src.features.feature_engineering
     deps:
       - data/processed/train.parquet
       - data/processed/val.parquet

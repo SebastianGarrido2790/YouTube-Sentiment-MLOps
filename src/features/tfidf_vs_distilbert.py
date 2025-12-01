@@ -1,49 +1,79 @@
 """
-Compare TF-IDF vs. DistilBERT embeddings for sentiment feature engineering.
+Compare TF-IDF vs. DistilBERT embeddings using DVC parameters.
 
-Loads processed data, generates embeddings, trains RandomForest baselines, logs to MLflow.
-Tracks multiple TF-IDF n-gram variants.
+Loads processed data, generates embeddings using TF-IDF and (optionally) DistilBERT,
+trains RandomForest baselines, and logs all results to MLflow for comparison.
+This script is designed to be run as part of a DVC pipeline.
 
-The feature_comparison stage should not have an outs section in dvc.yaml,
-as its primary purpose is hyperparameter tuning and comparison where results are logged to MLflow,
-not saved as local artifacts for DVC versioning.
+The feature_comparison stage should not have an `outs` section in dvc.yaml,
+as its primary purpose is to log experiment metrics to MLflow, not to
+produce versioned artifacts.
 
-Usage:
-    uv run python -m src.features.tfidf_vs_distilbert --ngram_ranges '[(1,1),(1,2),(1,3)]' --max_features 5000 --use_distilbert true
+Usage (DVC - preferred):
+    uv run dvc repro               # Uses params.yaml → fully reproducible
+    Run specific pipeline stage:
+    uv run dvc repro feature_comparison
+
+Usage (local cli override only):
+    uv run python -m src.features.tfidf_vs_distilbert --max_features 1000
 
 Requirements:
-    - Processed data in data/processed/.
-    - uv sync (for scikit-learn, transformers, torch, mlflow, seaborn).
-    - MLflow server running (e.g., uv run mlflow server --host 127.0.0.1 --port 5000).
+    - Parameters defined in params.yaml under `feature_comparison`.
+    - Processed data available in data/processed/.
+    - `uv sync` must be run for all dependencies.
+    - MLflow server must be running (e.g., uv run mlflow server --host 127.0.0.1 --port 5000).
 
-Design Considerations:
-- Reliability: Input validation, error handling for device/embedding dims.
-- Scalability: Batched DistilBERT inference; sparse TF-IDF.
-- Maintainability: Logging, type hints, relative paths.
-- Adaptability: Parameterized via args/params.yaml; extensible to other embedders.
+Design:
+    - Parameters are read from params.yaml via dvc.api (single source of truth).
+    - CLI arguments are optional and only for quick local testing overrides.
+    - Reproducibility is prioritized by warning users about CLI overrides.
 """
 
 import argparse
-from typing import Tuple, Optional, Any, Union, List
-import numpy as np
+from typing import Any, Dict, List, Optional, Tuple, Union
+
+import dvc.api
 import mlflow
+import numpy as np
+from scipy.sparse import spmatrix  # For sparse matrix type hint
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.feature_extraction.text import TfidfVectorizer
-from scipy.sparse import spmatrix  # For sparse matrix type hint
 
 # --- Project Utilities ---
-from src.utils.logger import get_logger
-from src.utils.mlflow_config import get_mlflow_uri
-from src.models.helpers.mlflow_tracking_utils import setup_experiment
 from src.features.helpers.feature_utils import (
+    evaluate_and_log,
     load_train_val_data,
     parse_dvc_param,
-    evaluate_and_log,
     str2bool,
 )
+from src.models.helpers.mlflow_tracking_utils import setup_experiment
+from src.utils.logger import get_logger
+from src.utils.mlflow_config import get_mlflow_uri
 
 # --- Logging Setup ---
 logger = get_logger(__name__, headline="tfidf_vs_distilbert.py")
+
+
+def load_params() -> Dict[str, Any]:
+    """
+    Load feature comparison parameters from params.yaml using DVC.
+    Falls back gracefully if running outside a DVC pipeline.
+    """
+    try:
+        logger.info("Loading params via dvc.api")
+        params = dvc.api.params_show()
+        return params["feature_comparison"]
+    except Exception as e:
+        logger.warning(f"Could not load params via dvc.api: {e}")
+        logger.warning("Falling back to script defaults (only for local debugging).")
+        return {
+            "ngram_ranges": "[(1,1), (1,2), (1,3)]",
+            "max_features": 5000,
+            "batch_size": 32,
+            "n_estimators": 200,
+            "max_depth": 15,
+            "use_distilbert": False,
+        }
 
 
 def get_distilbert_embeddings(
@@ -63,8 +93,8 @@ def get_distilbert_embeddings(
     # --- Lazy imports (only executed if DistilBERT is actually used) ---
     try:
         import torch
-        from transformers import AutoTokenizer, AutoModel
         from tqdm import tqdm
+        from transformers import AutoModel, AutoTokenizer
     except ImportError as e:
         raise ImportError(
             "DistilBERT embeddings require `torch`, `transformers`, and `tqdm`. "
@@ -76,7 +106,7 @@ def get_distilbert_embeddings(
     # --- Skip if no GPU and user prefers to avoid CPU inference ---
     if device == "cpu":
         logger.warning("⚠️ DistilBERT inference skipped: running on CPU only.")
-        raise RuntimeError("DistilBERT cannot be used without GPU acceleration.")
+        raise RuntimeError("❌ DistilBERT cannot be used without GPU acceleration.")
 
     logger.info(f"DistilBERT Inference: Using device: {device}")
     # Using a general-purpose model suitable for sentiment
@@ -198,7 +228,7 @@ def run_comparison_experiment(
         if vectorizer_type == "TF-IDF":
             run_params = {
                 **common_params,
-                "ngram_range": ngram_range,
+                "ngram_range": str(ngram_range),  # log as string for consistency
                 "max_features": max_features,
             }
         else:  # DistilBERT
@@ -225,85 +255,111 @@ def run_comparison_experiment(
 
 
 def main() -> None:
-    """Parse args and run experiments."""
+    """Parse args and run experiments, using params.yaml as the source of truth."""
+    # --- DVC/CLI Parameter Loading ---
+    params = load_params()
     parser = argparse.ArgumentParser(
-        description="Compare TF-IDF and DistilBERT feature engineering with MLflow tracking."
+        description="Compare TF-IDF and DistilBERT. Params from params.yaml by default."
     )
+    # Define arguments for optional CLI overrides
     parser.add_argument(
         "--ngram_ranges",
         type=str,
-        default="[(1,1),(1,2),(1,3)]",
-        help="N-gram ranges as string list.",
+        required=False,
+        help="Override ngram_ranges from params.yaml.",
     )
     parser.add_argument(
         "--max_features",
         type=int,
-        default=5000,
-        help="Max TF-IDF features.",
+        required=False,
+        help="Override max_features from params.yaml.",
     )
     parser.add_argument(
-        "--batch_size", type=int, default=32, help="DistilBERT batch size."
+        "--batch_size",
+        type=int,
+        required=False,
+        help="Override batch_size from params.yaml.",
     )
     parser.add_argument(
-        "--n_estimators", type=int, default=200, help="RF n_estimators."
+        "--n_estimators",
+        type=int,
+        required=False,
+        help="Override n_estimators from params.yaml.",
     )
-    parser.add_argument("--max_depth", type=int, default=15, help="RF max_depth.")
+    parser.add_argument(
+        "--max_depth",
+        type=int,
+        required=False,
+        help="Override max_depth from params.yaml.",
+    )
     parser.add_argument(
         "--use_distilbert",
-        type=str2bool,  # Custom str to bool parser
-        default=False,
-        help="Whether to run the DistilBERT experiment (True/False).",
+        type=str2bool,  # Custom str to bool converter
+        required=False,
+        help="Override use_distilbert from params.yaml.",
     )
     args = parser.parse_args()
+
+    # --- Consolidate Parameters (CLI overrides DVC) ---
+    final_params = {}
+    overridden_keys = []
+    for key, default_val in params.items():
+        cli_val = getattr(args, key, None)
+        if cli_val is not None:
+            final_params[key] = cli_val
+            overridden_keys.append(key)
+        else:
+            final_params[key] = default_val
+
+    if overridden_keys:
+        logger.warning(
+            "CLI overrides detected for: %s. This run may not be reproducible with 'dvc repro'.",
+            ", ".join(overridden_keys),
+        )
 
     # --- MLflow Setup ---
     mlflow_uri = get_mlflow_uri()
     setup_experiment("Exp - Feature Comparison (TFIDF vs DistilBERT)", mlflow_uri)
 
     # --- Parameter Parsing ---
-    # Parse the list of ngram tuples from DVC/CLI
     ngram_ranges = parse_dvc_param(
-        args.ngram_ranges, name="ngram_ranges", expected_type=list
+        final_params["ngram_ranges"], name="ngram_ranges", expected_type=list
     )
 
-    # --- TF-IDF experiments with different n-grams (parameterized) ---
+    # --- TF-IDF experiments ---
     logger.info("🚀 Starting TF-IDF Experiments")
     for ngram_range in ngram_ranges:
         run_comparison_experiment(
             vectorizer_type="TF-IDF",
             ngram_range=tuple(ngram_range),  # Ensure it's a tuple for the function
-            max_features=args.max_features,
-            n_estimators=args.n_estimators,
-            max_depth=args.max_depth,
-            batch_size=args.batch_size,  # Not used for TFIDF, but passed for consistency
+            max_features=final_params["max_features"],
+            n_estimators=final_params["n_estimators"],
+            max_depth=final_params["max_depth"],
+            batch_size=final_params[
+                "batch_size"
+            ],  # Not used for TFIDF, but passed for consistency
         )
 
-    # --- DistilBERT experiment (single conditional run) ---
-    if args.use_distilbert:
-        # Case 1 & 2: Experiment was requested by configuration (use_distilbert=True)
-        import torch  # Lazy load PyTorch only if experiment is requested
-
-        # Check for hardware capability (GPU/CUDA is essential for BERT training)
-        if "torch" in globals() and torch.cuda.is_available():
-            # Case 1: Requested AND successful (RUN)
+    # --- DistilBERT experiment (conditional run) ---
+    if final_params["use_distilbert"]:
+        try:
             logger.info("🚀 Starting DistilBERT_768dim Experiment")
             run_comparison_experiment(
                 vectorizer_type="DistilBERT",
-                ngram_range=(1, 1),
-                max_features=args.max_features,
-                n_estimators=args.n_estimators,
-                max_depth=args.max_depth,
-                batch_size=args.batch_size,
+                ngram_range=(1, 1),  # N-gram not applicable but required by function
+                max_features=final_params["max_features"],
+                n_estimators=final_params["n_estimators"],
+                max_depth=final_params["max_depth"],
+                batch_size=final_params["batch_size"],
             )
-        else:
-            # Case 2: Requested, but failed due to environment (WARNING)
+        except (ImportError, RuntimeError) as e:
             logger.warning(
-                "⚠️ Skipping DistilBERT experiment: Requested (use_distilbert=True), but torch/CUDA not available."
+                "⚠️ Skipping DistilBERT experiment: %s. Ensure PyTorch and CUDA are correctly installed.",
+                str(e),
             )
     else:
-        # Case 3: Experiment intentionally disabled by configuration (INFO)
         logger.info(
-            "ℹ️ DistilBERT experiment intentionally skipped (use_distilbert=False in params.yaml)."
+            "ℹ️ DistilBERT experiment intentionally skipped (use_distilbert=False)."
         )
 
     logger.info("--- TF-IDF vs. DistilBERT complete. Analyze results in MLflow UI ---")
