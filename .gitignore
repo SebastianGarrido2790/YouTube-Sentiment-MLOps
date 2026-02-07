@@ -40,7 +40,8 @@ models/advanced/
 # MLflow runs and artifacts
 mlruns/
 mlartifacts/
-mlflow.
+# Gemini
+GEMINI.md
 
 
 
