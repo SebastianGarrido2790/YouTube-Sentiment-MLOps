@@ -1,12 +1,12 @@
 schema: '2.0'
 stages:
   data_ingestion:
-    cmd: uv run python -m src.data.download_dataset
+    cmd: python -m src.data.download_dataset
     deps:
     - path: src/data/download_dataset.py
       hash: md5
-      md5: 4aeb791b36e03e9ac19ad930b86aa74b
-      size: 5088
+      md5: 793caed654fb6a7b81144065c4c5fc52
+      size: 3501
     - path: src/utils/logger.py
       hash: md5
       md5: 73106bb3de64f8ef8c097a990a6e2f49
@@ -26,7 +26,7 @@ stages:
       md5: 38ee083169162dbac0cb07c80ac0f04e
       size: 6888934
   data_preparation:
-    cmd: uv run python -m src.data.make_dataset
+    cmd: python -m src.data.make_dataset
     deps:
     - path: data/raw/reddit_comments.csv
       hash: md5
@@ -34,8 +34,8 @@ stages:
       size: 6888934
     - path: src/data/make_dataset.py
       hash: md5
-      md5: 8929e52af273404970aa73ca7c25f42b
-      size: 7485
+      md5: a58ad9803f72527b231d45ff2b91c3bb
+      size: 6323
     - path: src/utils/logger.py
       hash: md5
       md5: 73106bb3de64f8ef8c097a990a6e2f49

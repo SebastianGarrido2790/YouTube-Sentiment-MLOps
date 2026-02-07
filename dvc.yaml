@@ -1,6 +1,6 @@
 stages:
   data_ingestion:
-    cmd: uv run python -m src.data.download_dataset
+    cmd: python -m src.data.download_dataset
     deps:
       - src/data/download_dataset.py
       - src/utils/logger.py
@@ -12,7 +12,7 @@ stages:
       - data/raw/reddit_comments.csv
 
   data_preparation:
-    cmd: uv run python -m src.data.make_dataset
+    cmd: python -m src.data.make_dataset
     deps:
       - data/raw/reddit_comments.csv
       - src/data/make_dataset.py

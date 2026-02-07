@@ -40,7 +40,10 @@ models/advanced/
 # MLflow runs and artifacts
 mlruns/
 mlartifacts/
-mlflow.db
+mlflow.
+
+# Gemini
+GEMINI.md
 
 # PyInstaller
 *.manifest

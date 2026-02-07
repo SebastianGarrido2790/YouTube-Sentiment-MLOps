@@ -6,56 +6,41 @@ and saves Parquet files to data/processed/.
 
 Usage (preferred):
     uv run dvc repro                 # Uses params.yaml → fully reproducible
-    Run specific pipeline stage:
+Run specific pipeline stage:
     uv run dvc repro data_preparation
-
-Usage (local cli override only):
-    uv run python -m src.data.make_dataset --test_size 0.20
-
-Requirements:
-    - Raw data at data/raw/reddit_comments.csv (from download_dataset.py).
-    - uv sync (for pandas, scikit-learn, nltk).
-
-Design:
-    - Parameters are read from params.yaml via dvc.api
-    - CLI args are optional and only override for quick local testing
-    - All runs are reproducible when using DVC
 """
 
-import argparse
-from typing import Optional, Dict, Any
 import pandas as pd
 import re
+from typing import Optional
 from sklearn.model_selection import train_test_split
 import nltk
 from nltk.corpus import stopwords
 from nltk.tokenize import word_tokenize
-import dvc.api
 
 # --- Project Utilities ---
 from src.utils.paths import RAW_PATH, TRAIN_PATH, VAL_PATH, TEST_PATH, PROJECT_ROOT
 from src.utils.logger import get_logger
+from src.config.manager import ConfigurationManager
+from src.config.schemas import DataPreparationConfig
 
 # --- Logging Setup ---
 logger = get_logger(__name__, headline="make_dataset.py")
 
 
-def load_params() -> Dict[str, Any]:
+def load_params() -> DataPreparationConfig:
     """
-    Load parameters from params.yaml using DVC.
-    Falls back gracefully if running outside DVC (e.g., Jupyter).
+    Load parameters from params.yaml using ConfigurationManager.
     """
     try:
-        logger.info("Loading params via dvc.api")
-        params = dvc.api.params_show()
-        return params["data_preparation"]
+        logger.info("Loading params via ConfigurationManager")
+        config = ConfigurationManager().get_data_preparation_config()
+        return config
     except Exception as e:
-        logger.warning(f"Could not load params via dvc.api: {e}")
+        logger.warning(f"Could not load params via ConfigurationManager: {e}")
         logger.warning("Falling back to defaults (only for local debugging).")
-        return {
-            "test_size": 0.15,
-            "random_state": 42,
-        }
+        # Return a default config object
+        return DataPreparationConfig(test_size=0.15, random_state=42)
 
 
 def clean_text(text: str, stop_words: Optional[set] = None) -> str:
@@ -166,52 +151,22 @@ def prepare_reddit_dataset(test_size: float, random_state: int) -> None:
     logger.info(
         f"Train class distribution: {train['category'].value_counts().to_dict()}"
     )
+    logger.info("✅ Successfully prepared and saved processed datasets. ✅")
 
 
 def main() -> None:
-    """Entry point with optional CLI override."""
+    """Entry point."""
     # Ensure NLTK data is available
+    logger.info("🚀 Starting data preparation process 🚀")
     logger.info("Downloading NLTK data (if not already present)...")
     nltk.download("punkt_tab", quiet=True)
     nltk.download("stopwords", quiet=True)
     logger.info("NLTK data download complete.")
 
-    # Load parameters from params.yaml via DVC
-    params = load_params()
-    default_test_size = params["test_size"]
-    default_random_state = params.get("random_state", 42)
+    # Load parameters from params.yaml via ConfigurationManager
+    config = load_params()
 
-    parser = argparse.ArgumentParser(
-        description="Prepare processed dataset. Parameters come from params.yaml by default."
-    )
-    parser.add_argument(
-        "--test_size",
-        type=float,
-        required=False,
-        help=f"Test split fraction (default: {default_test_size} from params.yaml)",
-    )
-    parser.add_argument(
-        "--random_state",
-        type=int,
-        default=default_random_state,
-        help=f"Random seed (default: {default_random_state})",
-    )
-
-    args = parser.parse_args()
-
-    # Use CLI override only if provided
-    final_test_size = (
-        args.test_size if args.test_size is not None else default_test_size
-    )
-    final_random_state = args.random_state
-
-    if args.test_size is not None:
-        logger.warning(
-            f"CLI override detected: test_size={final_test_size} "
-            "(this run will NOT be reproducible with 'dvc repro' unless params.yaml is updated)"
-        )
-
-    prepare_reddit_dataset(final_test_size, final_random_state)
+    prepare_reddit_dataset(config.test_size, config.random_state)
 
 
 if __name__ == "__main__":
