@@ -19,8 +19,18 @@ feature_comparison:
   max_depth: 15
 
 feature_tuning:
-  max_features_values: '[1000,2000,3000,4000,5000,6000,7000,8000,9000,10000]'
-  best_ngram_range: (1,1)  # Best result from feature_comparison
+  max_features_values:  # Native YAML list
+    - 1000
+    - 2000
+    - 3000
+    - 4000
+    - 5000
+    - 6000
+    - 7000
+    - 8000
+    - 9000
+    - 10000
+  best_ngram_range: [1, 1]  # Best result from feature_comparison
   n_estimators: 200
   max_depth: 15
 

@@ -5,8 +5,8 @@ stages:
     deps:
     - path: src/data/download_dataset.py
       hash: md5
-      md5: 793caed654fb6a7b81144065c4c5fc52
-      size: 3501
+      md5: 99adf98517f94d248e55644bb539ef19
+      size: 3320
     - path: src/utils/logger.py
       hash: md5
       md5: 73106bb3de64f8ef8c097a990a6e2f49
@@ -34,8 +34,8 @@ stages:
       size: 6888934
     - path: src/data/make_dataset.py
       hash: md5
-      md5: a58ad9803f72527b231d45ff2b91c3bb
-      size: 6323
+      md5: babb0d5658c34d6d99125c6b75878123
+      size: 6398
     - path: src/utils/logger.py
       hash: md5
       md5: 73106bb3de64f8ef8c097a990a6e2f49
@@ -62,7 +62,7 @@ stages:
       md5: c55232be629f4fba0cdc3cce4329c594
       size: 499418
   feature_comparison:
-    cmd: uv run python -m src.features.tfidf_vs_distilbert
+    cmd: python -m src.features.tfidf_vs_distilbert
     deps:
     - path: data/processed/train.parquet
       hash: md5
@@ -78,8 +78,8 @@ stages:
       size: 6731
     - path: src/features/tfidf_vs_distilbert.py
       hash: md5
-      md5: 5cb2a508aa3dea40a01633c7bd4d6108
-      size: 13048
+      md5: 674cb4b42aa0b7f79ee755dad4130cf9
+      size: 10135
     - path: src/utils/logger.py
       hash: md5
       md5: 73106bb3de64f8ef8c097a990a6e2f49

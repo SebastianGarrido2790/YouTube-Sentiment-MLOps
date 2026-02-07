@@ -28,7 +28,7 @@ stages:
 
   # Transient processing stage for feature comparison (no outs)
   feature_comparison:
-    cmd: uv run python -m src.features.tfidf_vs_distilbert
+    cmd: python -m src.features.tfidf_vs_distilbert
     deps:
       - data/processed/train.parquet
       - data/processed/val.parquet
@@ -44,7 +44,7 @@ stages:
       - feature_comparison.max_depth
 
   feature_tuning:
-    cmd: uv run python -m src.features.tfidf_max_features
+    cmd: python -m src.features.tfidf_max_features
     deps:
       - data/processed/train.parquet
       - data/processed/val.parquet
