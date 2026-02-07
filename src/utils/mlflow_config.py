@@ -33,8 +33,6 @@ Hence, the "⚠️ MLflow registry unavailable" warning will now disappear, as s
 """
 
 import os
-import yaml
-from pathlib import Path
 from src.utils.paths import ENV  # Centralized environment detection
 from src.utils.logger import get_logger  # Centralized logging
 
@@ -89,26 +87,23 @@ def get_mlflow_uri(params_path: str = "params.yaml") -> str:
 
     # --- Priority 3: YAML fallback (local mode only) ---
     elif ENV == "local":
-        params_file = Path(params_path)
-        if not params_file.exists():
-            logger.warning(
-                f"params.yaml not found at {params_path}. Using local ./mlruns directory."
-            )
-            local_uri = "file:./mlruns"
-            logger.info(f"[ENV={ENV}] Using local MLflow URI: {local_uri}")
-            return local_uri
-
         try:
-            with open(params_file, "r") as f:
-                params = yaml.safe_load(f)
-                mlflow_uri = params["feature_comparison"]["mlflow_uri"]
-                logger.info(
-                    f"[ENV={ENV}] Using MLflow URI from params.yaml: {mlflow_uri}"
-                )
-                return mlflow_uri
-        except KeyError:
+            from src.config.manager import ConfigurationManager
+
+            # Using ConfigurationManager to get the URI
+            # This ensures type safety and consistency with other config loading
+            config_manager = ConfigurationManager(params_path=params_path)
+            # We access the value directly as get_mlflow_config() returns the URI string
+            mlflow_uri = config_manager.get_mlflow_config()
+
+            logger.info(
+                f"[ENV={ENV}] Using MLflow URI from params.yaml via ConfigurationManager: {mlflow_uri}"
+            )
+            return mlflow_uri
+
+        except Exception as e:
             logger.warning(
-                "[ENV=local] Missing 'feature_comparison.mlflow_uri' in params.yaml."
+                f"[ENV=local] Could not load URI via ConfigurationManager: {e}"
             )
             local_uri = "file:./mlruns"
             logger.info(f"[ENV={ENV}] Using fallback local MLflow URI: {local_uri}")
