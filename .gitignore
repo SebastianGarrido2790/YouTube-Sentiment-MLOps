@@ -42,8 +42,7 @@ mlruns/
 mlartifacts/
 mlflow.
 
-# Gemini
-GEMINI.md
+
 
 # PyInstaller
 *.manifest
