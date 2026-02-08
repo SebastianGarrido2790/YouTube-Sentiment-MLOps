@@ -72,11 +72,11 @@ class ImbalanceTuningConfig(BaseModel):
     Configuration for handling class imbalance.
     """
 
-    imbalance_methods: str = Field(
-        description='String representation of list of methods to test (e.g., \'["smote", "adasyn"]\').'
+    imbalance_methods: List[str] = Field(
+        description="List of methods to test (e.g., ['smote', 'adasyn'])."
     )
     best_max_features: int = Field(description="Best max_features from tuning stage.")
-    best_ngram_range: str = Field(
+    best_ngram_range: List[int] = Field(
         description="Best n-gram range from comparison stage."
     )
     rf_n_estimators: int
