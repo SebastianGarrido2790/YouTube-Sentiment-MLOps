@@ -98,7 +98,7 @@ stages:
       - models/features/
 
   baseline_model:
-    cmd: uv run python -m src.models.baseline_logistic
+    cmd: python -m src.models.baseline_logistic
     deps:
       - models/features/X_train.npz
       - models/features/X_val.npz
