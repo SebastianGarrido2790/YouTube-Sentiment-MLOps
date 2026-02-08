@@ -21,6 +21,7 @@ from src.config.schemas import (
     DataIngestionConfig,
     FeatureComparisonConfig,
     FeatureTuningConfig,
+    ImbalanceTuningConfig,
 )
 from src.utils.logger import get_logger
 
@@ -124,3 +125,9 @@ class ConfigurationManager:
         if not self.config:
             raise RuntimeError("Configuration not loaded.")
         return self.config.feature_tuning
+
+    def get_imbalance_tuning_config(self) -> ImbalanceTuningConfig:
+        """Returns the configuration for the Imbalance Tuning stage."""
+        if not self.config:
+            raise RuntimeError("Configuration not loaded.")
+        return self.config.imbalance_tuning

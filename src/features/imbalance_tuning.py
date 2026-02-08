@@ -1,48 +1,37 @@
 """
-Tune imbalance handling techniques using DVC parameters.
+Tune imbalance handling techniques using MLOps best practices.
 
 Applies techniques (SMOTE, ADASYN, etc.) to TF-IDF features on the train set,
-trains a RandomForest classifier, and logs results to MLflow. Parameters are
-managed by DVC.
+trains a RandomForest classifier, and logs results to MLflow.
 
-Usage (DVC - preferred):
+Usage:
+Run the entire pipeline:
     uv run dvc repro               # Uses params.yaml → fully reproducible
-    Run specific pipeline stage:
-    uv run dvc repro imbalance_tuning
-
-Usage (local cli override only):
-    uv run python -m src.features.imbalance_tuning --rf_n_estimators 100
+Run specific pipeline stage:
+    uv run python -m src.features.imbalance_tuning
 
 Requirements:
     - Parameters defined in params.yaml under `imbalance_tuning`.
     - Processed data available in data/processed/.
-    - `uv sync` must be run for all dependencies.
-    - MLflow server must be running (e.g., uv run mlflow server --host 127.0.0.1 --port 5000).
-
-Design:
-    - Parameters are read from params.yaml via dvc.api (single source of truth).
-    - CLI arguments are optional and only for quick local testing overrides.
-    - Reproducibility is prioritized by warning users about CLI overrides.
+    - MLflow server must be running (e.g., uv run python -m mlflow server --host 127.0.0.1 --port 5000).
 """
 
-import argparse
 from typing import Any, Dict, Tuple, Union
-
-import dvc.api
 import mlflow
 import numpy as np
 from imblearn.combine import SMOTEENN
 from imblearn.over_sampling import ADASYN, SMOTE
 from imblearn.under_sampling import RandomUnderSampler
-from scipy.sparse import spmatrix  # For sparse matrix type hint
+from scipy.sparse import spmatrix
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.feature_extraction.text import TfidfVectorizer
 
 # --- Project Utilities ---
+from src.config.manager import ConfigurationManager
+from src.config.schemas import ImbalanceTuningConfig
 from src.features.helpers.feature_utils import (
     evaluate_and_log,
     load_train_val_data,
-    parse_dvc_param,
 )
 from src.models.helpers.mlflow_tracking_utils import setup_experiment
 from src.utils.logger import get_logger
@@ -53,25 +42,16 @@ from src.utils.paths import IMBALANCE_FIGURES_DIR
 logger = get_logger(__name__, headline="imbalance_tuning.py")
 
 
-def load_params() -> Dict[str, Any]:
+def load_params() -> ImbalanceTuningConfig:
     """
-    Load imbalance tuning parameters from params.yaml using DVC.
-    Falls back gracefully if running outside a DVC pipeline.
+    Load imbalance tuning parameters from params.yaml using ConfigurationManager.
     """
     try:
-        logger.info("Loading params via dvc.api")
-        params = dvc.api.params_show()
-        return params["imbalance_tuning"]
+        logger.info("Loading params via ConfigurationManager")
+        return ConfigurationManager().get_imbalance_tuning_config()
     except Exception as e:
-        logger.warning(f"Could not load params via dvc.api: {e}")
-        logger.warning("Falling back to script defaults (only for local debugging).")
-        return {
-            "imbalance_methods": "['class_weights','oversampling','adasyn','undersampling','smote_enn']",
-            "best_ngram_range": "(1,1)",
-            "best_max_features": 1000,
-            "rf_n_estimators": 200,
-            "rf_max_depth": 15,
-        }
+        logger.error(f"Failed to load configuration: {e}")
+        raise e
 
 
 def run_imbalanced_experiment(
@@ -141,6 +121,7 @@ def run_imbalanced_experiment(
         if sampler:
             resampling_applied = True
             logger.info(f"Applying {imbalance_method.upper()} to training data...")
+            # imblearn samplers expect dense arrays or sparse matrices, and return them
             X_train_vec, y_train = sampler.fit_resample(X_train_vec, y_train)
             logger.info(
                 f"New training sample size: {X_train_vec.shape[0]} (Classes: {np.bincount(y_train)})"
@@ -148,7 +129,7 @@ def run_imbalanced_experiment(
 
     # --- MLflow Tracking, Training, and Evaluation ---
     run_name = f"Imb_{imbalance_method}_Feat_{feature_dim}"
-    logger.info(f"🚀 Running experiment: {run_name}")
+    logger.info(f"💪🏻 Running experiment: {run_name} 💪🏻")
 
     with mlflow.start_run(run_name=run_name):
         # 1. Model Training
@@ -188,7 +169,7 @@ def run_imbalanced_experiment(
             params=params,
             tags=tags,
             output_dir=IMBALANCE_FIGURES_DIR,
-            log_model=True,  # Log the model to the MLflow registry
+            log_model=True,
         )
 
         # 4. Log key metric to console
@@ -200,92 +181,41 @@ def run_imbalanced_experiment(
         logger.info(f"Class 1 F1-Score: {f1_score_1:.4f}")
 
         logger.info(
-            f"✅ Experiment finished: {run_name} | MLflow Run ID: {mlflow.last_active_run().info.run_id}"
+            f"🏁 Experiment finished: {run_name} | MLflow Run ID: {mlflow.last_active_run().info.run_id} 🏁"
         )
 
 
 def main() -> None:
-    """Parse args and run experiments, using DVC params as source of truth."""
-    # --- DVC/CLI Parameter Loading ---
-    params = load_params()
-    parser = argparse.ArgumentParser(
-        description="Tune imbalance handling methods. Params from params.yaml by default."
-    )
-    # Define arguments for optional CLI overrides, using names from params.yaml
-    parser.add_argument(
-        "--imbalance_methods",
-        type=str,
-        required=False,
-        help="Override imbalance_methods from params.yaml.",
-    )
-    parser.add_argument(
-        "--best_ngram_range",
-        type=str,
-        required=False,
-        help="Override best_ngram_range from params.yaml.",
-    )
-    parser.add_argument(
-        "--best_max_features",
-        type=int,
-        required=False,
-        help="Override best_max_features from params.yaml.",
-    )
-    parser.add_argument(
-        "--rf_n_estimators",
-        type=int,
-        required=False,
-        help="Override rf_n_estimators from params.yaml.",
-    )
-    parser.add_argument(
-        "--rf_max_depth",
-        type=int,
-        required=False,
-        help="Override rf_max_depth from params.yaml.",
-    )
-    args = parser.parse_args()
+    """Run experiments using ConfigurationManager users as source of truth."""
+    logger.info("🚀 Starting Imbalance Tuning 🚀")
 
-    # --- Consolidate Parameters (CLI overrides DVC) ---
-    final_params = {}
-    overridden_keys = []
-    for key, default_val in params.items():
-        cli_val = getattr(args, key, None)
-        if cli_val is not None:
-            final_params[key] = cli_val
-            overridden_keys.append(key)
-        else:
-            final_params[key] = default_val
-
-    if overridden_keys:
-        logger.warning(
-            "CLI overrides detected for: %s. This run may not be reproducible with 'dvc repro'.",
-            ", ".join(overridden_keys),
-        )
+    # --- Parameter Loading ---
+    config = load_params()
 
     # --- MLflow Setup ---
     mlflow_uri = get_mlflow_uri()
     setup_experiment("Exp - Imbalance Handling", mlflow_uri)
 
-    # --- Parameter Parsing ---
-    imbalance_methods = parse_dvc_param(
-        final_params["imbalance_methods"], name="imbalance_methods", expected_type=list
-    )
-    ngram_range = parse_dvc_param(
-        final_params["best_ngram_range"], name="best_ngram_range", expected_type=tuple
-    )
+    # --- Extract parameters from Pydantic config ---
+    imbalance_methods = config.imbalance_methods
+    # Ensure ngram_range is a tuple for TfidfVectorizer
+    ngram_range = tuple(config.best_ngram_range)
 
     logger.info(
         f"--- Running imbalance experiments for methods: {imbalance_methods} ---"
     )
+
     for method in imbalance_methods:
         run_imbalanced_experiment(
             imbalance_method=method,
             ngram_range=ngram_range,
-            max_features=final_params["best_max_features"],
-            n_estimators=final_params["rf_n_estimators"],
-            max_depth=final_params["rf_max_depth"],
+            max_features=config.best_max_features,
+            n_estimators=config.rf_n_estimators,
+            max_depth=config.rf_max_depth,
         )
+
     logger.info(
-        "--- Imbalance handling tuning complete. Analyze results in MLflow UI ---"
+        "✅ Imbalance handling tuning complete. Analyze results in MLflow UI ✅"
     )
 
 

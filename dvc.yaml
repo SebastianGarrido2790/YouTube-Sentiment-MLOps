@@ -61,8 +61,7 @@ stages:
       - reports/figures/tfidf_max_features/
 
   imbalance_tuning:
-    # Notice the quotes around imbalance_methods. This ensures DVC passes the entire list string correctly to Python.
-    cmd: uv run python -m src.features.imbalance_tuning
+    cmd: python -m src.features.imbalance_tuning
     deps:
     - data/processed/train.parquet
     - data/processed/val.parquet

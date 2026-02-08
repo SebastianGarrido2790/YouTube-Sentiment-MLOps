@@ -35,10 +35,14 @@ feature_tuning:
   max_depth: 15
 
 imbalance_tuning:
-  # No spaces after commas. This ensures the YAML value remains one literal string (not multiple tokens).
-  imbalance_methods: '[''class_weights'',''oversampling'',''adasyn'',''undersampling'',''smote_enn'']'
+  imbalance_methods:
+    - class_weights
+    - oversampling
+    - adasyn
+    - undersampling
+    - smote_enn
   best_max_features: 1000  # Best result from feature_tuning
-  best_ngram_range: (1,1)  # Best result from feature_comparison
+  best_ngram_range: [1, 1]  # Best result from feature_comparison
   rf_n_estimators: 200
   rf_max_depth: 15
 
