@@ -1,5 +1,5 @@
 """
-Feature Engineering Module for Sentiment Analysis (DVC-Aware)
+Feature Engineering Module for Sentiment Analysis (MLOps-Standards).
 
 Generates and saves reusable feature matrices (X) and labels (y) using parameters
 defined in `params.yaml`. Supports both TF-IDF and DistilBERT representations.
@@ -7,16 +7,15 @@ defined in `params.yaml`. Supports both TF-IDF and DistilBERT representations.
 Saves feature matrices as compressed NumPy sparse arrays (.npz) and labels
 as NumPy arrays (.npy) to the models/features directory.
 
-Usage (DVC - preferred):
-    uv run dvc repro feature_engineering
-
-Usage (local cli override only):
-    uv run python -m src.features.feature_engineering --max_features 2000
+Usage:
+Run the entire pipeline:
+    uv run dvc repro               # Uses params.yaml → fully reproducible
+Run specific pipeline stage:
+    uv run python -m src.features.feature_engineering
 
 Requirements:
     - Parameters defined in params.yaml under `feature_engineering` and `imbalance_tuning`.
     - Processed data available in data/processed/.
-    - `uv sync` must be run for all dependencies.
 
 Outputs:
     models/features
@@ -27,11 +26,8 @@ Outputs:
         └── label_encoder.pkl
 """
 
-import argparse
 import pickle
-from typing import Any, Dict, Optional, Tuple, Union
-
-import dvc.api
+from typing import Optional, Tuple, Union
 import numpy as np
 import pandas as pd
 from scipy.sparse import csr_matrix, hstack, issparse, save_npz, spmatrix
@@ -39,50 +35,12 @@ from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.preprocessing import LabelEncoder
 
 # --- Project Utilities ---
-from src.features.helpers.feature_utils import parse_dvc_param
+from src.config.manager import ConfigurationManager
 from src.utils.logger import get_logger
-from src.utils.paths import FEATURES_DIR, PROJECT_ROOT, TEST_PATH, TRAIN_PATH, VAL_PATH
+from src.utils.paths import FEATURES_DIR, TEST_PATH, TRAIN_PATH, VAL_PATH
 
 # --- Logging Setup ---
 logger = get_logger(__name__, headline="feature_engineering.py")
-
-
-def load_params() -> Dict[str, Any]:
-    """
-    Load parameters from params.yaml using DVC.
-    Merges `feature_engineering` and relevant `imbalance_tuning` sections.
-    """
-    try:
-        logger.info("Loading params via dvc.api")
-        all_params = dvc.api.params_show()
-
-        fe_params = all_params.get("feature_engineering", {})
-        it_params = all_params.get("imbalance_tuning", {})
-
-        # DVC can load bools as strings, so we ensure it's a proper boolean
-        use_distilbert_val = fe_params.get("use_distilbert", False)
-        if isinstance(use_distilbert_val, str):
-            use_distilbert = use_distilbert_val.lower() == "true"
-        else:
-            use_distilbert = bool(use_distilbert_val)
-
-        # Create a unified dictionary, mapping names from params.yaml
-        params = {
-            "use_distilbert": use_distilbert,
-            "distilbert_batch_size": fe_params.get("distilbert_batch_size", 32),
-            "max_features": it_params.get("best_max_features", 1000),
-            "ngram_range": it_params.get("best_ngram_range", "(1,1)"),
-        }
-        return params
-    except Exception as e:
-        logger.warning(f"Could not load params via dvc.api: {e}")
-        logger.warning("Falling back to script defaults (only for local debugging).")
-        return {
-            "use_distilbert": False,
-            "distilbert_batch_size": 32,
-            "max_features": 1000,
-            "ngram_range": "(1,1)",
-        }
 
 
 def _get_distilbert_embeddings(
@@ -189,7 +147,7 @@ def engineer_features(
     X_test_text: Union[spmatrix, np.ndarray]
 
     if use_distilbert:
-        logger.info("🚀 Generating DistilBERT embeddings (768 dim)...")
+        logger.info("💪🏻 Generating DistilBERT embeddings (768 dim)... 💪🏻")
         X_train_text = _get_distilbert_embeddings(
             train_texts, batch_size=distilbert_batch_size
         )
@@ -201,7 +159,7 @@ def engineer_features(
         )
     else:
         logger.info(
-            f"🚀 Generating TF-IDF features (max_features={max_features}, ngram={ngram_range})..."
+            f"💪🏻 Generating TF-IDF features (max_features={max_features}, ngram={ngram_range})... 💪🏻"
         )
         vectorizer = TfidfVectorizer(
             max_features=max_features,
@@ -233,6 +191,9 @@ def engineer_features(
         X_sets.append(X_combined)
 
     # 6. Save Artifacts
+    if not FEATURES_DIR.exists():
+        FEATURES_DIR.mkdir(parents=True, exist_ok=True)
+
     X_train, X_val, X_test = X_sets
     for split, X in zip(splits, X_sets):
         save_npz(FEATURES_DIR / f"X_{split}.npz", X)
@@ -251,73 +212,52 @@ def engineer_features(
         "DistilBERT" if use_distilbert else f"TF-IDF (max_features={max_features})"
     )
     logger.info(
-        f"✅ Features engineered successfully | Type: {feature_type} | "
+        f"Features engineered | Type: {feature_type} | "
         f"Shapes → Train: {X_train.shape}, Val: {X_val.shape}, Test: {X_test.shape}"
     )
 
 
 def main() -> None:
-    """Parse args and run feature engineering using DVC params as source of truth."""
-    params = load_params()
-    parser = argparse.ArgumentParser(
-        description="Generate final feature set. Params from params.yaml by default."
-    )
+    """Run feature engineering using ConfigurationManager as source of truth."""
+    logger.info("🚀 Starting Feature Engineering 🚀")
 
-    parser.add_argument(
-        "--use_distilbert",
-        type=lambda x: x.lower() == "true",
-        required=False,
-        help="Override 'use_distilbert' from params.yaml.",
-    )
-    parser.add_argument(
-        "--max_features",
-        type=int,
-        required=False,
-        help="Override 'best_max_features' from params.yaml.",
-    )
-    parser.add_argument(
-        "--ngram_range",
-        type=str,
-        required=False,
-        help="Override 'best_ngram_range' from params.yaml.",
-    )
-    parser.add_argument(
-        "--distilbert_batch_size",
-        type=int,
-        required=False,
-        help="Override 'distilbert_batch_size' from params.yaml.",
-    )
-    args = parser.parse_args()
+    # --- Parameter Loading via ConfigurationManager ---
+    config_manager = ConfigurationManager()
 
-    # Consolidate parameters (CLI overrides DVC-loaded params)
-    final_params = params.copy()
-    overridden_keys = []
-    for key in final_params:
-        cli_val = getattr(args, key, None)
-        if cli_val is not None:
-            final_params[key] = cli_val
-            overridden_keys.append(key)
+    # Load separate configs (feature_engineering and imbalance_tuning)
+    # Rationale: Feature engineering reuses 'best parameters' found in imbalance tuning.
+    fe_config = config_manager.get_feature_engineering_config()
+    it_config = config_manager.get_imbalance_tuning_config()
 
-    if overridden_keys:
-        logger.warning(
-            "CLI overrides detected for: %s. This run may not be reproducible with 'dvc repro'.",
-            ", ".join(overridden_keys),
-        )
+    # Parse boolean from string (if necessary, though specific to params.yaml structure)
+    # The Pydantic model defines use_distilbert as `str` to catch "False"/"True" strings.
+    use_distilbert_val = fe_config.use_distilbert
+    if isinstance(use_distilbert_val, str):
+        use_distilbert = use_distilbert_val.lower() == "true"
+    else:
+        use_distilbert = bool(use_distilbert_val)
 
-    # Parse ngram_range specifically
-    ngram_range = parse_dvc_param(
-        final_params["ngram_range"], name="ngram_range", expected_type=tuple
-    )
-    if ngram_range is None:
-        return
+    # Use parameters from Imbalance Tuning for optimal feature extraction
+    max_features = it_config.best_max_features
+    # Start as tuple from the list provided in config
+    ngram_range = tuple(it_config.best_ngram_range)
 
-    logger.info("--- Feature Engineering Started ---")
+    distilbert_batch_size = fe_config.distilbert_batch_size
+
+    logger.info("Configuration Loaded:")
+    logger.info(f"  - Use DistilBERT: {use_distilbert}")
+    logger.info(f"  - Max Features: {max_features}")
+    logger.info(f"  - N-gram Range: {ngram_range}")
+    logger.info(f"  - DistilBERT Batch Size: {distilbert_batch_size}")
+
     engineer_features(
-        use_distilbert=final_params["use_distilbert"],
-        max_features=final_params["max_features"],
+        use_distilbert=use_distilbert,
+        max_features=max_features,
         ngram_range=ngram_range,
-        distilbert_batch_size=final_params["distilbert_batch_size"],
+        distilbert_batch_size=distilbert_batch_size,
     )
+
+    logger.info("✅ Feature Engineering Pipeline Complete ✅")
 
 
 if __name__ == "__main__":
