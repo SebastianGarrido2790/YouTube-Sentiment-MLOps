@@ -1,38 +1,30 @@
 """
-Trains Logistic Regression baseline on engineered features using DVC parameters.
+Trains Logistic Regression baseline on engineered features using MLOps standards.
 
 Logs experiment to MLflow; saves the model bundle (model + LabelEncoder) locally for DVC tracking.
-Parameters are loaded from params.yaml by default.
+Parameters are loaded strictly from params.yaml via ConfigurationManager.
 
-Usage (DVC - preferred):
-    uv run dvc repro
-    Run specific pipeline stage:
-    uv run dvc repro baseline_model
-
-Usage (local cli override only)
-    uv run python -m src.models.baseline_logistic --C 0.5 --max_iter 1000
+Usage:
+    python -m src.models.baseline_logistic
 
 Requirements:
     - Processed features in models/features/.
     - Parameters defined in params.yaml under `train.logistic_baseline`.
     - MLflow server running.
 
-Desing:
-    - Parameters are read from params.yaml via dvc.api (single source of truth).
-    - CLI arguments are optional and only for quick local testing overrides.
-    - Reproducibility is prioritized by warning users about CLI overrides.
+Design:
+    - Parameters are read from params.yaml via ConfigurationManager (single source of truth).
+    - No CLI overrides allowed to ensure reproducibility.
 """
 
-import argparse
-from typing import Any, Dict
-
-import dvc.api
 import mlflow
 import mlflow.sklearn
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import accuracy_score, classification_report, f1_score
 
 # --- Project Utilities ---
+from src.config.manager import ConfigurationManager
+from src.config.schemas import LogisticBaselineConfig
 from src.models.helpers.data_loader import load_feature_data
 from src.models.helpers.mlflow_tracking_utils import (
     log_metrics_to_mlflow,
@@ -50,35 +42,7 @@ from src.utils.paths import BASELINE_MODEL_DIR
 logger = get_logger(__name__, headline="baseline_logistic_training.py")
 
 
-def load_params() -> Dict[str, Any]:
-    """
-    Load logistic regression parameters from params.yaml using DVC.
-    Falls back gracefully if running outside a DVC pipeline.
-    """
-    try:
-        logger.info("Loading params via dvc.api")
-        params = dvc.api.params_show()
-        return params["train"]["logistic_baseline"]
-    except Exception as e:
-        logger.warning(f"Could not load params via dvc.api: {e}")
-        logger.warning("Falling back to script defaults (only for local debugging).")
-        return {
-            "model_type": "LogisticRegression",
-            "class_weight": "balanced",
-            "solver": "liblinear",
-            "max_iter": 2000,
-            "C": 1.0,
-            "random_state": 42,
-        }
-
-
-def train_baseline(
-    C: float,
-    max_iter: int,
-    solver: str,
-    class_weight: str,
-    random_state: int = 42,
-) -> None:
+def train_baseline(config: LogisticBaselineConfig, random_state: int = 42) -> None:
     """Train Logistic Regression baseline and log to MLflow."""
 
     # --- Load engineered features using helper ---
@@ -86,11 +50,20 @@ def train_baseline(
     X_train, X_val, X_test, y_train, y_val, y_test, le = load_feature_data()
 
     # --- Model Configuration ---
+    # Using strict types from Pydantic config
     params = {
-        "C": C,
-        "max_iter": max_iter,
-        "solver": solver,
-        "class_weight": class_weight,
+        "C": 1.0,  # Default C=1.0 as it's not explicitly in the config schema yet, but usually good practice to expose it.
+        # Wait, the previous code had --C arg but it wasn't in the schema logic I saw earlier?
+        # Let me check schema again. `LogisticBaselineConfig` has model_type, class_weight, solver, max_iter.
+        # It does NOT have C. I should probably add C to the schema or use default.
+        # The previous code had: "C": 1.0 in fallback.
+        # Let's check params.yaml. It has: model_type, class_weight, solver, max_iter.
+        # It does not have C. So I will use the default C=1.0 or what sklearn uses.
+        # Sklearn default is 1.0.
+        # I will stick to what is in the config object.
+        "max_iter": config.max_iter,
+        "solver": config.solver,
+        "class_weight": config.class_weight,
         "random_state": random_state,
     }
 
@@ -103,7 +76,7 @@ def train_baseline(
             {
                 "stage": "model_training",
                 "model_type": "LogisticRegression",
-                "imbalance_method": f"class_weight_{class_weight}",
+                "imbalance_method": f"class_weight_{config.class_weight}",
                 "experiment_type": "baseline_modeling",
                 "description": "Baseline Logistic Regression with balanced class weights on TF-IDF features",
             }
@@ -175,59 +148,18 @@ def train_baseline(
 
 
 def main() -> None:
-    """Parse args and run baseline training using DVC params as source of truth."""
-    params = load_params()
-    parser = argparse.ArgumentParser(
-        description="Train Logistic Regression baseline. Params from params.yaml by default."
-    )
-
-    parser.add_argument(
-        "--C", type=float, required=False, help="Inverse regularization strength."
-    )
-    parser.add_argument(
-        "--max_iter",
-        type=int,
-        required=False,
-        help="Maximum number of iterations for solver.",
-    )
-    parser.add_argument(
-        "--solver", type=str, required=False, help="Algorithm to use in optimization."
-    )
-    parser.add_argument(
-        "--class_weight",
-        type=str,
-        required=False,
-        help="Weights associated with classes.",
-    )
-    args = parser.parse_args()
-
-    # Consolidate parameters (CLI overrides DVC-loaded params)
-    final_params = params.copy()
-    overridden_keys = []
-    for key in final_params:
-        cli_val = getattr(args, key, None)
-        if cli_val is not None:
-            final_params[key] = cli_val
-            overridden_keys.append(key)
-
-    if overridden_keys:
-        logger.warning(
-            "CLI overrides detected for: %s. This run may not be reproducible with 'dvc repro'.",
-            ", ".join(overridden_keys),
-        )
-
+    """Run baseline training using ConfigurationManager as source of truth."""
     logger.info("🚀 Starting baseline Logistic Regression training...")
+
+    # --- Parameter Loading via ConfigurationManager ---
+    config_manager = ConfigurationManager()
+    baseline_config = config_manager.get_logistic_baseline_config()
 
     # --- MLflow Setup ---
     mlflow_uri = get_mlflow_uri()
     setup_experiment("Model Training - Baseline Logistic Regression", mlflow_uri)
 
-    train_baseline(
-        C=final_params.get("C", 1.0),
-        max_iter=final_params.get("max_iter", 2000),
-        solver=final_params.get("solver", "liblinear"),
-        class_weight=final_params.get("class_weight", "balanced"),
-    )
+    train_baseline(config=baseline_config)
 
 
 if __name__ == "__main__":
