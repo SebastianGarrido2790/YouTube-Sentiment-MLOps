@@ -5,16 +5,15 @@ Logs experiment to MLflow; saves the model bundle (model + LabelEncoder) locally
 Parameters are loaded strictly from params.yaml via ConfigurationManager.
 
 Usage:
-    python -m src.models.baseline_logistic
+Run the entire pipeline:
+    uv run dvc repro               # Uses params.yaml → fully reproducible
+Run specific pipeline stage:
+    uv run python -m src.models.baseline_logistic
 
 Requirements:
     - Processed features in models/features/.
     - Parameters defined in params.yaml under `train.logistic_baseline`.
-    - MLflow server running.
-
-Design:
-    - Parameters are read from params.yaml via ConfigurationManager (single source of truth).
-    - No CLI overrides allowed to ensure reproducibility.
+    - MLflow server must be running (e.g., uv run python -m mlflow server --host 127.0.0.1 --port 5000).
 """
 
 import mlflow
@@ -51,16 +50,9 @@ def train_baseline(config: LogisticBaselineConfig, random_state: int = 42) -> No
 
     # --- Model Configuration ---
     # Using strict types from Pydantic config
+    # Using strict types from Pydantic config
     params = {
-        "C": 1.0,  # Default C=1.0 as it's not explicitly in the config schema yet, but usually good practice to expose it.
-        # Wait, the previous code had --C arg but it wasn't in the schema logic I saw earlier?
-        # Let me check schema again. `LogisticBaselineConfig` has model_type, class_weight, solver, max_iter.
-        # It does NOT have C. I should probably add C to the schema or use default.
-        # The previous code had: "C": 1.0 in fallback.
-        # Let's check params.yaml. It has: model_type, class_weight, solver, max_iter.
-        # It does not have C. So I will use the default C=1.0 or what sklearn uses.
-        # Sklearn default is 1.0.
-        # I will stick to what is in the config object.
+        "C": config.C,
         "max_iter": config.max_iter,
         "solver": config.solver,
         "class_weight": config.class_weight,
@@ -128,8 +120,8 @@ def train_baseline(config: LogisticBaselineConfig, random_state: int = 42) -> No
                 mlflow.log_metric(f"test_f1_{label}", metrics["f1-score"])
 
         logger.info(
-            f"✅ Logistic Regression baseline complete | "
-            f"Val F1: {val_f1:.4f}, Test F1: {test_f1:.4f}"
+            f"✅ Baseline Logistic Regression Complete | "
+            f"Val F1: {val_f1:.4f}, Test F1: {test_f1:.4f} ✅"
         )
 
         # --- Log Model Bundle ---
@@ -143,13 +135,13 @@ def train_baseline(config: LogisticBaselineConfig, random_state: int = 42) -> No
         )
 
         logger.info(
-            f"🎯 MLflow Run completed | Run ID: {mlflow.active_run().info.run_id}"
+            f"🎯 MLflow Run completed | Run ID: {mlflow.active_run().info.run_id} 🎯"
         )
 
 
 def main() -> None:
     """Run baseline training using ConfigurationManager as source of truth."""
-    logger.info("🚀 Starting baseline Logistic Regression training...")
+    logger.info("🚀 Starting baseline Logistic Regression training... 🚀")
 
     # --- Parameter Loading via ConfigurationManager ---
     config_manager = ConfigurationManager()

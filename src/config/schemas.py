@@ -105,6 +105,7 @@ class LogisticBaselineConfig(BaseModel):
     class_weight: str
     solver: str
     max_iter: int
+    C: float = Field(default=1.0, description="Inverse regularization strength.")
 
 
 class LightGBMConfig(BaseModel):

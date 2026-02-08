@@ -41,7 +41,7 @@ graph TD
     subgraph Training_Logic ["🚀 Training Logic"]
         Script[["🐍 baseline_logistic.py"]]:::process
         
-        ConfigMgr -->|Get Baseline Params<br>(C, MaxIter)| Script
+        ConfigMgr -->|Get Baseline Params| Script
         Inputs --> Script
         
         subgraph Model_Execution ["Model Execution"]
@@ -77,6 +77,7 @@ This stage uses `ConfigurationManager` to retrieve `LogisticBaselineConfig`. Thi
 *   `class_weight`: "balanced" (critical for handling sentiment imbalance)
 *   `solver`: "liblinear" (efficient for smaller datasets)
 *   `max_iter`: 2000 (ensures convergence)
+*   `C`: 1.0 (regularization strength)
 
 ### B. Training Process
 1.  **Data Loading:** Automatically loads `X_*.npz` and `y_*.npy` files from the `models/features/` directory.
