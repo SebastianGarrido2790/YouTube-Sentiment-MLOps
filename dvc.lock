@@ -393,8 +393,7 @@ stages:
       md5: 063a94ac7c077d4e4b8e5a35815486bf
       size: 1530346
   model_evaluation:
-    cmd: uv run python -m src.models.model_evaluation --models lightgbm xgboost 
-      logistic_baseline
+    cmd: python -m src.models.model_evaluation
     deps:
     - path: models/advanced/distilbert_model.pkl
       hash: md5
@@ -407,8 +406,8 @@ stages:
       nfiles: 0
     - path: models/advanced/lightgbm_model.pkl
       hash: md5
-      md5: a0a6c40522e704e547638d6421c12f3f
-      size: 1114687
+      md5: 566ef3b7429699ef9c878f2a79862145
+      size: 1079941
     - path: models/advanced/xgboost_model.pkl
       hash: md5
       md5: 3dfbfedf24c96faf7d8b17a301facb39
@@ -431,24 +430,24 @@ stages:
       size: 44320
     - path: src/models/helpers/data_loader.py
       hash: md5
-      md5: 7a89b90d5c30a18dd6288af65d98984e
-      size: 4150
+      md5: 0f9560e9e95328ccfeb849248a09b2cc
+      size: 4123
     - path: src/models/helpers/train_utils.py
       hash: md5
-      md5: 4faff6a55ee646192baff189b1fb276d
-      size: 4913
+      md5: a7fc222d49690c7659f8e0fc62b236bc
+      size: 4886
     - path: src/models/model_evaluation.py
       hash: md5
-      md5: 3a3c45b727b1a12a0926977fdb6d05c1
-      size: 17918
+      md5: 66f2853f9501aa5f3b7a7bf1d4362efe
+      size: 16394
     - path: src/utils/logger.py
       hash: md5
       md5: 73106bb3de64f8ef8c097a990a6e2f49
       size: 2345
     - path: src/utils/mlflow_config.py
       hash: md5
-      md5: 80c4e94241c5d684a2e28ce2456005eb
-      size: 4882
+      md5: 407c62f4427579c46492a1ffe02fab22
+      size: 4760
     - path: src/utils/paths.py
       hash: md5
       md5: 7b2d73cb9e053c99e1e0296ee965bdff
@@ -462,11 +461,11 @@ stages:
     outs:
     - path: models/advanced/evaluation/best_model_run_info.json
       hash: md5
-      md5: 6c44cbdf65008bf229e2f92ab6d27794
-      size: 185
+      md5: 448f01925d4e9cdd974c9544c708588f
+      size: 184
     - path: models/advanced/evaluation/lightgbm_test_metrics.json
       hash: md5
-      md5: f1a214fce4bad1dcde25d8c25f4c1dc2
+      md5: c1143c6d9d11e8f6c3ea0a3d04699c99
       size: 90
     - path: models/advanced/evaluation/logistic_baseline_test_metrics.json
       hash: md5
@@ -478,12 +477,12 @@ stages:
       size: 89
     - path: reports/figures/evaluation/comparative_roc_curve.png
       hash: md5
-      md5: 0fb65d97f2e47c65683aa35a8407a4fb
-      size: 90321
+      md5: 2e3dbfbea30896e5b9bb11fc5f4b474e
+      size: 89993
     - path: reports/figures/evaluation/lightgbm_confusion_matrix.png
       hash: md5
-      md5: 62790b5b5d5d35a3f52360ea6f663768
-      size: 32098
+      md5: 617ebeacc863c59c566ae0bab1d127e3
+      size: 33318
     - path: reports/figures/evaluation/xgboost_confusion_matrix.png
       hash: md5
       md5: 50968b7c36c66a10e0929b292fd12925
