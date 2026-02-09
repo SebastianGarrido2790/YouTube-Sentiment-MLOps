@@ -26,6 +26,7 @@ from src.config.schemas import (
     LogisticBaselineConfig,
     TrainConfig,
     DistilBERTConfig,
+    ModelEvaluationConfig,
 )
 from src.utils.logger import get_logger
 
@@ -159,3 +160,9 @@ class ConfigurationManager:
         if not self.config:
             raise RuntimeError("Configuration not loaded.")
         return self.config.train.distilbert
+
+    def get_model_evaluation_config(self) -> ModelEvaluationConfig:
+        """Returns the configuration for model evaluation."""
+        if not self.config:
+            raise RuntimeError("Configuration not loaded.")
+        return self.config.model_evaluation
