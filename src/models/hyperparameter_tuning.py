@@ -169,7 +169,7 @@ def retrain_and_save_model(model_name: str, best_params: dict):
             "objective": "multi:softprob",
             "num_class": 3,
             "random_state": 42,
-            "verbosity": 0.0,
+            "verbosity": 0,
         }
         final_params = {**static_params, **best_params}
 
