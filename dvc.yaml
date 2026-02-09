@@ -187,7 +187,7 @@ stages:
       - models/advanced/distilbert_metrics.json
 
   model_evaluation:
-    cmd: uv run python -m src.models.model_evaluation --models lightgbm xgboost logistic_baseline
+    cmd: python -m src.models.model_evaluation
     deps:
       - src/models/model_evaluation.py
       - src/utils/mlflow_config.py

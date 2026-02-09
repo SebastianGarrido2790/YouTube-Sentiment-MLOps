@@ -1,44 +1,31 @@
 """
-Comparative Model Evaluation Script (DVC-Aware).
+Comparative Model Evaluation Script (ConfigurationManager-Aware).
 
-Evaluates a list of "champion" models (e.g., LightGBM, XGBoost) on the
+Evaluates a list of "champion" models (e.g., LightGBM, XGBoost, DistilBERT) on the
 independent test set using their best hyperparameters (as saved model artifacts).
 
 This script is designed for scalability and can evaluate any number of models.
-It prioritizes parameters defined in `params.yaml` via DVC but allows for
-local CLI overrides.
+It loads configuration and model lists strictly via `ConfigurationManager`.
 
 It logs to MLflow in a structured way:
 - A single Parent Run for the comparison.
 - A Child Run for each model, containing its specific metrics and artifacts.
 - A comparative ROC curve artifact logged to the Parent Run.
 
-Usage (DVC - Preferred):
+Usage:
+Run the entire pipeline:
     uv run dvc repro
-    Run specific pipeline stage:
-    uv run dvc repro model_evaluation
-
-Usage (local cli override only)
-    uv run python -m src.models.model_evaluation --models lightgbm xgboost
+Run specific pipeline stage:
+    uv run python -m src.models.model_evaluation
 
 Requirements:
-    - Processed features in models/features/.
-    - Parameters defined in params.yaml under `model_evaluation`.
-    - MLflow server running.
-
-Design Considerations:
-- Scalability: Easily add more models to evaluate via params.yaml or CLI.
-- Maintainability: Centralized evaluation logic reduces duplication.
-- Reproducibility: Logs all evaluations to MLflow with clear parent-child structure.
-- Adaptability: Can handle different model types and evaluation metrics.
+    - MLflow server must be running (e.g., uv run python -m mlflow server --host 127.0.0.1 --port 5000).
+    - DVC must be initialized and the 'model_evaluation' stage must be defined in dvc.yaml.
 """
 
-import argparse
 import pickle
 from itertools import cycle
 from typing import Any, Dict, List
-
-import dvc.api
 import matplotlib.pyplot as plt
 import mlflow
 import mlflow.lightgbm
@@ -55,6 +42,7 @@ from sklearn.metrics import (
 from sklearn.preprocessing import LabelBinarizer
 
 # --- Project Utilities ---
+from src.config.manager import ConfigurationManager
 from src.models.helpers.data_loader import load_feature_data
 from src.models.helpers.mlflow_tracking_utils import (
     log_confusion_matrix_as_artifact,
@@ -84,19 +72,6 @@ logger = get_logger(__name__, headline="model_evaluation.py")
 # =====================================================================
 #  Core Helper Functions
 # =====================================================================
-def load_params() -> Dict[str, Any]:
-    """Load project configuration parameters using DVC."""
-    try:
-        logger.info("Loading params via dvc.api")
-        return dvc.api.params_show()
-    except Exception as e:
-        logger.error(f"Failed to load params via dvc.api: {e}")
-        # Fallback for purely local/debug runs without DVC context
-        return {
-            "model_evaluation": {"models": ["lightgbm", "xgboost", "logistic_baseline"]}
-        }
-
-
 def load_model_artifact(model_name: str):
     """
     Loads the trained model artifact from the correct directory.
@@ -106,7 +81,7 @@ def load_model_artifact(model_name: str):
 
     Args:
         model_name (str): The name of the model to load ('lightgbm', 'xgboost',
-                          or 'logistic_baseline').
+                          'logistic_baseline', 'distilbert').
 
     Returns:
         object: The trained model object (LogisticRegression, LGBMClassifier, etc.).
@@ -140,11 +115,18 @@ def load_model_artifact(model_name: str):
 
     elif model_name in ["lightgbm", "xgboost", "distilbert"]:
         # 2. Advanced models are saved directly as the model object
-        # Note: DistilBERT loading here assumes a pickle artifact, but typically it uses
-        # a directory structure. If DistilBERT is added to evaluation, specific logic
-        # for loading from 'distilbert_results' might be needed or we pickle the wrapper.
-        # For now, we assume standard pickle loading for consistency with the training script.
+        # NOTE: DistilBERT loading here assumes a pickle artifact.
+
         filepath = ADVANCED_DIR / f"{model_name}_model.pkl"
+
+        # Check if file is empty (placeholder) for DistilBERT
+        if model_name == "distilbert":
+            if filepath.exists() and filepath.stat().st_size == 0:
+                logger.warning(
+                    f"DistilBERT artifact at {filepath} is empty (skipped training). Skipping evaluation."
+                )
+                return None
+
         logger.info(
             f"Loading advanced model artifact from: {filepath.relative_to(PROJECT_ROOT)}"
         )
@@ -157,7 +139,6 @@ def load_model_artifact(model_name: str):
         except FileNotFoundError:
             logger.error(f"Advanced model file not found at: {filepath}")
             raise
-
     else:
         raise ValueError(
             f"Unknown model name: {model_name}. Must be 'lightgbm', 'xgboost', 'distilbert', or 'logistic_baseline'."
@@ -181,20 +162,16 @@ def evaluate_model(model, X_test, y_test):
             y_pred = np.argmax(y_pred_proba, axis=1)
         elif "transformers" in str(type(model)) or "DistilBert" in str(type(model)):
             # Placeholder for DistilBERT evaluation logic if integrated directly
-            # Typically requires tokenized input, not just X_test features.
-            # For this script, we assume X_test are numerical features.
-            # If DistilBERT is evaluated here, X_test needs to be handled differently
-            # or this function needs to delegate.
             logger.warning(
                 "DistilBERT evaluation via this script requires compatible input features."
             )
             # Raising error to prevent misleading results if not properly implemented
-            raise NotImplementedError(
-                "Direct DistilBERT evaluation not yet implemented in this general evaluator."
-            )
+            # For simplicity, we are skipping DistilBERT evaluation in this loop
+            # if it wasn't handled upstream or via a specific evaluator.
+            # Ideally, DistilBERT evaluation should be separate or handle tokenized inputs.
+            return None, None, None
         else:
             # Fallback for standard sklearn-compatible APIs
-            logger.warning(f"Unknown model type: {type(model)}. Assuming sklearn API.")
             y_pred = model.predict(X_test)
             y_pred_proba = model.predict_proba(X_test)
 
@@ -261,7 +238,6 @@ def plot_comparative_roc_curve(y_test_bin, roc_results: list, labels: list):
     plt.legend(loc="lower right")
     plt.grid(True)
     plt.tight_layout()
-
     plt.savefig(file_path)
     plt.close()
 
@@ -287,7 +263,7 @@ def log_model_to_mlflow(model, model_name: str):
             registered_model_name=None,
         )
     else:
-        logger.warning(f"No specific MLflow flavor found for {type(model)}.")
+        # Fallback
         mlflow.sklearn.log_model(
             sk_model=model,
             artifact_path="model",
@@ -299,12 +275,17 @@ def log_model_to_mlflow(model, model_name: str):
 # =====================================================================
 #  Main Execution
 # =====================================================================
-def main(model_list: List[str]):
+def main():
+    # --- 1. Load Configuration ---
+    config_manager = ConfigurationManager()
+    eval_config = config_manager.get_model_evaluation_config()
+    model_list = eval_config.models
+
     # --- Setup MLflow ---
     mlflow_uri = get_mlflow_uri()
     setup_experiment(EXPERIMENT_NAME, mlflow_uri)
 
-    # --- 1. Load Data & Binarize Labels (Done Once) ---
+    # --- 2. Load Data & Binarize Labels ---
     try:
         # load_feature_data: X_train, X_val, X_test, y_train, y_val, y_test, le
         _, _, X_test, _, _, y_test, le = load_feature_data(validate_files=True)
@@ -321,19 +302,26 @@ def main(model_list: List[str]):
         logger.error(f"An error occurred during data loading: {e}")
         raise
 
-    # --- 2. Start Parent MLflow Run for Comparison ---
+    # --- 3. Start Parent MLflow Run for Comparison ---
     with mlflow.start_run(run_name="Model_Comparison_Test_Set") as parent_run:
-        logger.info(f"🚀 Starting model comparison for: {model_list}")
+        logger.info(f"🚀 Starting model comparison for: {model_list} 🚀")
         mlflow.set_tag("task", "Comparative Evaluation")
         mlflow.log_param("models_evaluated", ", ".join(model_list))
 
         roc_results = []  # Store probas for final comparative plot
-
         champion_metrics = []  # List to track champion model metrics
 
-        # --- 3. Loop and Evaluate Each Model in a Child Run ---
+        # --- 4. Loop and Evaluate Each Model in a Child Run ---
         for model_name in model_list:
             logger.info(f"--- Evaluating model: {model_name} ---")
+
+            # Special check for DistilBERT skip (since we don't have eval logic here yet)
+            if model_name == "distilbert":
+                logger.info(
+                    "DistilBERT evaluation is not yet supported in this script. Skipping."
+                )
+                continue
+
             with mlflow.start_run(
                 run_name=f"Evaluation_{model_name}", nested=True
             ) as child_run:
@@ -343,9 +331,17 @@ def main(model_list: List[str]):
 
                     # Load model
                     model = load_model_artifact(model_name)
+                    if model is None:
+                        logger.warning(
+                            f"Feature processing skipped for {model_name}. Skipping evaluation."
+                        )
+                        continue
 
                     # Evaluate (get report, cm, probas)
                     report, cm, y_pred_proba = evaluate_model(model, X_test, y_test)
+
+                    if report is None:
+                        continue
 
                     # Calculate Macro AUC Score
                     test_macro_auc = roc_auc_score(
@@ -388,7 +384,7 @@ def main(model_list: List[str]):
                     logger.info(
                         f"✅ Evaluation complete for {model_name}. "
                         f"Test Macro F1: {report['macro avg']['f1-score']:.4f} | "
-                        f"Test Macro AUC: {test_macro_auc:.4f}"
+                        f"Test Macro AUC: {test_macro_auc:.4f} ✅"
                     )
 
                 except Exception as e:
@@ -397,7 +393,7 @@ def main(model_list: List[str]):
                     mlflow.log_param("error", str(e))
                     continue  # Continue to the next model
 
-        # --- 4. After Loop: Generate Comparative Artifacts (in Parent Run) ---
+        # --- 5. After Loop: Generate Comparative Artifacts (in Parent Run) ---
         if roc_results:
             logger.info("Generating comparative ROC curve...")
             plot_comparative_roc_curve(y_test_bin, roc_results, labels)
@@ -413,7 +409,7 @@ def main(model_list: List[str]):
                 logger.info(
                     f"🏆 Champion selected: {champion['model_name']} "
                     f"(AUC: {champion['test_macro_auc']:.4f}). "
-                    f"Saving run info for registration."
+                    f"Saving run info for registration. 🏆"
                 )
 
                 # Save the champion's info to the DVC output file
@@ -431,40 +427,9 @@ def main(model_list: List[str]):
             )
 
         logger.info(
-            f"🏁 Model comparison complete. View Parent Run: {parent_run.info.run_id}"
+            f"🏁 Model comparison complete. View Parent Run: {parent_run.info.run_id} 🏁"
         )
 
 
 if __name__ == "__main__":
-    # 1. Load parameters from DVC
-    params = load_params()
-    default_models = params.get("model_evaluation", {}).get("models", [])
-
-    # 2. Parse CLI args (optional overrides)
-    parser = argparse.ArgumentParser(description="Comparative Model Evaluation Script")
-    parser.add_argument(
-        "--models",
-        nargs="+",  # Accepts one or more model names
-        required=False,  # Optional now
-        help="List of model names to evaluate (e.g., lightgbm xgboost). Overrides params.yaml.",
-    )
-    args = parser.parse_args()
-
-    # 3. Determine final model list
-    if args.models:
-        model_list = args.models
-        logger.warning(
-            f"CLI override detected: Evaluating models provided via CLI ({model_list}). "
-            "This run may not be fully reproducible via 'dvc repro'."
-        )
-    elif default_models:
-        model_list = default_models
-        logger.info(f"Using model list from params.yaml: {model_list}")
-    else:
-        # Fallback default if neither is provided
-        model_list = ["lightgbm", "xgboost", "logistic_baseline"]
-        logger.warning(
-            f"No models found in params.yaml or CLI. Using hardcoded defaults: {model_list}"
-        )
-
-    main(model_list=model_list)
+    main()
