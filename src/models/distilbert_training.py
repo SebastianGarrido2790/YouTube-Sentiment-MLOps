@@ -10,11 +10,18 @@ Featues:
     - **MLOps**: Full experiment tracking with MLflow and artifacts for DVC.
 
 Usage:
-    uv run dvc repro distilbert_training
+Run the entire pipeline:
+    uv run dvc repro
+Run specific pipeline stage:
+    uv run python -m src.models.distilbert_training
+
+Requirements:
+    - Processed features in models/features/.
+    - Parameters defined in params.yaml under `distilbert`.
+    - MLflow server must be running (e.g., uv run python -m mlflow server --host 127.0.0.1 --port 5000).
 """
 
 import functools
-
 import mlflow
 import mlflow.transformers
 import numpy as np
@@ -48,7 +55,7 @@ from src.utils.logger import get_logger
 from src.utils.mlflow_config import get_mlflow_uri
 from src.utils.paths import ADVANCED_DIR
 
-logger = get_logger(__name__)
+logger = get_logger(__name__, headline="DistilBERT_Training.py")
 
 
 def objective(trial: optuna.trial.Trial, config: DistilBERTConfig) -> float:
@@ -208,7 +215,7 @@ def main() -> None:
     study = optuna.create_study(direction="maximize")
     objective_with_config = functools.partial(objective, config=distilbert_config)
 
-    logger.info(f"Running {distilbert_config.n_trials} trials...")
+    logger.info(f"🏃 Running {distilbert_config.n_trials} trials...")
     study.optimize(
         objective_with_config,
         n_trials=distilbert_config.n_trials,
@@ -219,7 +226,7 @@ def main() -> None:
     best_params = study.best_params
 
     logger.info(
-        f"✅ Tuning complete | Best F1: {best_f1:.4f} | Best parameters: {best_params}"
+        f"✅ Tuning complete | Best F1: {best_f1:.4f} | Best parameters: {best_params} ✅"
     )
 
     # --- 5. Save Artifacts ---
@@ -233,8 +240,8 @@ def main() -> None:
     save_hyperparams_bundle("distilbert", best_params, best_f1)
     save_metrics_json("distilbert", best_f1)
 
-    # Note: We technically should retrain the best model here or copy the best artifact
-    # from the best trial run. For simplicity in this refactor, we are saving configs/metrics.
+    # NOTE: We technically should retrain the best model here or copy the best artifact
+    # from the best trial run. For simplicity, we are saving configs/metrics.
     # The actual model weight saving is handled inside the trial loop via MLflow logging.
     # Users can retrieve the best model from MLflow using the best_trial_id.
 
