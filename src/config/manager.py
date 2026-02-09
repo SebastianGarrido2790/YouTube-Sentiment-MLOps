@@ -24,6 +24,7 @@ from src.config.schemas import (
     ImbalanceTuningConfig,
     FeatureEngineeringConfig,
     LogisticBaselineConfig,
+    TrainConfig,
 )
 from src.utils.logger import get_logger
 
@@ -145,3 +146,9 @@ class ConfigurationManager:
         if not self.config:
             raise RuntimeError("Configuration not loaded.")
         return self.config.train.logistic_baseline
+
+    def get_train_config(self) -> TrainConfig:
+        """Returns the master configuration for the training stage."""
+        if not self.config:
+            raise RuntimeError("Configuration not loaded.")
+        return self.config.train
