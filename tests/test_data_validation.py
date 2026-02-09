@@ -3,45 +3,43 @@ import pandas as pd
 from src.data.make_dataset import clean_text
 
 
-def test_clean_text_basic():
-    """Test basic text cleaning (lowercase, removal of non-alpha)."""
-    text = "Hello World! 123"
-    expected = "hello world"
+@pytest.mark.parametrize(
+    "text,expected",
+    [
+        ("Hello World! 123", "hello world"),
+        ("Sentim@nt An@lys!s #", "sentim nt an lys s"),
+        ("", ""),
+        (pd.NA, ""),
+        (None, ""),
+    ],
+    ids=["basic_cleaning", "special_chars", "empty_string", "pd_NA", "None_value"],
+)
+def test_clean_text_general(text, expected):
+    """
+    Test general text cleaning scenarios.
+
+    Covers:
+    - Basic lowercase and non-alpha removal
+    - Special character removal
+    - Edge cases (empty, NA, None)
+    """
     assert clean_text(text) == expected
 
 
-def test_clean_text_special_chars():
-    """Test removal of special characters."""
-    text = "Sentim@nt An@lys!s #"
-    expected = "sentim nt an lys s"
-    assert clean_text(text) == expected
+@pytest.mark.parametrize(
+    "text,stop_words,expected",
+    [
+        ("This is a test sentence", {"this", "is", "a"}, "test sentence"),
+        ("go to the gym", {"the"}, "gym"),  # "go" and "to" removed due to len <= 2
+    ],
+    ids=["remove_stopwords", "remove_short_tokens"],
+)
+def test_clean_text_with_stopwords(text, stop_words, expected):
+    """
+    Test text cleaning with stopword removal enabled.
 
-
-def test_clean_text_stopwords():
-    """Test stopword removal."""
-    text = "This is a test sentence"
-    stop_words = {"this", "is", "a"}
-    expected = "test sentence"
-    # Note: 'clean_text' logic splits by space.
-    # "This is a test sentence" -> lower -> "this is a test sentence"
-    # -> tokens: ["this", "is", "a", "test", "sentence"]
-    # -> filter: "test", "sentence" -> join -> "test sentence"
-    assert clean_text(text, stop_words) == expected
-
-
-def test_clean_text_empty_and_nan():
-    """Test handling of empty strings and NaN."""
-    assert clean_text("") == ""
-    assert clean_text(pd.NA) == ""
-    assert clean_text(None) == ""
-
-
-def test_clean_text_short_tokens():
-    """Test removal of short tokens when stopwords are provided."""
-    # The logic in clean_text is: if stop_words provided, also remove len(t) <= 2
-    text = "go to the gym"
-    stop_words = {"the"}
-    # "go", "to", "gym" -> "go"(2), "to"(2), "gym"(3)
-    # expected: "gym"
-    expected = "gym"
+    Covers:
+    - Stopword filtering
+    - Short token filtering (len <= 2) when stopwords are provided
+    """
     assert clean_text(text, stop_words) == expected
