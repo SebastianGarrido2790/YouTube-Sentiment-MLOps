@@ -223,7 +223,7 @@ stages:
       - model_evaluation.models
 
   register_model:
-    cmd: uv run python -m src.models.register_model
+    cmd: python -m src.models.register_model
     deps:
       - src/models/register_model.py
       - src/utils/mlflow_config.py

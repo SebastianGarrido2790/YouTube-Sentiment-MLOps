@@ -1,5 +1,5 @@
 """
-Automated Model Registration Script (DVC-Aware).
+Automated Model Registration Script (ConfigurationManager-Aware).
 
 This module reads the champion model information (selected during the
 'model_evaluation' stage) from 'best_model_run_info.json'.
@@ -7,34 +7,23 @@ This module reads the champion model information (selected during the
 It then:
 1.  Loads the champion's 'run_id' and 'model_name'.
 2.  Loads the champion's corresponding test metrics (e.g., 'lightgbm_test_metrics.json').
-3.  Loads the 'f1_threshold' from 'params.yaml' using DVC.
+3.  Loads the 'f1_threshold' from 'params.yaml' using `ConfigurationManager`.
 4.  Checks if the champion's F1 score meets the threshold.
 5.  If it passes, registers the model in the MLflow Model Registry.
 6.  Handles modern (tag-based) and legacy (stage-based) MLflow registry workflows.
 
-Usage (DVC - Preferred):
-    uv run dvc repro
-    Run specific pipeline stage:
+Usage:
     uv run dvc repro register_model
-
-Usage (local cli override only)
-    uv run python -m src.models.register_model --f1_threshold 0.70
-
-Requirements:
-    - 'best_model_run_info.json' created by 'model_evaluation' stage.
-    - Corresponding test metrics JSON files in 'models/evaluation/'.
-    - Parameters defined in 'params.yaml' under `register.f1_threshold`.
-    - MLflow server running.
 """
 
 import json
-
-import dvc.api
-import mlflow
-from mlflow.tracking import MlflowClient
 from packaging import version
 
+import mlflow
+from mlflow.tracking import MlflowClient
+
 # --- Project Utilities ---
+from src.config.manager import ConfigurationManager
 from src.utils.logger import get_logger
 from src.utils.mlflow_config import get_mlflow_uri
 from src.utils.paths import EVAL_DIR
@@ -180,10 +169,11 @@ def main():
     logger.info("🚀 Starting automated model registration workflow...")
 
     try:
-        # --- 1. Load params to get F1 threshold via DVC ---
-        logger.info("Loading params via dvc.api")
-        params = dvc.api.params_show()
-        f1_threshold = params.get("register", {}).get("f1_threshold", 0.75)
+        # --- 1. Load params to get F1 threshold via ConfigurationManager ---
+        config_manager = ConfigurationManager()
+        register_config = config_manager.get_register_config()
+        f1_threshold = register_config.f1_threshold
+
         logger.info(f"Using F1 threshold for registration: {f1_threshold}")
 
         # --- 2. Load champion model info from evaluation directory ---

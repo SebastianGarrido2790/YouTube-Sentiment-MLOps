@@ -27,6 +27,7 @@ from src.config.schemas import (
     TrainConfig,
     DistilBERTConfig,
     ModelEvaluationConfig,
+    RegisterConfig,
 )
 from src.utils.logger import get_logger
 
@@ -166,3 +167,9 @@ class ConfigurationManager:
         if not self.config:
             raise RuntimeError("Configuration not loaded.")
         return self.config.model_evaluation
+
+    def get_register_config(self) -> RegisterConfig:
+        """Returns the configuration for model registration."""
+        if not self.config:
+            raise RuntimeError("Configuration not loaded.")
+        return self.config.register_config
