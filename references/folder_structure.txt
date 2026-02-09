@@ -1,124 +1,53 @@
 YouTube_Sentiment_Analysis
-├── LICENSE.txt
-├── README.md          <- The top-level README for developers using this project.
 ├── .dvc
 ├── .venv
-├── 🛡️ YouTube_Sentiment_Analysis.code-workspace  <- VSCode workspace file.
-├── app
-│   ├── inference_utils.py
-│   ├── insights_api.py
-│   ├── predict_model_absa.py
-│   ├── predict_model.py
-│   └── test_inference.py
-│
-├── chrome-extension
-│   ├── manifest.json
-│   ├── popup.css
-│   ├── popup.html
-│   ├── popup.js
-│   └── youtube_api.js
-│
-├── chrome-extension-absa
-│   ├── manifest.json
-│   ├── popup.css
-│   ├── popup.html
-│   ├── popup.js
-│   └── youtube_api.js
-│
+├── .vscode
 ├── data
-│   ├── external       <- Data from third-party sources.
-│   ├── interim        <- Intermediate data that has been transformed.
 │   ├── processed      <- The final, canonical data sets for modeling.
 │   └── raw            <- The original, immutable data dump.
-│
-├── docker        <- Docker configuration files.
-│   ├── .dockerignore
-│   ├── docker-compose.dev.yml
-│   ├── docker-compose.yml
-│   └── Dockerfile
-│
-├── github
-│   └── workflows
-│       └── ci.yml
-│
+├── dvc.lock
+├── dvc.yaml
 ├── logs
-│   └── experiments.log
-│
 ├── mlartifacts
 ├── mlruns
-│
 ├── models             <- Trained and serialized models, model predictions, or model summaries.
 │   ├── advanced
-│   │   ├── bert_hyperparams.pkl
-│   │   ├── lightgbm_best_hyperparams.pkl
-│   │   ├── xgboost_best_hyperparams.pkl
-│   │   ├── bert_results
-│   │   └── evaluation
-│   │       ├── lightgbm_evaluation_run.json
-│   │       ├── lightgbm_test_metrics.json
-│   │       └── lightgbm_confusion_matrix.png
+│   │   ├── evaluation
+│   │   └── distilbert_results
 │   ├── baseline
+│   │   ├── logistic_baseline.pkl
+│   │   └── baseline_metrics.json
 │   └── features
-│
-├── notebooks          <- Jupyter notebooks. The naming convention is a number (for ordering),
-│   │                     the creator's initials, and a short `-` delimited description, e.g.
-│   │                     `1.0-jqp-initial-data-exploration`.
-│   ├── .gitkeep
-│   └── 1.0-initial-eda.ipynb
-│
+│       ├── X_train.npz
+│       ├── y_train.npy
+│       └── label_encoder.pkl
+├── params.yaml
+├── pyproject.toml
+├── README.md          <- The top-level README for developers using this project.
 ├── references         <- Data dictionaries, manuals, and all other explanatory materials.
 │   ├── env_setup.md
 │   ├── folder_structure.txt
 │   ├── project_overview.md
 │   └── system_architecture_data_flow_you_tube_sentiment_mlops.md
-│
 ├── reports            <- Generated analysis as HTML, PDF, LaTeX, etc.
-│   ├── docs           
-│   │   ├── chrome-extension.md
-│   │   ├── ci_cd_pipeline.md
-│   │   ├── data_splitting.md
-│   │   ├── docker_setup.md
-│   │   ├── dvc_mlflow_integration.md
-│   │   ├── eda_findings.md
-│   │   ├── feature_engineering.md
-│   │   ├── modeling.md
-│   │   └── reset_.venv.md
-│   └── figures        <- Generated graphics and figures to be used in reporting
-│       ├── .gitignore
-│       ├── .gitkeep
-│       ├── evaluation
-│       ├── imbalance_methods
-│       ├── tfidf_max_features
-│       └── YouTube_API
-│           ├── aspect_based_sentiment
-│           │   ├── YouTube_API_4.png
-│           │   └── YouTube_API_5.png
-│           └── sentiment_prediction
-│               ├── YouTube_API_1.png
-│               ├── YouTube_API_2.png
-│               └── YouTube_API_3.png
-│
+│   ├── docs           <- Documentation for specific stages and components.
+│   └── figures        <- Generated graphics and figures to be used in reporting.
 ├── src                <- Source code for use in this project.
-│   ├── __init__.py    <- Makes src a Python module
-│   │
+│   ├── __init__.py
+│   ├── config
+│   │   ├── manager.py
+│   │   └── schemas.py
 │   ├── data           <- Scripts to download or generate data
 │   │   ├── download_dataset.py
 │   │   └── make_dataset.py
-│   │
 │   ├── features       <- Scripts to turn raw data into features for modeling.
-│   │   ├── __init__.py
-│   │   ├── .gitkeep
 │   │   ├── feature_engineering.py
-│   │   ├── imbalanced_tuning.py
+│   │   ├── imbalance_tuning.py
 │   │   ├── tfidf_max_features.py
-│   │   ├── tfidf_vs_bert.py
+│   │   ├── tfidf_vs_distilbert.py
 │   │   └── helpers
-│   │       ├── __init__.py
 │   │       └── feature_utils.py
-│   │
-│   ├── models         <- Scripts to train models and then use trained models to make predictions.
-│   │   ├── __init__.py
-│   │   ├── .gitkeep
+│   ├── models         <- Scripts to train models and make predictions.
 │   │   ├── absa_model.py
 │   │   ├── baseline_logistic.py
 │   │   ├── distilbert_training.py
@@ -126,31 +55,17 @@ YouTube_Sentiment_Analysis
 │   │   ├── model_evaluation.py
 │   │   ├── register_model.py
 │   │   └── helpers
-│   │       ├── __init__.py
 │   │       ├── data_loader.py
 │   │       ├── mlflow_tracking_utils.py
 │   │       └── train_utils.py
-│   │
 │   ├── utils          <- Scripts for reusable helper functions, classes, and modules.
-│   │   ├── __init__.py
 │   │   ├── logger.py
 │   │   ├── mlflow_config.py
 │   │   └── paths.py
-│   │
 │   └── visualization  <- Scripts for data visualization and plotting.
-│       ├── __init__.py
-│       ├── .gitkeep
-│       ├── plot_settings.py
-│       └── visualize.py
-│
-├── .dvcignore
-├── .env               <- Environmental variable for APIs.
-├── .gitignore
-├── .python-version
-├── dvc.lock
-├── dvc.yaml
-├── GEMINI.md
-├── params.yaml
-├── pyproject.toml
-├── reset-venv-full.ps1
+├── tests              <- Unit and integration tests
+│   ├── conftest.py
+│   ├── test_config.py
+│   ├── test_data_validation.py
+│   └── test_model_pipeline.py
 └── uv.lock
