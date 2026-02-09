@@ -25,6 +25,7 @@ from src.config.schemas import (
     FeatureEngineeringConfig,
     LogisticBaselineConfig,
     TrainConfig,
+    DistilBERTConfig,
 )
 from src.utils.logger import get_logger
 
@@ -152,3 +153,9 @@ class ConfigurationManager:
         if not self.config:
             raise RuntimeError("Configuration not loaded.")
         return self.config.train
+
+    def get_distilbert_config(self) -> DistilBERTConfig:
+        """Returns the configuration for DistilBERT training."""
+        if not self.config:
+            raise RuntimeError("Configuration not loaded.")
+        return self.config.train.distilbert
