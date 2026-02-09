@@ -1,3 +1,10 @@
+import sys
+from pathlib import Path
+
+# Add project root to sys.path so we can import src
+project_root = Path(__file__).resolve().parent.parent
+sys.path.append(str(project_root))
+
 import pytest
 import yaml
 from src.config.manager import ConfigurationManager
@@ -22,15 +29,15 @@ def mock_params_yaml(tmp_path):
             "max_depth": 10,
         },
         "feature_tuning": {
-            "max_features_values": "[100, 200]",
-            "best_ngram_range": "(1,1)",
+            "max_features_values": [100, 200],
+            "best_ngram_range": [1, 1],
             "n_estimators": 100,
             "max_depth": 10,
         },
         "imbalance_tuning": {
-            "imbalance_methods": "['smote']",
+            "imbalance_methods": ["smote"],
             "best_max_features": 1000,
-            "best_ngram_range": "(1,1)",
+            "best_ngram_range": [1, 1],
             "rf_n_estimators": 100,
             "rf_max_depth": 10,
         },
@@ -38,7 +45,7 @@ def mock_params_yaml(tmp_path):
             "use_distilbert": "False",
             "distilbert_batch_size": 16,
             "best_max_features": 1000,
-            "best_ngram_range": "(1,1)",
+            "best_ngram_range": "[1, 1]",  # Kept as string/optional based on schema but let's check
         },
         "train": {
             "logistic_baseline": {
@@ -46,6 +53,7 @@ def mock_params_yaml(tmp_path):
                 "class_weight": "balanced",
                 "solver": "lbfgs",
                 "max_iter": 100,
+                "C": 1.0,
             },
             "hyperparameter_tuning": {
                 "lightgbm": {"n_trials": 1},

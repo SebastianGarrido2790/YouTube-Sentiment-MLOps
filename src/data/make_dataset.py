@@ -64,7 +64,7 @@ def clean_text(text: str, stop_words: Optional[set] = None) -> str:
         tokens = word_tokenize(text)
         tokens = [t for t in tokens if t not in stop_words and len(t) > 2]
         text = " ".join(tokens)
-    return text
+    return text.strip()
 
 
 def prepare_reddit_dataset(test_size: float, random_state: int) -> None:
