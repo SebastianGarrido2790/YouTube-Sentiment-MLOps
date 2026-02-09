@@ -41,8 +41,8 @@ models/advanced/
 mlruns/
 mlartifacts/
 mlflow.db
-# Gemini
-GEMINI.md
+# Agents
+AGENTS.md
 
 
 
