@@ -164,7 +164,7 @@ stages:
       - models/advanced/xgboost_metrics.json
 
   train_distilbert:
-    cmd: uv run python -m src.models.distilbert_training
+    cmd: python -m src.models.distilbert_training
     deps:
       - src/models/distilbert_training.py
       - src/models/helpers/data_loader.py
@@ -178,6 +178,7 @@ stages:
       - models/advanced/distilbert_model.pkl
       - models/advanced/distilbert_results
     params:
+      - train.distilbert.enable
       - train.distilbert.n_trials
       - train.distilbert.batch_size
       - train.distilbert.lr
