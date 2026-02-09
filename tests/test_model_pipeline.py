@@ -45,7 +45,25 @@ def test_train_baseline(
     mock_data,
     mock_config,
 ):
-    """Test the train_baseline function end-to-end with mocks."""
+    """
+    Test the `train_baseline` function end-to-end with mocks to verify pipeline orchestration.
+
+    Arrange:
+        - Mock `load_feature_data` to return dummy arrays.
+        - Mock `mlflow` to simulate experiment tracking.
+        - Mock `save_...` functions to prevent disk I/O.
+        - Create a dummy `LogisticBaselineConfig`.
+
+    Act:
+        - Call `train_baseline(config)`.
+
+    Assert:
+        - **Data Loading**: `load_feature_data` is called once.
+        - **Experiment Tracking**: `mlflow.start_run` is initialized.
+        - **Model Logging**: `mlflow.sklearn.log_model` is called to register the model artifact.
+        - **Metrics Logging**: `mlflow.log_metric` is called (indirectly via `log_metrics_to_mlflow`).
+        - **Artifact Persistence**: `save_baseline_metrics_json` and `save_model_bundle` are triggered to save outputs locally.
+    """
 
     # Setup mocks
     mock_load_data.return_value = mock_data
@@ -69,8 +87,6 @@ def test_train_baseline(
 
     # 4. Metrics logged?
     # We check if log_metrics_to_mlflow (which calls mlflow.log_metric) was effectively used.
-    # Since we didn't patch log_metrics_to_mlflow explicitly but it uses mlflow,
-    # we can check mlflow.log_metric calls.
     assert mock_mlflow.log_metric.called
 
     # 5. Files saved locally?
