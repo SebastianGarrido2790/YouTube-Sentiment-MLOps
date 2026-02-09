@@ -124,7 +124,7 @@ stages:
       - models/baseline/baseline_metrics.json
 
   hyperparameter_tuning_lightgbm:
-    cmd: uv run python -m src.models.hyperparameter_tuning --model lightgbm
+    cmd: python -m src.models.hyperparameter_tuning --model lightgbm
     deps:
       - src/models/hyperparameter_tuning.py
       - src/models/helpers/data_loader.py
@@ -144,7 +144,7 @@ stages:
       - models/advanced/lightgbm_metrics.json
 
   hyperparameter_tuning_xgboost:
-    cmd: uv run python -m src.models.hyperparameter_tuning --model xgboost
+    cmd: python -m src.models.hyperparameter_tuning --model xgboost
     deps:
       - src/models/hyperparameter_tuning.py
       - src/models/helpers/data_loader.py
