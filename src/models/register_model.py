@@ -13,12 +13,20 @@ It then:
 6.  Handles modern (tag-based) and legacy (stage-based) MLflow registry workflows.
 
 Usage:
-    uv run dvc repro register_model
+Run the entire pipeline:
+    uv run dvc repro
+Run specific pipeline stage:
+    uv run python -m src.models.register_model
+
+Requirements:
+    - MLflow server must be running (e.g., uv run python -m mlflow server --host 127.0.0.1 --port 5000).
+    - DVC must be initialized and the 'register_model' stage must be defined in dvc.yaml.
+    - The 'model_evaluation' stage must have been run successfully.
+    - The 'best_model_run_info.json' file must exist in the 'models/advanced/evaluation' directory.
 """
 
 import json
 from packaging import version
-
 import mlflow
 from mlflow.tracking import MlflowClient
 
@@ -68,7 +76,7 @@ def load_champion_model_data():
             raise KeyError(f"'test_macro_f1' not found in {metric_path}")
 
         logger.info(
-            f"🏆 Champion identified: {model_name.upper()} (Run ID: {run_id}) | Test Macro F1: {f1_score:.4f}"
+            f"🏆 Champion identified: {model_name.upper()} (Run ID: {run_id}) | Test Macro F1: {f1_score:.4f} "
         )
         return model_name, run_id, f1_score
 
@@ -86,7 +94,7 @@ def register_best_model(model_name: str, run_id: str, f1: float, f1_threshold: f
     if it meets the F1 threshold.
     """
     client = MlflowClient()
-    logger.info("🚀 Starting model registration process...")
+    logger.info("🚀 Starting model registration process... 🚀")
     model_registry_name = f"youtube_sentiment_{model_name}"
 
     if f1 < f1_threshold:
@@ -97,7 +105,7 @@ def register_best_model(model_name: str, run_id: str, f1: float, f1_threshold: f
         return
 
     logger.info(
-        f"✅ Model performance meets threshold (F1={f1:.4f} >= {f1_threshold:.2f})."
+        f"Model performance meets threshold (F1={f1:.4f} >= {f1_threshold:.2f})."
     )
 
     # --- Register model from run ---
@@ -109,7 +117,7 @@ def register_best_model(model_name: str, run_id: str, f1: float, f1_threshold: f
             name=model_registry_name,
         )
         logger.info(
-            f"✅ Successfully registered model '{model_registry_name}' version {model_version.version}"
+            f"✅ Successfully registered model '{model_registry_name}' version {model_version.version} ✅"
         )
 
     except Exception as e:
@@ -122,7 +130,7 @@ def register_best_model(model_name: str, run_id: str, f1: float, f1_threshold: f
 
     try:
         if supports_stages:
-            # ✅ Legacy MLflow (pre-2.9.0): use stage transitions
+            # Legacy MLflow (pre-2.9.0): use stage transitions
             client.transition_model_version_stage(
                 name=model_registry_name,
                 version=model_version.version,
@@ -133,7 +141,7 @@ def register_best_model(model_name: str, run_id: str, f1: float, f1_threshold: f
                 f"🟢 Model version {model_version.version} transitioned to 'Production' stage."
             )
         else:
-            # ✅ Modern MLflow (2.9.0+): use tag-based deployment stage
+            # Modern MLflow (2.9.0+): use tag-based deployment stage
             client.set_model_version_tag(
                 name=model_registry_name,
                 version=model_version.version,
@@ -159,14 +167,14 @@ def register_best_model(model_name: str, run_id: str, f1: float, f1_threshold: f
         f"Version: {model_version.version} | "
         f"F1: {f1:.4f}"
     )
-    logger.info("🏁 Model registration workflow completed successfully.")
+    logger.info("🏁 Model registration workflow completed successfully. 🏁")
 
 
 # =====================================================================
 #  Main Execution
 # =====================================================================
 def main():
-    logger.info("🚀 Starting automated model registration workflow...")
+    logger.info("🚀 Starting automated model registration workflow... 🚀")
 
     try:
         # --- 1. Load params to get F1 threshold via ConfigurationManager ---
