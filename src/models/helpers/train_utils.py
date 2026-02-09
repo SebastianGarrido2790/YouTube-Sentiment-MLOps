@@ -12,7 +12,7 @@ from src.utils.logger import get_logger
 from src.utils.paths import ADVANCED_DIR, EVAL_DIR, PROJECT_ROOT, BASELINE_MODEL_DIR
 
 # --- Logging Setup ---
-logger = get_logger(__name__, headline="train_utils.py")
+logger = get_logger(__name__)
 
 
 # ---------------------------------------------------------------------

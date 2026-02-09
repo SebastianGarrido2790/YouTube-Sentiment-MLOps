@@ -11,7 +11,7 @@ from datetime import datetime
 from src.utils.logger import get_logger
 from src.utils.paths import REPORTS_DIR, EVAL_FIG_DIR
 
-logger = get_logger(__name__, headline="mlflow_tracking_utils.py")
+logger = get_logger(__name__)
 
 
 # ---------------------------------------------------------------------

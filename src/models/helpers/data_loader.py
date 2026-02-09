@@ -13,7 +13,7 @@ from imblearn.over_sampling import ADASYN
 from src.utils.paths import PROCESSED_DATA_DIR, FEATURES_DIR
 from src.utils.logger import get_logger
 
-logger = get_logger(__name__, headline="data_loader.py")
+logger = get_logger(__name__)
 
 
 # ============================================================
