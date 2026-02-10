@@ -45,25 +45,25 @@ Runs on every push and pull request to ensure code quality and integrity.
 1.  **Checkout Code**: Checks out the repository.
 2.  **Install uv**: Sets up the fast Python package manager `uv` with caching enabled.
 3.  **Install Dependencies**: Runs `uv sync --all-extras --dev` to install the project environment.
-4.  **Linting**: Runs `ruff check` and `ruff format --check` to enforce code style.
+4.  **Linting & Formatting**: Runs `ruff check` and `ruff format --check` to enforce strict code style.
 5.  **Pull DVC Data**: Uses `dvc pull` to fetch data/models from S3 (if AWS credentials are provided).
 6.  **Run Tests**: Executes `pytest` to validate the codebase.
+    -   **NLTK Setup**: Automatically downloads required NLTK resources (`punkt`, `stopwords`) via `tests/conftest.py` before running tests.
 
 ### 3.2 `build` Job
 
 Runs **only on pushes to `main`** after tests pass.
 
 **Key Steps:**
-1.  **Configure AWS**: Authenticates to AWS to access ECR.
-2.  **Login to ECR**: Logs into Amazon Elastic Container Registry.
+1.  **Configure AWS**: Authenticates to AWS to access ECR (Conditional: Skips if secrets are missing).
+2.  **Login to ECR**: Logs into Amazon Elastic Container Registry (Conditional: Skips if secrets are missing).
 3.  **Security Scan (Trivy)**: Scans the filesystem for vulnerabilities using `aquasecurity/trivy-action`.
-    -    configured to report `CRITICAL,HIGH` severity issues.
-    -   **Non-blocking**: The pipeline will continue even if issues are found (`exit-code: 0`), allowing manual review.
-4.  **Build and Push**:
-    -   Builds the Docker image using the root `Dockerfile`.
-    -   Uses **GitHub Actions Caching** (`cache-from/to: type=gha`) for speed.
-    -   Tags the image with the commit SHA and `latest`.
-    -   Pushes the image to AWS ECR.
+    -   Report level: `CRITICAL,HIGH`
+    -   **Non-blocking**: The pipeline will continue even if issues are found, allowing manual review.
+4.  **Build and Push (Conditional Logic)**:
+    -   **If AWS Secrets Exist**: Builds the Docker image and **pushes** it to AWS ECR with `latest` and commit SHA tags.
+    -   **If AWS Secrets Missing**: Performs a **Local Build Verification** (builds the image without pushing) to ensure `Dockerfile` validity and catch build errors, ensuring a green pipeline even without cloud credentials.
+    -   **Caching**: Uses GitHub Actions Caching for both scenarios to speed up builds.
 
 ### 3.3 `deploy` Job
 
