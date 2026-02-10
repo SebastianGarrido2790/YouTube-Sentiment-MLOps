@@ -36,7 +36,7 @@ dvc.lock
 notebooks/    # Jupyter notebooks
 references/   # Data dictionaries, manuals, design docs
 reset-venv-full.ps1
-GEMINI.md
+AGENTS.md
 .DS_Store
 
 # We keep:
