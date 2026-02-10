@@ -45,10 +45,7 @@ IMBALANCE_FIGURES_DIR = FIGURES_DIR / "imbalance_methods"
 
 # --- Logs and MLflow ---
 # Use system-specific log directory if running in production
-if ENV == "production":
-    LOGS_DIR = Path("/var/log/my_project")
-else:
-    LOGS_DIR = PROJECT_ROOT / "logs"
+LOGS_DIR = PROJECT_ROOT / "logs"
 
 MLRUNS_DIR = PROJECT_ROOT / "mlruns"
 

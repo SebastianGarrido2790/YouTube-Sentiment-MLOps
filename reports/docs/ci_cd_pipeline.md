@@ -26,6 +26,7 @@ on:
   push:
     branches: [ main ]
   pull_request:
+    branches: [ main ]
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
@@ -34,94 +35,70 @@ concurrency:
 
 ## 3. Pipeline Jobs
 
-The pipeline is composed of three main jobs that run sequentially: `test`, `build`, and `deploy`.
+The pipeline is composed of three main jobs: `test`, `build`, and `deploy`.
 
-### `test` Job
+### 3.1 `test` Job
 
-The `test` job is responsible for ensuring code quality, correctness, and reproducibility. It runs on every push and pull request.
-
-**Key Steps:**
-
-1.  **Checkout Code**: Checks out the repository's source code.
-2.  **Set up Python**: Configures the Python 3.11 environment.
-3.  **Install Dependencies**: Installs project dependencies using `uv`. This step is accelerated by caching `uv` dependencies, which significantly speeds up subsequent runs.
-4.  **Linting and Formatting**: Runs `Ruff` to check for linting errors and ensure consistent code formatting.
-5.  **Pull DVC Data**: Authenticates with AWS and pulls versioned data, models, and the DVC run-cache using `dvc pull --run-cache`. This MLOps step ensures tests are reproducible and can reuse results from previous pipeline stages.
-6.  **Run Tests**: Executes the entire test suite using `pytest`.
-
-**MLOps Highlights:**
-
--   **Reproducibility**: By using `dvc pull`, the pipeline guarantees that tests are always performed with the same version of the data and models.
--   **Reliability**: Comprehensive linting and testing ensure that code quality remains high and regressions are caught early.
--   **Efficiency**: Caching Python dependencies and the DVC run-cache minimizes setup time, providing faster feedback to developers.
-
-### `build` Job
-
-The `build` job creates a production-ready Docker image and pushes it to a container registry. This job only runs after the `test` job has succeeded on a push to the `main` branch.
+Runs on every push and pull request to ensure code quality and integrity.
 
 **Key Steps:**
+1.  **Checkout Code**: Checks out the repository.
+2.  **Install uv**: Sets up the fast Python package manager `uv` with caching enabled.
+3.  **Install Dependencies**: Runs `uv sync --all-extras --dev` to install the project environment.
+4.  **Linting**: Runs `ruff check` and `ruff format --check` to enforce code style.
+5.  **Pull DVC Data**: Uses `dvc pull` to fetch data/models from S3 (if AWS credentials are provided).
+6.  **Run Tests**: Executes `pytest` to validate the codebase.
 
-1.  **Checkout Code**: Checks out the repository's source code.
-2.  **Log in to AWS ECR**: Authenticates with Amazon Elastic Container Registry (ECR).
-3.  **Build and Push Docker Image**: Builds the Docker image, tags it with the Git commit hash and other metadata, and pushes it to the configured ECR repository.
-4.  **Security Scan**: Scans the newly pushed image for known vulnerabilities using `Trivy`. The pipeline will fail if any `CRITICAL` or `HIGH` severity vulnerabilities are found.
-5.  **Health Check**: Runs the container and performs a health check by sending a sample request to the `/predict` endpoint to ensure the application and model are working correctly inside the container.
+### 3.2 `build` Job
 
-**MLOps Highlights:**
-
--   **Automation**: The entire process of building, tagging, and pushing the application container is fully automated.
--   **Security**: Integrated vulnerability scanning is a crucial step in securing the software supply chain.
--   **Deployment-Ready Artifact**: The pipeline produces a versioned, immutable Docker image that is ready for deployment to any containerized environment (e.g., AWS ECS, Kubernetes).
-
-### `deploy` Job
-
-The `deploy` job is responsible for automatically deploying the application to a production environment. This job runs on a **self-hosted runner** (e.g., an AWS EC2 instance) after the `build` job succeeds on a push to `main`.
+Runs **only on pushes to `main`** after tests pass.
 
 **Key Steps:**
+1.  **Configure AWS**: Authenticates to AWS to access ECR.
+2.  **Login to ECR**: Logs into Amazon Elastic Container Registry.
+3.  **Security Scan (Trivy)**: Scans the filesystem for vulnerabilities using `aquasecurity/trivy-action`.
+    -    configured to report `CRITICAL,HIGH` severity issues.
+    -   **Non-blocking**: The pipeline will continue even if issues are found (`exit-code: 0`), allowing manual review.
+4.  **Build and Push**:
+    -   Builds the Docker image using the root `Dockerfile`.
+    -   Uses **GitHub Actions Caching** (`cache-from/to: type=gha`) for speed.
+    -   Tags the image with the commit SHA and `latest`.
+    -   Pushes the image to AWS ECR.
 
-1.  **Configure AWS Credentials**: Authenticates with AWS using OIDC.
-2.  **Login to Amazon ECR**: Connects to the container registry to pull the image.
-3.  **Stop and Remove Existing Container**: Checks for a running instance of the application container and, if found, stops and removes it to prepare for the update.
-4.  **Pull Latest Image**: Pulls the newly built Docker image from ECR.
-5.  **Run New Container**: Starts a new container with the updated image.
-6.  **Clean Up Old Images**: Removes unused Docker images to free up disk space on the runner.
+### 3.3 `deploy` Job
 
-**MLOps Highlights:**
+Runs after a successful build on `main`.
 
--   **Continuous Deployment**: Achieves true CI/CD by automatically deploying every validated change from `main` to a live environment, reducing manual intervention and speeding up delivery.
--   **Zero-Downtime Strategy (Basic)**: While simple, the stop-and-replace mechanism ensures that the old version is removed before the new one starts, providing a clean state transition. More advanced strategies like blue-green could be implemented in the future.
--   **Infrastructure as Code Principle**: The entire deployment logic is defined as code within the GitHub Actions workflow, making the process transparent and reproducible.
+**Key Steps:**
+1.  **Environment Check**: Checks if the `EC2_HOST` secret is set.
+    -   **Safe Skip**: If `EC2_HOST` is missing (e.g., no live server configured), it outputs a warning and exits gracefully. This prevents pipeline failures for users without active infrastructure.
+2.  **Deployment (Stub)**: If credentials exist, it would connect to the EC2 instance, pull the new image, and restart the container.
 
 ## 4. How to Run the Pipeline
 
-The pipeline is designed to run automatically based on Git events. There is no manual trigger configured by default. This section outlines the required setup and the standard developer workflow to run the pipeline.
+The pipeline triggers automatically on Git events.
 
-### 4.1. Prerequisites
+### 4.1. Prerequisites (Secrets)
 
-For the pipeline to run successfully, you need to configure the following secrets in your GitHub repository settings under **Settings > Secrets and variables > Actions**:
+To enable all features, configure these secrets in **Settings > Secrets and variables > Actions**:
 
--   `AWS_ACCOUNT_ID`: Your AWS account ID.
--   `AWS_IAM_ROLE_NAME`: The name of the IAM role that GitHub Actions will assume. This role should have permissions to access the DVC S3 bucket and the ECR repository.
--   `AWS_REGION`: The AWS region where your resources are located (e.g., `us-east-1`).
--   `ECR_REPOSITORY`: The name of your ECR repository.
+**Required for DVC & ECR:**
+-   `AWS_ACCESS_KEY_ID`: Your AWS Access Key.
+-   `AWS_SECRET_ACCESS_KEY`: Your AWS Secret Key.
+-   `AWS_REGION`: AWS Region (e.g., `us-east-1`).
+-   `ECR_REPOSITORY`: Name of your ECR repository (e.g., `youtube-sentiment`).
 
-The pipeline uses OpenID Connect (OIDC) to securely authenticate with AWS without needing to store long-lived access keys as secrets. For more information on setting this up, see the [GitHub documentation on configuring OIDC with AWS](https://docs.github.com/en/actions/deployment/security-hardening-your-deployments/configuring-openid-connect-in-amazon-web-services).
+**Required for Deployment (Optional):**
+-   `EC2_HOST`: IP address or DNS of your production server.
+-   `EC2_USER`: SSH user (e.g., `ubuntu`).
+-   `EC2_KEY`: Private SSH key content.
 
 ### 4.2. Developer Workflow
 
-The pipeline is triggered by making contributions to the repository through a standard Git workflow:
-
-1.  **Create a Feature Branch**: Create a new branch from `main` for your changes.
-    ```bash
-    git checkout main
-    git pull origin main
-    git checkout -b my-new-feature
-    ```
-2.  **Make Changes**: Implement your new feature or bug fix.
-3.  **Push and Create a Pull Request**: Push your branch to GitHub and open a pull request targeting the `main` branch.
-    ```bash
-    git push origin my-new-feature
-    ```
-4.  **Review Pipeline Results**: Opening the pull request automatically triggers the `test` job. You can monitor its progress and review the results in the "Actions" tab of the pull request. If the job fails, inspect the logs to diagnose the issue.
-5.  **Merge to `main`**: Once the pull request is reviewed, approved, and the `test` job is passing, merge it into the `main` branch.
-6.  **Trigger Full CI/CD Pipeline**: The merge to `main` triggers the full `test`, `build`, and `deploy` sequence. If all jobs succeed, the updated application will be automatically deployed to the production environment.
+1.  **Work on a Branch**: Create a feature branch.
+2.  **Push Changes**: Pushing triggers the `test` job (Lint + Test).
+3.  **Open PR**: Opening a PR also triggers the `test` job.
+4.  **Merge to `main`**:
+    -   Triggers `test`.
+    -   If tests pass, triggers `build` (Scan + Build + Push).
+    -   If build succeeds, triggers `deploy` (Live Deployment or Safe Skip).

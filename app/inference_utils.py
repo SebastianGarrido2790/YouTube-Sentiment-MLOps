@@ -9,6 +9,7 @@ Usage:
     from app.inference_utils import load_production_model, build_derived_features
 """
 
+import os
 import joblib
 import mlflow
 import pandas as pd
@@ -74,71 +75,84 @@ def load_champion_model_name():
 # =====================================================================
 def load_production_model(alias_name: str = "Production") -> Any:
     """
-    Loads the trained model object, prioritizing MLflow Model Registry with the
-    '@Production' alias, and falling back to a local DVC-tracked PKL file.
+    Loads the trained model object.
 
-    The model name is dynamically retrieved from the 'best_model_run_info.json'
-    file created during the 'model_evaluation' stage.
-
-    MLflow Priority:
-        1. Dynamically retrieve the full model name (e.g., 'youtube_sentiment_lightgbm').
-        2. Try to load the model artifact from MLflow Model Registry using the
-           retrieved name and the '@Production' alias.
-
-    Local Fallback:
-        If MLflow loading fails, fall back to loading the locally DVC-tracked
-        'lightgbm_model.pkl'.
+    Strategies:
+    1. If env var `PREFER_LOCAL_MODEL` is "true":
+       - Try loading local DVC-tracked 'lightgbm_model.pkl' first.
+       - If not found, fall back to MLflow Registry.
+    2. Default (Production):
+       - Try MLflow Registry ('@Production') first.
+       - If fails/offline, fall back to local file.
 
     Returns:
-        Any: The loaded model instance (mlflow.pyfunc.PyFuncModel or scikit-learn model).
+        Any: The loaded model instance.
 
     Raises:
-        RuntimeError: If model loading fails from both sources.
+        RuntimeError: If model loading fails from all attempted sources.
     """
-    # === STEP 1: Dynamically determine model_name ===
-    # This function will return the full name (e.g., 'youtube_sentiment_lightgbm')
+    # === STEP 1: Dynamically determine model_name (for MLflow) ===
     model_name = load_champion_model_name()
+    prefer_local = os.getenv("PREFER_LOCAL_MODEL", "false").lower() == "true"
 
-    # 1. Attempt MLflow Model Registry Load
-    try:
+    # Path to local model (currently pinned to LightGBM artifact)
+    local_model_path = ADVANCED_DIR / "lightgbm_model.pkl"
+
+    def _load_from_mlflow():
         mlflow_uri = get_mlflow_uri()
         mlflow.set_tracking_uri(mlflow_uri)
-
         model_uri = f"models:/{model_name}@{alias_name}"
         logger.info(f"Attempting to load model from MLflow URI: {model_uri}")
         model = mlflow.pyfunc.load_model(model_uri=model_uri)
-
         logger.info(
             f"✅ Loaded model from MLflow registry → {model_name}@{alias_name} "
             f"(Tracking URI: {mlflow_uri})"
         )
-
         return model
 
-    except Exception as e:
-        # 2. Local Fallback Load
-        # Updated to the expected champion model's local PKL file name
-        model_path = ADVANCED_DIR / "lightgbm_model.pkl"
+    def _load_from_local():
+        logger.info(f"Attempting to load local model from: {local_model_path}")
+        if not local_model_path.exists():
+            raise FileNotFoundError(f"Local model file not found at {local_model_path}")
 
+        model = joblib.load(local_model_path)
+        logger.info(
+            f"✅ Loaded local LightGBM model from {local_model_path.relative_to(PROJECT_ROOT)}"
+        )
+        return model
+
+    # === STEP 2: Execute Loading Strategy ===
+    if prefer_local:
         try:
-            # Load the local model artifact
-            model = joblib.load(model_path)
-            logger.warning(
-                f"⚠️ MLflow registry unavailable or alias not found for **{model_name}**. | "
-                f"Loaded local LightGBM model from {model_path.relative_to(PROJECT_ROOT)}. | "
-                f"Original MLflow error: {e}"
+            logger.info(
+                "Strategy: PREFER_LOCAL_MODEL=True. Checking local filesystem first..."
             )
-            return model
+            return _load_from_local()
+        except Exception as e:
+            logger.warning(f"⚠️ Local load failed: {e}. Falling back to MLflow...")
+            try:
+                return _load_from_mlflow()
+            except Exception as e_mlflow:
+                raise RuntimeError(
+                    f"Failed to load model from Local (Error: {e}) AND MLflow (Error: {e_mlflow})"
+                )
 
-        except FileNotFoundError:
-            logger.error(
-                f"❌ Local model fallback failed. Model file not found at "
-                f"{model_path.relative_to(PROJECT_ROOT)}."
+    else:
+        # Default behavior: MLflow first
+        try:
+            return _load_from_mlflow()
+        except Exception as e:
+            logger.warning(
+                f"⚠️ MLflow registry unavailable/failed for **{model_name}**. | "
+                f"Error: {e} | "
+                f"Falling back to local LightGBM model..."
             )
-            raise RuntimeError(
-                "Failed to load model from both MLflow and local filesystem. | "
-                "Ensure MLflow is running or 'lightgbm_model.pkl' is DVC-pulled."
-            )
+            try:
+                return _load_from_local()
+            except Exception as e_local:
+                raise RuntimeError(
+                    f"Failed to load model from MLflow (Error: {e}) AND Local (Error: {e_local})"
+                )
 
 
 def build_derived_features(df: pd.DataFrame) -> np.ndarray:

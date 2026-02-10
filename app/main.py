@@ -10,7 +10,7 @@ It loads all required models and artifacts at startup.
 
 Usage (local):
 Ensure MLflow server is running if loading from registry:
-    uv run mlflow server --host 127.0.0.1 --port 5000
+    uv run python -m mlflow server --host 127.0.0.1 --port 5000
 Then run:
     uv run python -m app.main
 Or via Uvicorn:
@@ -45,7 +45,6 @@ from app.inference_utils import (
     build_derived_features,
     safe_to_list,
 )
-from src.models.absa_model import ABSAModel
 
 logger = get_logger(__name__, headline="main_API_endpoints.py")
 
@@ -66,9 +65,6 @@ try:
     label_encoder = joblib.load(FEATURES_DIR / "label_encoder.pkl")
     logger.info("✅ Loaded TF-IDF vectorizer and label encoder successfully.")
 
-    # Load the ABSA model
-    absa_model = ABSAModel()
-    logger.info("✅ Loaded ABSA model successfully.")
 
 except Exception as e:
     logger.error(f"❌ FATAL: Service cannot start. Artifact loading failed. Error: {e}")
@@ -138,12 +134,26 @@ def predict(data: PredictRequest):
 # ============================================================
 # Aspect-Based Sentiment Analysis (ABSA) Endpoint
 # ============================================================
+# Global ABSA model placeholder
+absa_model = None
+
+
 @app.post("/predict_absa", response_model=List[AspectSentiment])
 def predict_absa(data: ABSAPredictRequest):
     """
     Performs Aspect-Based Sentiment Analysis on a single text.
+    Lazy-loads the ABSA model on first request to prevent startup hangs.
     """
+    global absa_model
     try:
+        # Lazy initialization
+        if absa_model is None:
+            logger.info("⏳ Initializing ABSA model (this may take a moment)...")
+            from src.models.absa_model import ABSAModel
+
+            absa_model = ABSAModel()
+            logger.info("✅ ABSA model loaded successfully.")
+
         analysis = absa_model.predict(data.text, data.aspects)
         logger.info(f"✅ ABSA prediction completed for text: '{data.text[:50]}...'")
         return analysis
@@ -167,8 +177,8 @@ async def health_check():
 if __name__ == "__main__":
     import uvicorn
 
-    logger.info("🚀 Starting FastAPI inference server...")
-    logger.info("➡️  Access API docs at: http://127.0.0.1:8000/docs")
+    logger.info("🚀 Starting FastAPI inference server... 🚀")
+    logger.info("➡️ Access API docs at: http://127.0.0.1:8000/docs")
 
     uvicorn.run(
         "app.main:app",
