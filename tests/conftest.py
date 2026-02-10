@@ -7,10 +7,11 @@ sys.path.append(str(project_root))
 
 # Ensure NLTK resources are available for tests
 import nltk
-nltk.download('punkt')
-nltk.download('punkt_tab')
-nltk.download('stopwords')
-nltk.download('wordnet')
+
+nltk.download("punkt")
+nltk.download("punkt_tab")
+nltk.download("stopwords")
+nltk.download("wordnet")
 
 import pytest
 import yaml
