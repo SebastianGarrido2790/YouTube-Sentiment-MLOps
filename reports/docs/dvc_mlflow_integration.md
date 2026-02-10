@@ -107,10 +107,13 @@ After evaluation, the best-performing model (the "champion") is registered:
 ### How to Use MLflow in This Project
 1.  **Start the MLflow UI**:
     ```bash
-    mlflow ui --host 127.0.0.1 --port 5000
+    uv run python -m mlflow server --host 127.0.0.1 --port 5000
     ```
 2.  **View Experiments**: Open `http://127.0.0.1:5000` to browse runs.
 3.  **View Registered Models**: Navigate to the "Models" tab.
+
+![MLflow UI Dashboard](../figures/mlflow_ui.png)
+*Figure: MLflow UI Dashboard showing experiments and registered models.*
 
 ## 4. The Combined DVC + MLflow Workflow
 
