@@ -120,9 +120,9 @@ This structure ensures that changes in early stages (e.g., data prep) automatica
 | **Phase 3** | Modeling                        | ✅ Complete      | Baseline + XGBoost/LightGBM/DistilBERT + Optuna optimization      |
 | **Phase 4** | Experiment tracking             | ✅ Complete      | Integrate MLflow logging and registry                             |
 | **Phase 5** | Evaluation & Registration       | ✅ Complete      | Automated champion selection and MLflow Model Registry promotion  |
-| **Phase 6** | Deployment                      | 🚧 Planned      | Dockerize FastAPI inference service                               |
-| **Phase 7** | CI/CD pipeline                  | 🚧 Planned      | GitHub Actions + AWS deployment automation                        |
-| **Phase 8** | Real-time inference integration | 🚧 Planned      | Connect Chrome extension → inference API                          |
+| **Phase 6** | Deployment                      | ✅ Complete      | Dockerize FastAPI inference service                               |
+| **Phase 7** | CI/CD pipeline                  | ✅ Complete      | GitHub Actions + AWS deployment automation                        |
+| **Phase 8** | Real-time inference integration | ✅ Complete      | Connect Chrome extension → inference API                          |
 
 ---
 
@@ -141,7 +141,4 @@ This structure ensures that changes in early stages (e.g., data prep) automatica
 
 ### ✅ Next Steps
 
-1. **Containerize**: Create a Dockerfile for the inference service.
-2. **API Development**: Build a FastAPI application to serve the registered model.
-3. **Frontend Integration**: Develop the Chrome Extension prototype.
-4. **Cloud Deployment**: Set up AWS infrastructure (S3, ECS/Lambda).
+1. **Cloud Deployment**: Set up AWS infrastructure (S3, ECS/Lambda).
