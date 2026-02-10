@@ -5,6 +5,13 @@ from pathlib import Path
 project_root = Path(__file__).resolve().parent.parent
 sys.path.append(str(project_root))
 
+# Ensure NLTK resources are available for tests
+import nltk
+nltk.download('punkt')
+nltk.download('punkt_tab')
+nltk.download('stopwords')
+nltk.download('wordnet')
+
 import pytest
 import yaml
 from src.config.manager import ConfigurationManager
