@@ -6,6 +6,9 @@ This document provides an overview of the Continuous Integration and Continuous 
 
 The primary purpose of this pipeline is to provide a fast, reliable, and automated way to validate code changes and deploy production-ready artifacts. It integrates several key MLOps practices:
 
+![CI/CD Pipeline Workflow](../figures/ci_cd_pipeline.png)
+*Figure: Complete CI/CD Workflow showing Test, Build, and Deploy stages.*
+
 -   **Automated Testing**: Ensures that every change is automatically tested for correctness and quality.
 -   **Data and Model Versioning**: Uses DVC to pull versioned data for reproducible tests.
 -   **Containerization**: Builds a Docker image as a versioned, deployable artifact.
