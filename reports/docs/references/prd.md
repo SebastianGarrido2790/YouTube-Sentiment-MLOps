@@ -79,6 +79,22 @@ This project is designed not only to solve the technical problem above, but to s
 
 ## 3. Key Features & Requirements
 
+### 🧭 CRISP-DM Framework (Professional Data Science Lifecycle)
+
+We’ll use **CRISP-DM** as the methodological backbone, but integrate it with **modern MLOps components** for full reproducibility, automation, and monitoring.
+
+| CRISP-DM Stage                  | Objective                                                    | Key Deliverables                                                                                       | MLOps Integrations                            |
+| ------------------------------- | ------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------ | --------------------------------------------- |
+| **1. Business Understanding**   | Define problem scope, success metrics, and system goals.     | - Problem statement<br>- KPI definition (accuracy, latency, uptime)<br>- System architecture blueprint | GitHub README, system design diagram          |
+| **2. Data Understanding**       | Collect, explore, and validate text data.                    | - EDA notebook<br>- Data validation checks (missing, imbalance)<br>- DVC data versioning               | DVC tracking, `artifacts/data/preprocessed`   |
+| **3. Data Preparation**         | Clean, preprocess, and feature-engineer text data.           | - Tokenization, stopword removal<br>- TF-IDF and BERT embeddings<br>- Balanced training set            | Modular `src/features/` scripts, DVC pipeline |
+| **4. Modeling**                 | Train baseline and advanced models, log experiments.         | - Baseline Logistic Regression<br>- Transformer-based fine-tuning<br>- Hyperparameter optimization     | MLflow experiment tracking, Optuna            |
+| **5. Evaluation**               | Validate models using consistent metrics.                    | - Model report (F1, Precision, Recall)<br>- Model card (metadata)<br>- Champion model selection        | MLflow model registry, automated evaluation   |
+| **6. Deployment**               | Serve model via API and integrate with Chrome extension.     | - REST API (FastAPI or AWS Lambda)<br>- Docker container                                               | Docker + CI/CD (GitHub Actions + AWS ECR/ECS) |
+| **7. Monitoring & Maintenance** | Track performance drift and retrain as needed.               | - Drift detection<br>- Model version updates<br>- Scheduled retraining                                 | MLflow + DVC + AWS CloudWatch/Lambda triggers |
+
+---
+
 ### 3.1 Feature 1 — Automated MLOps Pipeline
 
 **Description:** A 12-stage DVC DAG that ingests raw Reddit data, engineers features, trains models, evaluates performance, and registers the champion model — all reproducible from a single `dvc repro` command.
@@ -236,3 +252,29 @@ This project is designed not only to solve the technical problem above, but to s
 | **M4 — Containerization** | Dockerfile, CI/CD pipeline, GitHub Actions | ✅ Complete |
 | **M5 — Hardening** | Security, type safety, training-serving integrity, test coverage | 🔄 In Progress |
 | **M6 — Portfolio Polish** | Makefile, pre-commit, CONTRIBUTING.md, Model Card, GX validation | ⬜ Planned |
+
+---
+
+## 9. Implementation Status (Phases)
+
+| Phase       | Component                       | Status          | Focus                                                             |
+| ----------- | ------------------------------- | --------------- | ----------------------------------------------------------------- |
+| **Phase 1** | Data ingestion & preprocessing  | ✅ Hardening    | Automate dataset download, cleaning, and validation (DVC tracked) |
+| **Phase 2** | Feature engineering             | ✅ Hardening    | TF-IDF tuning, imbalance handling comparison                      |
+| **Phase 3** | Modeling                        | ✅ Hardening    | Baseline + XGBoost/LightGBM/DistilBERT + Optuna optimization      |
+| **Phase 4** | Experiment tracking             | ✅ Hardening    | Integrate MLflow logging and registry                             |
+| **Phase 5** | Evaluation & Registration       | ✅ Hardening    | Automated champion selection and MLflow Model Registry promotion  |
+| **Phase 6** | Deployment                      | ✅ Hardening    | Dockerize FastAPI inference service                               |
+| **Phase 7** | CI/CD pipeline                  | ✅ Hardening    | GitHub Actions + AWS deployment automation                        |
+| **Phase 8** | Real-time inference integration | ✅ Hardening    | Connect Chrome extension → inference API                        |
+
+---
+
+## 10. ML Design Requirements
+
+To ensure the YouTube Sentiment Analysis pipeline is production-ready and built to elite MLOps standards, the following design requirements are enforced:
+
+- **Reliability**: Decouple **Probabilistic Reasoning** from **Deterministic Execution**. Machine learning model inferences and data transformations are handled by deterministic tools/microservices, while the orchestrator (where applicable) handles routing and synthesis. High-stakes operations utilize deterministic validation (Pydantic models).
+- **Scalability**: Implement the **FTI (Feature, Training, Inference) Pattern**. By decoupling the feature pipeline, training pipeline, and inference pipeline, the system allows for independent scaling of data engineering, model development, and serving. All components are containerized for horizontal scaling in cloud environments (AWS/LocalStack).
+- **Maintainability**: Adherence to the **"Python-Development" Standard**. This includes 100% type hint coverage (checked via `pyright`), modular separation of concerns, mandatory Google-style docstrings, and consistent linting (`ruff`). DVC ensures data and model lineage, while MLflow provides centralized experiment tracking and model registry.
+- **Adaptability**: Modular microservice architecture using **FastAPI**. The system is designed to survive component failures (e.g., if a specific model fails, the API remains functional or provides clear fallback logic). Configuration is separated from logic using a centralized `config/` management system, allowing for environment-agnostic deployments.

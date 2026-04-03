@@ -43,6 +43,8 @@ The **YouTube Sentiment Analysis MLOps Pipeline** is an **ambitious and well-sco
 | **Dual-Model Loading Strategy** | [inference_utils.py:76-155](file:///c:/Users/sebas/Desktop/youtube-sentiment-analysis/app/inference_utils.py#L76-L155) implements MLflow Registry → Local fallback with `PREFER_LOCAL_MODEL` env override — resilient to registry downtime |
 | **ADASYN Imbalance Handling** | [data_loader.py:96-115](file:///c:/Users/sebas/Desktop/youtube-sentiment-analysis/src/models/helpers/data_loader.py#L96-L115) applies ADASYN with `random_state=42` for reproducible oversampling |
 | **Dual-Framework Optuna** | [hyperparameter_tuning.py](file:///c:/Users/sebas/Desktop/youtube-sentiment-analysis/src/models/hyperparameter_tuning.py) supports both LightGBM (sklearn API) and XGBoost (native API) in a single script with strategy pattern |
+| **Artifacts Persistence Record** | Adherence to **Rule 2.12** — the pipeline is architected to save and version all reusable artifacts (scalers, encoders, stratified splits) to ensure full lifecycle persistence and reproducibility |
+
 
 ### 1.3 Data Processing
 
@@ -637,6 +639,8 @@ services:
 - [ ] **Add API versioning (`/v1/` router)** to both APIs ([§2.20](#220-low-no-api-versioning))
 - [ ] **Rewrite `test_inference.py` as `pytest` tests** using `TestClient` ([§2.12](#212-medium-apptest_inferencepy-is-a-manual-script-not-an-automated-test))
 - [ ] **Fix Docker/README mismatch** — create `docker-compose.yml` or update docs ([§2.17](#217-low-root-dockerfile-healthcheck-uses-curl-but-extension-needs-two-apis))
+- [ ] **Implement Artifacts Persistence Mandate (Rule 2.12)** — Centralize all non-code outputs into a versioned `artifacts/` root directory for absolute lifecycle persistence.
+
 
 ### Phase 4: Developer Experience (1-2 hours)
 

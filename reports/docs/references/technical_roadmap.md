@@ -29,6 +29,26 @@ M1 ─────── M2 ─────── M3 ─────── M4 �
 
 **Goal:** A fully reproducible 12-stage DVC pipeline that ingests raw data, engineers features, trains models under controlled experiment conditions, evaluates champions, and registers to a model registry.
 
+Each pipeline step is modular and tracked via **DVC + MLflow**. The current implementation includes:
+
+```yaml
+stages:
+  data_ingestion:      # Download raw comments
+  data_preparation:    # Clean, split, encode labels
+  feature_comparison:  # Compare TF-IDF settings
+  feature_tuning:      # Optimize n-grams/max_features
+  imbalance_tuning:    # Select best resampling strategy (SMOTE, ADASYN)
+  feature_engineering: # Generate final feature matrices
+  baseline_model:      # Train Logistic Regression benchmark
+  hyperparameter_tuning_lightgbm: # Tune LightGBM via Optuna
+  hyperparameter_tuning_xgboost:  # Tune XGBoost via Optuna
+  train_distilbert:    # Fine-tune DistilBERT (optional)
+  model_evaluation:    # Compare all models on Test set
+  register_model:      # Promote Champion based on F1 threshold
+```
+
+This structure ensures that changes in early stages (e.g., data prep) automatically trigger re-runs of dependent downstream stages (modeling/evaluation).
+
 **Linked PRD Requirements:** PIPE-01 through PIPE-07
 
 ---
