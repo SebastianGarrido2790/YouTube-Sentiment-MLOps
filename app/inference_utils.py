@@ -21,7 +21,7 @@ from scipy.sparse import issparse
 # --- Project Utilities ---
 from src.utils.logger import get_logger
 from src.utils.mlflow_config import get_mlflow_uri
-from src.utils.paths import ADVANCED_DIR, PROJECT_ROOT, EVAL_DIR
+from src.constants import ADVANCED_DIR, PROJECT_ROOT, EVAL_DIR
 
 # --- Logging Setup ---
 logger = get_logger(__name__, headline="inference_utils.py")

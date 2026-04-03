@@ -35,7 +35,7 @@ from src.models.helpers.train_utils import (
 )
 from src.utils.logger import get_logger
 from src.utils.mlflow_config import get_mlflow_uri
-from src.utils.paths import BASELINE_MODEL_DIR
+from src.constants import BASELINE_MODEL_DIR
 
 # --- Logging Setup ---
 logger = get_logger(__name__, headline="baseline_logistic_training.py")

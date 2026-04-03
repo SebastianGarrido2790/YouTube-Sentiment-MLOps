@@ -37,7 +37,7 @@ from sklearn.preprocessing import LabelEncoder
 # --- Project Utilities ---
 from src.config.manager import ConfigurationManager
 from src.utils.logger import get_logger
-from src.utils.paths import FEATURES_DIR, TEST_PATH, TRAIN_PATH, VAL_PATH
+from src.constants import FEATURES_DIR, TEST_PATH, TRAIN_PATH, VAL_PATH
 
 # --- Logging Setup ---
 logger = get_logger(__name__, headline="feature_engineering.py")

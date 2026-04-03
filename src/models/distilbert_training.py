@@ -53,7 +53,7 @@ from src.models.helpers.mlflow_tracking_utils import setup_experiment
 from src.models.helpers.train_utils import save_hyperparams_bundle, save_metrics_json
 from src.utils.logger import get_logger
 from src.utils.mlflow_config import get_mlflow_uri
-from src.utils.paths import ADVANCED_DIR
+from src.constants import ADVANCED_DIR
 
 logger = get_logger(__name__, headline="DistilBERT_Training.py")
 

@@ -14,7 +14,7 @@ import os
 import requests
 
 # --- Project Utilities ---
-from src.utils.paths import RAW_PATH
+from src.constants import RAW_PATH
 from src.utils.logger import get_logger
 from src.config.manager import ConfigurationManager
 from src.config.schemas import DataIngestionConfig

@@ -19,7 +19,7 @@ from nltk.corpus import stopwords
 from nltk.tokenize import word_tokenize
 
 # --- Project Utilities ---
-from src.utils.paths import RAW_PATH, TRAIN_PATH, VAL_PATH, TEST_PATH, PROJECT_ROOT
+from src.constants import RAW_PATH, TRAIN_PATH, VAL_PATH, TEST_PATH, PROJECT_ROOT
 from src.utils.logger import get_logger
 from src.config.manager import ConfigurationManager
 from src.config.schemas import DataPreparationConfig

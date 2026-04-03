@@ -15,7 +15,6 @@ Or via Uvicorn:
 
 Integrates project utilities for modularity:
 - Logging via src.utils.logger
-- Paths via src.utils.paths
 - MLflow config via src.utils.mlflow_config
 - Inference helpers via app.inference_utils
 
@@ -46,7 +45,7 @@ from pydantic import BaseModel
 
 # Project Utilities
 from src.utils.logger import get_logger
-from src.utils.paths import FEATURES_DIR
+from src.constants import FEATURES_DIR
 
 # Inference Utilities
 from app.inference_utils import load_production_model, build_derived_features

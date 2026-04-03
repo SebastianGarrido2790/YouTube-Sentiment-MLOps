@@ -34,7 +34,7 @@ from mlflow.tracking import MlflowClient
 from src.config.manager import ConfigurationManager
 from src.utils.logger import get_logger
 from src.utils.mlflow_config import get_mlflow_uri
-from src.utils.paths import EVAL_DIR
+from src.constants import EVAL_DIR
 
 logger = get_logger(__name__, headline="register_model.py")
 

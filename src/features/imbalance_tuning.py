@@ -36,7 +36,7 @@ from src.features.helpers.feature_utils import (
 from src.models.helpers.mlflow_tracking_utils import setup_experiment
 from src.utils.logger import get_logger
 from src.utils.mlflow_config import get_mlflow_uri
-from src.utils.paths import IMBALANCE_FIGURES_DIR
+from src.constants import IMBALANCE_FIGURES_DIR
 
 # --- Logging Setup ---
 logger = get_logger(__name__, headline="imbalance_tuning.py")

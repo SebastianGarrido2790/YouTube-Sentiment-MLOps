@@ -8,9 +8,11 @@ import numpy as np
 import pandas as pd
 from scipy.sparse import load_npz
 from imblearn.over_sampling import ADASYN
+import pickle
+
 
 # --- Project Utilities ---
-from src.utils.paths import PROCESSED_DATA_DIR, FEATURES_DIR
+from src.constants import PROCESSED_DATA_DIR, FEATURES_DIR
 from src.utils.logger import get_logger
 
 logger = get_logger(__name__)
@@ -54,8 +56,6 @@ def load_feature_data(validate_files: bool = True):
     y_train = np.load(feature_files["y_train"])
     y_val = np.load(feature_files["y_val"])
     y_test = np.load(feature_files["y_test"])
-
-    import pickle
 
     with open(feature_files["label_encoder"], "rb") as f:
         le = pickle.load(f)

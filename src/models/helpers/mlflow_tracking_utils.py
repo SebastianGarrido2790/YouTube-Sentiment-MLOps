@@ -9,7 +9,7 @@ from datetime import datetime
 
 # --- Project Utilities ---
 from src.utils.logger import get_logger
-from src.utils.paths import REPORTS_DIR, EVAL_FIG_DIR
+from src.constants import REPORTS_DIR, EVAL_FIG_DIR
 
 logger = get_logger(__name__)
 

@@ -15,6 +15,7 @@ Key Features:
 from pathlib import Path
 import yaml
 from typing import Optional
+from src.constants import PARAMS_FILE_PATH
 from src.config.schemas import (
     AppConfig,
     DataPreparationConfig,
@@ -50,19 +51,19 @@ class ConfigurationManager:
 
     _instance = None
 
-    def __new__(cls, params_path: str = "params.yaml"):
+    def __new__(cls, params_path=PARAMS_FILE_PATH):
         """Ensures only one instance of configuration is loaded."""
         if cls._instance is None:
             cls._instance = super(ConfigurationManager, cls).__new__(cls)
             cls._instance._initialized = False
         return cls._instance
 
-    def __init__(self, params_path: str = "params.yaml"):
+    def __init__(self, params_path=PARAMS_FILE_PATH):
         """
         Initialize the configuration manager.
 
         Args:
-            params_path: Path to the parameter file (default: "params.yaml").
+            params_path: Path to the parameter file (default: PARAMS_FILE_PATH).
         """
         if self._initialized:
             return

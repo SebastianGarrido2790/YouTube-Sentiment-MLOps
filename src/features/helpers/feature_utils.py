@@ -19,7 +19,7 @@ from sklearn.base import ClassifierMixin
 from scipy.sparse import spmatrix
 
 # --- Project Utilities ---
-from src.utils.paths import TRAIN_PATH, VAL_PATH, PROJECT_ROOT
+from src.constants import TRAIN_PATH, VAL_PATH, PROJECT_ROOT
 from src.utils.logger import get_logger
 
 # Setup logger for the utility module

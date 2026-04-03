@@ -54,7 +54,7 @@ from src.models.helpers.train_utils import (
 )
 from src.utils.logger import get_logger
 from src.utils.mlflow_config import get_mlflow_uri
-from src.utils.paths import (
+from src.constants import (
     ADVANCED_DIR,
     BASELINE_MODEL_DIR,
     EVAL_FIG_DIR,

@@ -32,7 +32,7 @@ from src.features.helpers.feature_utils import (
 )
 from src.models.helpers.mlflow_tracking_utils import setup_experiment
 from src.utils.logger import get_logger
-from src.utils.paths import TFIDF_FIGURES_DIR
+from src.constants import TFIDF_FIGURES_DIR
 
 
 # --- Logging Setup ---
