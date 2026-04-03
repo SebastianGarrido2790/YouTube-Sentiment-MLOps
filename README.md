@@ -7,8 +7,12 @@
 ![MLflow](https://img.shields.io/badge/MLflow-0194E2?style=flat&logo=mlflow&logoColor=white)
 ![DVC](https://img.shields.io/badge/DVC-945DD6?style=flat&logo=dvc&logoColor=white)
 ![License](https://img.shields.io/badge/license-MIT-green)
+![Status](https://img.shields.io/badge/Status-M5_Hardening_Phase-orange?style=flat-square)
 
 An end-to-end **MLOps Production Pipeline** that delivers real-time sentiment insights for YouTube comments. This project demonstrates strict engineering standards, automating the journey from data ingestion to model deployment using **DVC**, **MLflow**, and **Docker**.
+
+> [!NOTE]
+> **Current Phase: M5 Hardening & Security**. Elevating the MVP to production-grade engineering standards, focusing on type safety, training-serving integrity, and security hardening.
 
 ---
 
@@ -19,6 +23,21 @@ This system allows content creators to instantly gauge audience reaction through
 *   **Real-time Analysis:** Process comments instantly as you browse YouTube.
 *   **Deep Insights:** Go beyond "Likes" with aggregated sentiment trends, word clouds, and Aspect-Based Sentiment Analysis (ABSA).
 *   **Production Grade:** Built with reproducibility, scalability, and CI/CD at its core.
+*   **Hardened Logic:** Focused on eliminating training-serving skew and ensuring zero-error type safety with `pyright`.
+
+## 📖 Project Design & Strategy
+
+For a deep dive into the strategic and technical foundation of this project, refer to the following documentation:
+
+| Document | Description |
+| :--- | :--- |
+| [**Project Charter**](./reports/docs/references/project_charter.md) | The "Why" and "What" – core foundation and strategy. |
+| [**Product Requirements (PRD)**](./reports/docs/references/prd.md) | Comprehensive feature specs and success metrics. |
+| [**User Stories**](./reports/docs/references/user_story.md) | Persona-driven requirements and acceptance criteria. |
+| [**Technical Roadmap**](./reports/docs/references/technical_roadmap.md) | Phase-by-phase implementation and hardening plan. |
+| [**Codebase Review**](./reports/docs/evaluations/codebase_review.md) | Production readiness assessment and identified gaps. |
+
+---
 
 ### 📸 Extension Previews
 
@@ -53,11 +72,12 @@ The ecosystem relies on three synchronized layers:
 
 | Feature | Description |
 | :--- | :--- |
-| **Dual-Model Strategy** | **LightGBM/XGBoost** for speed (General Sentiment) + **BERT** for granularity (ABSA). |
-| **Automated Pipeline** | `dvc repro` executes the full DAG from ingestion to registration. |
-| **Strict CI/CD** | GitHub Actions pipeline for Linting, Testing, Security Scanning (Trivy), and Docker Build. |
-| **Lazy Loading** | APIs utilize "lazy loading" to ensure instant startup, initializing heavy models only when needed. |
+| **Dual-Model Strategy** | **LightGBM/XGBoost** for speed + **BERT** for granularity (ABSA). |
+| **Automated Pipeline** | 12-stage DVC DAG executing the full flow from ingestion to registration. |
+| **Strict CI/CD** | GitHub Actions for Linting (`Ruff`), Type-checking (`Pyright`), Testing, and Security. |
+| **Scientific Integrity** | Zero training-serving skew via shared preprocessing and feature utilities. |
 | **Experiment Tracking** | Full hyperparameter and metric logging via MLflow. |
+| **Lazy Loading** | High-performance API startup with first-request model initialization. |
 
 ---
 
