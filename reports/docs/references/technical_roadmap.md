@@ -21,7 +21,7 @@ M1 ─────── M2 ─────── M3 ─────── M4 �
 ```
 
 > [!IMPORTANT]
-> Milestones M1–M4 are **complete**. This roadmap serves as both a retrospective record and a forward specification for the active M5 hardening phase and planned M6 portfolio polish. All unchecked items below are active work items tracked in [`task.md`](../evaluations/task.md).
+> Milestones M1–M4 are **complete**. This roadmap serves as both a retrospective record and a forward specification for the active M5 hardening phase and planned M6 portfolio polish.
 
 ---
 
@@ -158,7 +158,7 @@ M1 ─────── M2 ─────── M3 ─────── M4 �
 **Goal:** Elevate the codebase from MVP to production-grade engineering standards — resolving all critical security, type safety, and training-serving integrity gaps identified in the codebase review.
 
 **Linked PRD Requirements:** OPS-01 through OPS-08  
-**Linked Review:** [`codebase_review.md`](../evaluations/codebase_review.md), [`task.md`](../evaluations/task.md)
+**Linked Review:** [`codebase_review.md`](../evaluations/codebase_review.md)
 
 ---
 
@@ -314,5 +314,5 @@ A milestone is considered **complete** when:
 2. ✅ CI/CD pipeline passes all gates (lint, type check, test coverage, security scan)
 3. ✅ New code is covered by tests (coverage gate enforced)
 4. ✅ No `pyright` errors on modified files
-5. ✅ Documentation is updated to reflect the change (architecture docs, task.md, CHANGELOG if applicable)
+5. ✅ Documentation is updated to reflect the change (architecture docs, CHANGELOG if applicable)
 6. ✅ Changes are commited to Git with a descriptive message and pushed to `main`
