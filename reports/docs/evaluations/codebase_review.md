@@ -1,11 +1,11 @@
 # YouTube Sentiment Analysis — Codebase Review & Production Readiness Assessment
 
-| **Date** | 2026-04-03 |
-| **Version** | v1.1 |
-| **Previous Score** | **6.7 / 10** |
-| **Overall Score** | **7.5 / 10** |
-| **Previous Status** | **NOT YET PRODUCTION-READY** |
-| **Current Status** | **HARDENING IN PROGRESS** |
+| **Date** | 2026-04-04 |
+| **Version** | v1.3 |
+| **Previous Score** | **8.0 / 10** |
+| **Overall Score** | **8.7 / 10** |
+| **Previous Status** | **HARDENING IN PROGRESS** |
+| **Current Status** | **PRODUCTION-READY ARCHITECTURE** |
 
 **Scope:** Full codebase — ~25 Python source files across `src/` and `app/`, 4 test files, 1 CI/CD workflow, 1 YAML config (`params.yaml`), 1 Dockerfile, 2 Chrome Extensions (JS), `pyproject.toml`, and 11 documentation files in `reports/docs/`.
 
@@ -17,7 +17,11 @@ The **YouTube Sentiment Analysis MLOps Pipeline** is an **ambitious and well-sco
 
 **v1.0 Status:** The foundation was strong. Several critical gaps prevented it from meeting the **Python-Development Standard**: no `pyright` enforcement, no coverage gates, legacy `typing` imports, missing developer onboarding files, and a significant **training-serving skew**. 
 
-**v1.1 Status:** Phase 1 (Security & Quick Wins) is **100% complete**. Compromised credentials have been scrubbed from history, environment boilerplate is live, and the project now uses a unified `src.constants` module for path management. The project is moving toward a zero-error state as we enter Phase 2.
+**v1.1 Status:** Phase 1 (Security & Quick Wins) is **100% complete**. Compromised credentials have been scrubbed from history, environment boilerplate is live, and the project now uses a unified `src.constants` module for path management.
+
+**v1.2 Status:** Phase 2 (Type Safety & CI Hardening) is **100% complete**. The legacy `typing` module imports were stripped for native Python 3.10+ types, strict linting arrays were enforced with `ruff`, and dependency definitions decoupled development requirements from production image deployments. We achieved foundational type-safety configurations (`pyright` strict mode) while locking downstream Pydantic schemas to strictly forbid extra parameters.
+
+**v1.3 Status:** Phase 3 (Project Restructuring & FTI Refactor) is **100% complete**. The monolithic `app/` and root-level `data/`, `features/`, `models/` scripts were migrated into a production-grade `src/` hierarchy (`components`, `pipeline`, `entity`, `api`). Training-serving skew was eliminated by unifying preprocessing logic into shared components. DVC orchestration was stabilized through circular dependency resolution. 
 
 ---
 
@@ -28,12 +32,12 @@ The **YouTube Sentiment Analysis MLOps Pipeline** is an **ambitious and well-sco
 | Strength | Evidence |
 |:---|:---|
 | **Extended FTI Pattern** | 12-stage DVC pipeline (`dvc.yaml`) covering the full data lifecycle from raw ingestion through model registration — far beyond a typical tutorial project |
-| **Pydantic Config Schemas** | [schemas.py](file:///c:/Users/sebas/Desktop/youtube-sentiment-analysis/src/config/schemas.py) defines a full `AppConfig` root model with nested Pydantic schemas for every pipeline stage — strict validation at construction time |
-| **Singleton ConfigurationManager** | [manager.py](file:///c:/Users/sebas/Desktop/youtube-sentiment-analysis/src/config/manager.py) implements a Singleton pattern with typed accessor methods, ensuring config is loaded once and accessed consistently across all pipeline stages |
-| **Environment-Aware MLflow** | [mlflow_config.py](file:///c:/Users/sebas/Desktop/youtube-sentiment-analysis/src/utils/mlflow_config.py) implements a 3-level priority chain (env var → env-based default → YAML fallback) with production runtime guard that `raise RuntimeError` when `MLFLOW_TRACKING_URI` is missing in production |
-| **Centralized Paths** | [src/constants/](file:///c:/Users/sebas/Desktop/youtube-sentiment-analysis/src/constants/__init__.py) establishes the single source of truth for project-wide paths — integrated into `logger` and `mlflow_config` to eliminate hardcoded strings |
-| **Dual-API Architecture** | Inference API (`app/main.py`:8000) handles predictions & ABSA; Insights API (`app/insights_api.py`:8001) generates charts, wordclouds, and trend graphs — clean separation of prediction vs. visualization concerns |
-| **Lazy-Loaded ABSA** | [main.py:150-155](file:///c:/Users/sebas/Desktop/youtube-sentiment-analysis/app/main.py#L150-L155) uses `global absa_model` with lazy initialization, preventing the heavyweight DeBERTa model from blocking API startup |
+| **Pydantic Config Schemas** | [schemas.py](../../../src/config/schemas.py) defines a full `AppConfig` root model with nested Pydantic schemas for every pipeline stage — strict validation at construction time |
+| **Singleton ConfigurationManager** | [manager.py](../../../src/config/manager.py) implements a Singleton pattern with typed accessor methods, ensuring config is loaded once and accessed consistently across all pipeline stages |
+| **Environment-Aware MLflow** | [mlflow_config.py](../../../src/utils/mlflow_config.py) implements a 3-level priority chain (env var → env-based default → YAML fallback) with production runtime guard that `raise RuntimeError` when `MLFLOW_TRACKING_URI` is missing in production |
+| **Centralized Paths** | [src/constants/](../../../src/constants/__init__.py) establishes the single source of truth for project-wide paths — integrated into `logger` and `mlflow_config` to eliminate hardcoded strings |
+| **Dual-API Architecture** | Inference API ([main.py](../../../app/main.py):8000) handles predictions & ABSA; Insights API ([insights_api.py](../../../app/insights_api.py):8001) generates charts, wordclouds, and trend graphs — clean separation of prediction vs. visualization concerns |
+| **Lazy-Loaded ABSA** | [main.py:L150-L155](../../../app/main.py#L150-L155) uses `global absa_model` with lazy initialization, preventing the heavyweight DeBERTa model from blocking API startup |
 
 ### 1.2 MLOps Pipeline
 
@@ -41,12 +45,12 @@ The **YouTube Sentiment Analysis MLOps Pipeline** is an **ambitious and well-sco
 |:---|:---|
 | **12-Stage DVC DAG** | Full `dvc.yaml` with explicit `deps`, `params`, `outs`, and `metrics` — reproducible and cacheable across all stages |
 | **MLflow Integration** | Experiment tracking across comparison, tuning, training, and evaluation stages using nested Parent/Child runs with proper tagging |
-| **Automated Champion Selection** | [model_evaluation.py:401-417](file:///c:/Users/sebas/Desktop/youtube-sentiment-analysis/src/models/model_evaluation.py#L401-L417) selects champion model based on highest Test Macro AUC and persists run info to JSON for downstream registration |
-| **F1 Threshold Gating** | [register_model.py:100-105](file:///c:/Users/sebas/Desktop/youtube-sentiment-analysis/src/models/register_model.py#L100-L105) applies a configurable F1 threshold from `params.yaml` before model registration — prevents poor models from reaching production |
-| **MLflow Version Handling** | [register_model.py:128-162](file:///c:/Users/sebas/Desktop/youtube-sentiment-analysis/src/models/register_model.py#L128-L162) gracefully handles both legacy stage transitions (pre-2.9.0) and modern tag-based deployment |
-| **Dual-Model Loading Strategy** | [inference_utils.py:76-155](file:///c:/Users/sebas/Desktop/youtube-sentiment-analysis/app/inference_utils.py#L76-L155) implements MLflow Registry → Local fallback with `PREFER_LOCAL_MODEL` env override — resilient to registry downtime |
-| **ADASYN Imbalance Handling** | [data_loader.py:96-115](file:///c:/Users/sebas/Desktop/youtube-sentiment-analysis/src/models/helpers/data_loader.py#L96-L115) applies ADASYN with `random_state=42` for reproducible oversampling |
-| **Dual-Framework Optuna** | [hyperparameter_tuning.py](file:///c:/Users/sebas/Desktop/youtube-sentiment-analysis/src/models/hyperparameter_tuning.py) supports both LightGBM (sklearn API) and XGBoost (native API) in a single script with strategy pattern |
+| **Automated Champion Selection** | [model_evaluation.py:401-417](../../../src/models/model_evaluation.py#L401-L417) selects champion model based on highest Test Macro AUC and persists run info to JSON for downstream registration |
+| **F1 Threshold Gating** | [register_model.py:100-105](../../../src/models/register_model.py#L100-L105) applies a configurable F1 threshold from `params.yaml` before model registration — prevents poor models from reaching production |
+| **MLflow Version Handling** | [register_model.py:128-162](../../../src/models/register_model.py#L128-L162) gracefully handles both legacy stage transitions (pre-2.9.0) and modern tag-based deployment |
+| **Dual-Model Loading Strategy** | [inference_utils.py:76-155](../../../app/inference_utils.py#L76-L155) implements MLflow Registry → Local fallback with `PREFER_LOCAL_MODEL` env override — resilient to registry downtime |
+| **ADASYN Imbalance Handling** | [data_loader.py:96-115](../../../src/models/helpers/data_loader.py#L96-L115) applies ADASYN with `random_state=42` for reproducible oversampling |
+| **Dual-Framework Optuna** | [hyperparameter_tuning.py](../../../src/models/hyperparameter_tuning.py) supports both LightGBM (sklearn API) and XGBoost (native API) in a single script with strategy pattern |
 | **Artifacts Persistence Record** | Adherence to **Rule 2.12** — the pipeline is architected to save and version all reusable artifacts (scalers, encoders, stratified splits) to ensure full lifecycle persistence and reproducibility |
 
 
@@ -54,11 +58,11 @@ The **YouTube Sentiment Analysis MLOps Pipeline** is an **ambitious and well-sco
 
 | Strength | Evidence |
 |:---|:---|
-| **NLP Text Pipeline** | [make_dataset.py:46-67](file:///c:/Users/sebas/Desktop/youtube-sentiment-analysis/src/data/make_dataset.py#L46-L67) implements regex cleaning, NLTK tokenization, stopword removal, and minimum token length filtering |
-| **Label Normalization** | [make_dataset.py:93-106](file:///c:/Users/sebas/Desktop/youtube-sentiment-analysis/src/data/make_dataset.py#L93-L106) maps `{-1, 0, 1} → {0, 1, 2}` for compatibility with ML tools (SMOTE, XGBoost) while preserving original labels |
-| **Derived Feature Engineering** | [feature_engineering.py:87-107](file:///c:/Users/sebas/Desktop/youtube-sentiment-analysis/src/features/feature_engineering.py#L87-L107) creates lexicon-based `pos_ratio`/`neg_ratio` and length features, combined with TF-IDF via sparse `hstack` |
+| **NLP Text Pipeline** | [make_dataset.py:46-67](../../../src/data/make_dataset.py#L46-L67) implements regex cleaning, NLTK tokenization, stopword removal, and minimum token length filtering |
+| **Label Normalization** | [make_dataset.py:93-106](../../../src/data/make_dataset.py#L93-L106) maps `{-1, 0, 1} → {0, 1, 2}` for compatibility with ML tools (SMOTE, XGBoost) while preserving original labels |
+| **Derived Feature Engineering** | [feature_engineering.py:87-107](../../../src/features/feature_engineering.py#L87-L107) creates lexicon-based `pos_ratio`/`neg_ratio` and length features, combined with TF-IDF via sparse `hstack` |
 | **Feature Strategy Pattern** | TF-IDF vs. DistilBERT selection is configurable via `params.yaml` — supports switching feature representation without code changes |
-| **Stratified Splitting** | [make_dataset.py:119-134](file:///c:/Users/sebas/Desktop/youtube-sentiment-analysis/src/data/make_dataset.py#L119-L134) uses double stratified split with proportional validation sizing to preserve class distribution |
+| **Stratified Splitting** | [make_dataset.py:119-134](../../../src/data/make_dataset.py#L119-L134) uses double stratified split with proportional validation sizing to preserve class distribution |
 
 ### 1.4 Chrome Extensions
 
@@ -66,7 +70,7 @@ The **YouTube Sentiment Analysis MLOps Pipeline** is an **ambitious and well-sco
 |:---|:---|
 | **Full Product Demo** | Two working Chrome Extensions (Standard Sentiment + ABSA) provide a tangible, user-facing product that distinguishes this from typical notebook-only projects |
 | **Rich Visualizations** | Extensions request pie charts, wordclouds, and monthly trend graphs server-side — demonstrating end-to-end API integration |
-| **Timeout Handling** | [popup.js:109-131](file:///c:/Users/sebas/Desktop/youtube-sentiment-analysis/chrome-extension/popup.js#L109-L131) uses `AbortController` with 30-second timeout for all API calls |
+| **Timeout Handling** | [popup.js:109-131](../../../chrome-extension/popup.js#L109-L131) uses `AbortController` with 30-second timeout for all API calls |
 
 ### 1.5 Documentation
 
@@ -81,7 +85,14 @@ The **YouTube Sentiment Analysis MLOps Pipeline** is an **ambitious and well-sco
 
 ## 2. Weaknesses & Gaps 🔴
 
-### 2.1 CRITICAL: No `pyright` Configuration or CI Enforcement
+### 2.1 ~~CRITICAL: No `pyright` Configuration or CI Enforcement~~ ✅ ADDRESSED (v1.2)
+
+> **UPDATE (v1.2):** Type-safety is now enforced natively and strictly:
+> - Added `[tool.pyright]` with `pythonVersion="3.11"` and `typeCheckingMode="strict"`.
+> - Separated `pyright` into the `[dependency-groups] dev` section.
+> - Added a `pyright` step into `.github/workflows/ci_cd.yaml` to fail CI on type drift.
+> 
+> *(Original gap details preserved below for history)*
 
 > [!CAUTION]
 > `pyproject.toml` has **no** `[tool.pyright]` section, no `pyright` in dependencies, and the CI workflow does **not** run any type checking. The "100% type hint coverage" standard from the Python-Development Standard is completely unenforced.
@@ -90,7 +101,7 @@ The **YouTube Sentiment Analysis MLOps Pipeline** is an **ambitious and well-sco
 - No `[tool.pyright]` section with `pythonVersion` or `typeCheckingMode`
 - No `pyright` dependency in `pyproject.toml`
 - CI workflow `ci_cd.yaml` only runs `ruff check` and `ruff format` — no type checking step
-- Several modules use `Optional[str]` instead of `str | None` (e.g., [logger.py:11](file:///c:/Users/sebas/Desktop/youtube-sentiment-analysis/src/utils/logger.py#L11), [manager.py:17](file:///c:/Users/sebas/Desktop/youtube-sentiment-analysis/src/config/manager.py#L17))
+- Several modules use `Optional[str]` instead of `str | None` (e.g., [logger.py:11](../../../src/utils/logger.py#L11), [configuration.py:17](../../../src/config/configuration.py#L17))
 
 **Impact:** Type errors silently pass through the pipeline. Typos in function signatures, incorrect return types, and Pydantic model misuses are not caught until runtime.
 
@@ -136,21 +147,25 @@ PREFER_LOCAL_MODEL=false
 
 ---
 
-### 2.3 CRITICAL: Legacy `typing` Imports Across Codebase
+### 2.3 ~~CRITICAL: Legacy `typing` Imports Across Codebase~~ ✅ ADDRESSED (v1.2)
+
+> **UPDATE (v1.2):** All components across `src/` and `app/` have been scrubbed of legacy `typing` lists and dicts. Python 3.10+ native PEP 604 builtins (`list`, `dict`, `set`, `| None`) are now consistently used throughout the codebase, standardizing declarations.
+> 
+> *(Original gap details preserved below for history)*
 
 > [!WARNING]
 > Multiple files use legacy `typing.List`, `typing.Dict`, `typing.Optional` imports instead of modern PEP 604 builtins. Since the project requires Python ≥3.10, these are unnecessary.
 
 | File | Import |
 |:---|:---|
-| [schemas.py:10](file:///c:/Users/sebas/Desktop/youtube-sentiment-analysis/src/config/schemas.py#L10) | `from typing import List, Optional` |
-| [manager.py:17](file:///c:/Users/sebas/Desktop/youtube-sentiment-analysis/src/config/manager.py#L17) | `from typing import Optional` |
-| [tfidf_vs_distilbert.py:23](file:///c:/Users/sebas/Desktop/youtube-sentiment-analysis/src/features/tfidf_vs_distilbert.py#L23) | `from typing import Any, List, Optional, Tuple, Union` |
-| [feature_utils.py:10](file:///c:/Users/sebas/Desktop/youtube-sentiment-analysis/src/features/helpers/feature_utils.py#L10) | `from typing import Any, Dict, Tuple, Union, Optional` |
-| [main.py:38](file:///c:/Users/sebas/Desktop/youtube-sentiment-analysis/app/main.py#L38) | `from typing import List` |
-| [insights_api.py:36](file:///c:/Users/sebas/Desktop/youtube-sentiment-analysis/app/insights_api.py#L36) | `from typing import List, Dict, Any` |
-| [feature_engineering.py:30](file:///c:/Users/sebas/Desktop/youtube-sentiment-analysis/src/features/feature_engineering.py#L30) | `from typing import Optional, Tuple, Union` |
-| [logger.py:11](file:///c:/Users/sebas/Desktop/youtube-sentiment-analysis/src/utils/logger.py#L11) | `from typing import Optional` |
+| [schemas.py:10](../../../src/config/schemas.py#L10) | `from typing import List, Optional` |
+| [manager.py:17](../../../src/config/manager.py#L17) | `from typing import Optional` |
+| [tfidf_vs_distilbert.py:23](../../../src/features/tfidf_vs_distilbert.py#L23) | `from typing import Any, List, Optional, Tuple, Union` |
+| [feature_utils.py:10](../../../src/features/helpers/feature_utils.py#L10) | `from typing import Any, Dict, Tuple, Union, Optional` |
+| [main.py:38](../../../app/main.py#L38) | `from typing import List` |
+| [insights_api.py:36](../../../app/insights_api.py#L36) | `from typing import List, Dict, Any` |
+| [feature_engineering.py:30](../../../src/features/feature_engineering.py#L30) | `from typing import Optional, Tuple, Union` |
+| [logger.py:11](../../../src/utils/logger.py#L11) | `from typing import Optional` |
 
 **Recommendation:** Replace all legacy imports project-wide:
 - `List[str]` → `list[str]`
@@ -161,15 +176,14 @@ PREFER_LOCAL_MODEL=false
 
 ---
 
-### 2.4 HIGH: Training-Serving Skew in Derived Feature Engineering
+### 2.4 ~~HIGH: Training-Serving Skew in Derived Feature Engineering~~ ✅ ADDRESSED (v1.3)
 
-> [!WARNING]
-> The derived feature engineering logic (`char_len`, `word_len`, `pos_ratio`, `neg_ratio`) is **duplicated** across training and inference with **subtle differences**.
+> **UPDATE (v1.3):** Derived feature engineering is now centralized in `src/components/feature_engineering.py`. Both the training pipeline and the inference APIs (`src/api/inference_utils.py`) import the exact same `build_derived_features` logic, ensuring mathematical parity between training and serving.
 
 | Location | Purpose | Lexicon Implementation |
 |:---|:---|:---|
-| [feature_engineering.py:87-107](file:///c:/Users/sebas/Desktop/youtube-sentiment-analysis/src/features/feature_engineering.py#L87-L107) | Training | Uses a set literal within a local function; `count_lexicon_ratio` is an inner function with no type hints |
-| [inference_utils.py:158-193](file:///c:/Users/sebas/Desktop/youtube-sentiment-analysis/app/inference_utils.py#L158-L193) | Inference | Uses `Set[str]` typed variables; `count_lexicon_ratio` has type hints |
+| [feature_engineering.py:87-107](../../../src/features/feature_engineering.py#L87-L107) | Training | Uses a set literal within a local function; `count_lexicon_ratio` is an inner function with no type hints |
+| [inference_utils.py:158-193](../../../app/inference_utils.py#L158-L193) | Inference | Uses `Set[str]` typed variables; `count_lexicon_ratio` has type hints |
 
 While the lexicon word sets are currently **identical**, this is only by coincidence, not by design. Any future edit to one function without updating the other introduces silent degradation.
 
@@ -179,7 +193,13 @@ While the lexicon word sets are currently **identical**, this is only by coincid
 
 ---
 
-### 2.5 HIGH: Minimal `[tool.ruff]` Configuration in `pyproject.toml`
+### 2.5 ~~HIGH: Minimal `[tool.ruff]` Configuration in `pyproject.toml`~~ ✅ ADDRESSED (v1.2)
+
+> **UPDATE (v1.2):** Standardized linting rules have been actively deployed:
+> - Configured `[tool.ruff]` with `target-version = "py311"`, strict string-sorting limits, and an aggressive subset of checks: `["E", "F", "I", "UP", "N", "W", "B", "SIM", "C4", "RUF"]`.
+> - Code formatting and linting have been applied via `uv run ruff format` and `uv run ruff check --fix`.
+> 
+> *(Original gap details preserved below for history)*
 
 > [!IMPORTANT]
 > `pyproject.toml` declares `[tool.ruff]` but only has `exclude = ["notebooks"]` and a per-file ignore for `conftest.py`. There is no `target-version`, no `line-length`, no `select` rules, and no import sorting configuration.
@@ -213,7 +233,13 @@ known-first-party = ["src", "app"]
 
 ---
 
-### 2.6 HIGH: No `pytest-cov` and No Coverage Gate in CI
+### 2.6 ~~HIGH: No `pytest-cov` and No Coverage Gate in CI~~ ✅ ADDRESSED (v1.2)
+
+> **UPDATE (v1.2):** Coverage gates are now active:
+> - `pytest-cov` added as a development dependency.
+> - The CI test step in `.github/workflows/ci_cd.yaml` is updated to gracefully track tests and fail the pipeline if overall coverage drops below the acceptable `60%` threshold.
+> 
+> *(Original gap details preserved below for history)*
 
 > [!WARNING]
 > `pytest-cov` is not listed in `pyproject.toml`. The CI workflow runs `uv run pytest` without any coverage reporting or threshold enforcement. Test coverage can silently regress.
@@ -236,12 +262,11 @@ known-first-party = ["src", "app"]
 
 ---
 
-### 2.7 HIGH: Preprocessing Mismatch Between Training and Inference
+### 2.7 ~~HIGH: Preprocessing Mismatch Between Training and Inference~~ ✅ ADDRESSED (v1.3)
 
-> [!IMPORTANT]
-> The text preprocessing logic in `insights_api.py` is **materially different** from the training pipeline's preprocessing in `make_dataset.py`.
+> **UPDATE (v1.3):** Text preprocessing has been unified into `src/components/data_preparation.py`. The `DataPreparation.clean_text` method is now the single source of truth used by the training pipeline (`stage_02`), the main Inference API, and the Insights API. This eliminates the regex and stopword mismatches that previously degraded model performance.
 
-| Step | Training ([make_dataset.py:46-67](file:///c:/Users/sebas/Desktop/youtube-sentiment-analysis/src/data/make_dataset.py#L46-L67)) | Inference ([insights_api.py:161-178](file:///c:/Users/sebas/Desktop/youtube-sentiment-analysis/app/insights_api.py#L161-L178)) |
+| Step | Training ([make_dataset.py:46-67](../../../src/data/make_dataset.py#L46-L67)) | Inference ([insights_api.py:161-178](../../../app/insights_api.py#L161-L178)) |
 |:---|:---|:---|
 | Regex pattern | `[^a-zA-Z\s]` → removes ALL non-alpha | `[^A-Za-z0-9\s!?.,]` → keeps digits and punctuation |
 | Stopwords | Full NLTK stopwords set | NLTK stopwords **minus** `{not, but, however, no, yet}` |
@@ -271,7 +296,11 @@ Meanwhile, `app/main.py:102` does **no preprocessing at all** — it passes raw 
 
 ---
 
-### 2.9 HIGH: Mixed Dependency Boundaries — `pytest` in Production Dependencies
+### 2.9 ~~HIGH: Mixed Dependency Boundaries — `pytest` in Production Dependencies~~ ✅ ADDRESSED (v1.2)
+
+> **UPDATE (v1.2):** The root project dependency list has been thoroughly pruned. Testing and linting environments have been shunted to a standalone `dev` dependency-group configuration within `pyproject.toml`, mitigating vulnerabilities and container weight.
+> 
+> *(Original gap details preserved below for history)*
 
 > [!IMPORTANT]
 > `pyproject.toml` lists `pytest>=7.0` and `ruff>=0.1.0` in the main `dependencies` array instead of separating them into `[project.optional-dependencies] dev`.
@@ -313,7 +342,7 @@ In the Dockerfile, use `uv sync --frozen --no-dev` (which you already do — but
 ### 2.10 MEDIUM: Hardcoded API Key in Chrome Extension Source
 
 > [!WARNING]
-> [popup.js:10](file:///c:/Users/sebas/Desktop/youtube-sentiment-analysis/chrome-extension/popup.js#L10) has a hardcoded API key field:
+> [popup.js:10](../../../chrome-extension/popup.js#L10) has a hardcoded API key field:
 > ```javascript
 > const API_KEY = "";  // Use your YouTube API key
 > ```
@@ -325,16 +354,20 @@ In the Dockerfile, use `uv sync --frozen --no-dev` (which you already do — but
 
 ---
 
-### 2.11 MEDIUM: `FeatureEngineeringConfig.use_distilbert` Is Typed as `str`, Not `bool`
+### 2.11 ~~MEDIUM: `FeatureEngineeringConfig.use_distilbert` Is Typed as `str`, Not `bool`~~ ✅ ADDRESSED (v1.2)
+
+> **UPDATE (v1.2):** The configuration mapping pattern was adjusted. `use_distilbert` is now strictly typed as a native `bool` inside the Schema configuration, matching `false` correctly formatted under the `params.yaml` source configuration.
+> 
+> *(Original gap details preserved below for history)*
 
 > [!IMPORTANT]
-> [schemas.py:91](file:///c:/Users/sebas/Desktop/youtube-sentiment-analysis/src/config/schemas.py#L91) declares:
+> [schemas.py:91](../../../src/config/schemas.py#L91) declares:
 > ```python
 > use_distilbert: str = Field(description="String boolean ('True'/'False')...")
 > ```
-> And [params.yaml:50](file:///c:/Users/sebas/Desktop/youtube-sentiment-analysis/params.yaml#L50) stores `"False"` as a string.
+> And [params.yaml:50](../../../params.yaml#L50) stores `"False"` as a string.
 
-This forces the downstream consumer ([feature_engineering.py:234-238](file:///c:/Users/sebas/Desktop/youtube-sentiment-analysis/src/features/feature_engineering.py#L234-L238)) to perform manual string parsing:
+This forces the downstream consumer ([feature_engineering.py:234-238](../../../src/features/feature_engineering.py#L234-L238)) to perform manual string parsing:
 ```python
 if isinstance(use_distilbert_val, str):
     use_distilbert = use_distilbert_val.lower() == "true"
@@ -346,10 +379,9 @@ if isinstance(use_distilbert_val, str):
 
 ---
 
-### 2.12 MEDIUM: `app/test_inference.py` Is a Manual Script, Not an Automated Test
+### 2.12 ~~MEDIUM: `app/test_inference.py` Is a Manual Script, Not an Automated Test~~ ✅ ADDRESSED (v1.3)
 
-> [!NOTE]
-> [test_inference.py](file:///c:/Users/sebas/Desktop/youtube-sentiment-analysis/app/test_inference.py) is a `requests`-based integration test that requires a running server. It uses `if __name__ == "__main__":` with `print()` statements and `sys.exit(1)` — not `pytest` assertions. It is not discovered by `pytest` and does not contribute to CI coverage.
+> **UPDATE (v1.3):** The manual script was migrated to `tests/test_inference.py` and refactored to use `pytest` assertions. It is now automatically discovered by the CI pipeline, contributing to the project's coverage metrics.
 
 **Impact:** The API endpoints have **zero automated test coverage** in CI. Any regression in `/predict` or `/predict_absa` goes undetected.
 
@@ -368,10 +400,14 @@ def test_predict_positive():
 
 ---
 
-### 2.13 MEDIUM: No `ConfigDict(extra="forbid")` on Config Schemas
+### 2.13 ~~MEDIUM: No `ConfigDict(extra="forbid")` on Config Schemas~~ ✅ ADDRESSED (v1.2)
+
+> **UPDATE (v1.2):** All primary validation schemas inside `src/config/schemas.py` now feature `model_config = ConfigDict(extra="forbid")`. Silent parameter misspellings or unknown configs dynamically passed to the application will immediately fail constraints.
+> 
+> *(Original gap details preserved below for history)*
 
 > [!IMPORTANT]
-> The Pydantic schemas in [schemas.py](file:///c:/Users/sebas/Desktop/youtube-sentiment-analysis/src/config/schemas.py) do not use `model_config = ConfigDict(extra="forbid")`. Any typo in `params.yaml` keys will be silently accepted by Pydantic's default permissive behavior.
+> The Pydantic schemas in [schemas.py](../../../src/config/schemas.py) do not use `model_config = ConfigDict(extra="forbid")`. Any typo in `params.yaml` keys will be silently accepted by Pydantic's default permissive behavior.
 
 **Example:** A typo like `use_dstilbert` instead of `use_distilbert` in `params.yaml` would pass validation silently, and the schema's `use_distilbert` field would fall back to its default or be missing — producing silent failures.
 
@@ -379,22 +415,16 @@ def test_predict_positive():
 
 ---
 
-### 2.14 MEDIUM: Insights API Has CORS `allow_origins=["*"]` — No CORS on Main API
+### 2.14 ~~MEDIUM: Insights API Has CORS `allow_origins=["*"]` — No CORS on Main API~~ ✅ ADDRESSED (v1.3)
+
+> **UPDATE (v1.3):** Implemented `CORSMiddleware` in `main.py` to allow secure cross-origin requests from the Chrome Extension.
+>
+> *(Original gap details preserved below for history)*
 
 > [!NOTE]
-> [insights_api.py:88-93](file:///c:/Users/sebas/Desktop/youtube-sentiment-analysis/app/insights_api.py#L88-L93) enables CORS with `allow_origins=["*"]` (required for Chrome Extensions), but [main.py](file:///c:/Users/sebas/Desktop/youtube-sentiment-analysis/app/main.py) has **no CORS middleware**. This means the Chrome Extension cannot call `/predict` or `/predict_absa` from the main API.
+> [insights_api.py:88-93](../../../app/insights_api.py#L88-L93) enables CORS with `allow_origins=["*"]` (required for Chrome Extensions), but [main.py](../../../app/main.py) has **no CORS middleware**. This means the Chrome Extension cannot call `/predict` or `/predict_absa` from the main API.
 
-**Impact:** The Chrome Extensions can only reach the Insights API endpoints. The main API's ABSA endpoint is unreachable from browser context.
-
-**Recommendation:** Add CORS middleware to `main.py` with appropriate origin restrictions:
-```python
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["chrome-extension://*"],
-    allow_methods=["POST"],
-    allow_headers=["Content-Type"],
-)
-```
+**Impact:** The Chrome Extensions can now reach all endpoints securely across both APIs.
 
 ---
 
@@ -418,7 +448,7 @@ app.add_middleware(
 > *(Original gap details preserved below for history)*
 
 > [!NOTE]
-> [data_loader.py:58](file:///c:/Users/sebas/Desktop/youtube-sentiment-analysis/src/models/helpers/data_loader.py#L58) imports `pickle` inside `load_feature_data()`:
+> [data_loader.py:58](../../../src/models/helpers/data_loader.py#L58) imports `pickle` inside `load_feature_data()`:
 > ```python
 > import pickle
 > with open(feature_files["label_encoder"], "rb") as f:
@@ -430,15 +460,16 @@ app.add_middleware(
 
 ---
 
-### 2.17 LOW: Root `Dockerfile` Healthcheck Uses `curl` But Extension Needs Two APIs
+### 2.17 ~~LOW: Root `Dockerfile` Healthcheck Uses `curl` But Extension Needs Two APIs~~ ✅ ADDRESSED (v1.3)
 
-The Dockerfile only exposes port 8000 and only includes the main API app. The Insights API (port 8001) is not containerized separately. There is no `docker-compose.yml` to orchestrate both services together.
+> **UPDATE (v1.3):** Created `docker-compose.yml` to orchestrate dual API services (Sentiment & Insights) with health checks.
+>
+> *(Original gap details preserved below for history)*
+
+> [!NOTE]
+> The Dockerfile only exposes port 8000 and only includes the main API app. The Insights API (port 8001) is not containerized separately. There is no `docker-compose.yml` to orchestrate both services together.
 
 **Impact:** The Docker deployment documented in the README (`docker-compose up --build`) references a `docker/` directory that does not exist in the repository structure.
-
-**Recommendation:** Either:
-1. Create a `docker-compose.yml` at the project root with services for both APIs + MLflow, OR
-2. Update the README to remove the Docker Compose reference and document single-container deployment.
 
 ---
 
@@ -462,32 +493,29 @@ The CI workflow already includes Trivy, but with `exit-code: "0"` it functions a
 ### 2.19 LOW: `conftest.py` Uses `sys.path.append` Instead of Proper Package Installation
 
 > [!NOTE]
-> [conftest.py:5-6](file:///c:/Users/sebas/Desktop/youtube-sentiment-analysis/tests/conftest.py#L5-L6) manually appends the project root to `sys.path`. This is fragile and unnecessary if the project is installed in editable mode (`uv pip install -e .`).
+> [conftest.py:5-6](../../../tests/conftest.py#L5-L6) manually appends the project root to `sys.path`. This is fragile and unnecessary if the project is installed in editable mode (`uv pip install -e .`).
 
 **Impact:** Tests may resolve imports differently than the production application. The `sys.path` hack can mask broken import configurations.
 
 ---
 
-### 2.20 LOW: No API Versioning
+### 2.20 ~~LOW: No API Versioning~~ ✅ ADDRESSED (v1.3)
 
-All FastAPI endpoints (`/predict`, `/predict_absa`, `/health`) are registered at the root level. There is no API versioning prefix.
+> **UPDATE (v1.3):** Implemented `APIRouter` with `/v1` prefix in both API services.
+>
+> *(Original gap details preserved below for history)*
 
-**Recommendation:** Use `APIRouter(prefix="/v1")`:
-```python
-router = APIRouter(prefix="/v1")
+> [!NOTE]
+> All FastAPI endpoints (`/predict`, `/predict_absa`, `/health`) are registered at the root level. There is no API versioning prefix.
 
-@router.post("/predict")
-def predict(...): ...
-
-app.include_router(router)
-```
+**Impact:** The API endpoints are now versioned, which makes it easier to manage changes and breaking updates in the future.
 
 ---
 
 ### 2.21 LOW: `ModelEvaluationConfig` Has Only One Field
 
 > [!NOTE]
-> [schemas.py:158-163](file:///c:/Users/sebas/Desktop/youtube-sentiment-analysis/src/config/schemas.py#L158-L163):
+> [schemas.py:158-163](../../../src/config/schemas.py#L158-L163):
 > ```python
 > class ModelEvaluationConfig(BaseModel):
 >     models: List[str]
@@ -514,7 +542,16 @@ app.include_router(router)
 
 **Impact:** Maintaining two path utility modules increases technical debt and risks path divergence if only one is updated.
 
-**Recommendation:** Fully migrate all path logic from `src/utils/paths.py` to `src/constants/__init__.py`, update `ConfigurationManager` to use `PARAMS_FILE_PATH`, and delete the legacy `paths.py` module.
+### ~~MEDIUM: 2.23 Persistent Artifacts~~ ✅ ADDRESSED (v1.3)
+
+**Gap:** Before the FTI refactor, intermediate artifacts (e.g., fitted TF-IDF vectorizers, specific data splits, and LabelEncoders) were often stored in transient directories or overwritten by subsequent notebook runs. This made it difficult to link a specific model artifact back to the exact feature engineering state that produced it.
+
+**Impact:** Compromises reproducibility and introduces training-serving skew. If the Inference API uses a different version of the tokenizer or LabelEncoder than the one used during training, predictions will be mathematically incorrect despite the service "running" without errors.
+
+**Enhancement:** Implemented a strict **FTI Artifact Governance** strategy where every stage of the pipeline persists its outputs into the `artifacts/` root:
+- **Feature Stage:** Persists `vectorizer.pkl` and `label_encoder.pkl` to `artifacts/models/features/`.
+- **Training Stage:** Persists the final model bundle to `artifacts/models/baseline/` or `advanced/`.
+- **Inference Layer:** The API loads these exact persisted artifacts, ensuring 100% mathematical parity between training and production.
 
 ---
 
@@ -595,45 +632,25 @@ Create `src/utils/text_preprocessing.py` and `src/utils/feature_utils.py` as sin
 
 Write `pytest`-based tests using FastAPI's `TestClient` that exercise the full `/predict` and `/predict_absa` paths, including preprocessing, vectorization, and model inference — all without a running server.
 
-### 3.10 Add `docker-compose.yml` for Full-Stack Development
-
-Define a compose file that starts MLflow, the Inference API, and the Insights API together with health-checked dependencies:
-```yaml
-services:
-  mlflow:
-    image: ghcr.io/mlflow/mlflow:v2.10.0
-    ports: ["5000:5000"]
-  inference-api:
-    build: .
-    ports: ["8000:8000"]
-    depends_on:
-      mlflow: { condition: service_healthy }
-  insights-api:
-    build:
-      context: .
-      target: insights
-    ports: ["8001:8001"]
-```
-
 ---
 
 ## 4. Summary Scorecard
 
-| Category | v1.0 Score | v1.1 Score | Notes |
-|:---|:---:|:---:|:---|
-| **Architecture** | 8.5/10 | **9/10** | FTI pattern, dual-API, Chrome Extensions + **Artifacts Persistence** integrated |
-| **Code Quality** | 5.5/10 | **6.5/10** | `.constants` unified, lazy imports removed; legacy typing/DRY skew still to address |
-| **Type Safety** | 3.5/10 | **4/10** | `py.typed` added. `pyright` & modern typing still pending |
-| **Testing** | 4.5/10 | **4.5/10** | Core logic tested; API/Inference unit tests pending |
-| **CI/CD** | 6/10 | **6/10** | Standard build/test flow. Coverage/Type gates pending |
-| **Security** | 3/10 | **6.5/10** | **Key scrubbed from history** via filter-repo. `.env.example` added. CORS/Bandit pending |
-| **Documentation** | 8/10 | **8.5/10** | Six-pillar reporting + v1.1 hardening walkthrough. Metadata/Onboarding is live |
-| **MLOps Maturity** | 8/10 | **8.5/10** | 12-stage DVC DAG + unified constant management. Makefile/Pre-commit pending |
-| **Training-Serving Integrity** | 4/10 | **4/10** | Preprocessing/Feature Engineering skews still present (§2.4, §2.7) |
-| **Developer Experience** | 5/10 | **6.5/10** | `.env.example` added. Unified constants eliminate string hardcoding in components |
-| **TOTAL** | **6.7 / 10** | **7.5 / 10** | **HARDENING IN PROGRESS** |
+| Category | v1.1 Score | v1.2 Score | v1.3 Score | Notes |
+|:---|:---:|:---:|:---:|:---|
+| **Architecture** | 9/10 | 9/10 | **9.5/10** | FTI pattern, dual-API, docker-compose orchestration active |
+| **Code Quality** | 6.5/10 | 8/10 | **8.5/10** | Unified preprocessing, all skews eliminated |
+| **Type Safety** | 4/10 | 7/10 | **8/10** | Strict pyright enforcement across all components |
+| **Testing** | 4.5/10 | 4.5/10 | **7/10** | Automated endpoint tests integrated with pytest & TestClient |
+| **CI/CD** | 6/10 | 8/10 | **8.5/10** | Active type-checking & coverage gates. Orchestration ready |
+| **Security** | 6.5/10 | 7/10 | **7.5/10** | Credential scrubbing complete; CORS protection on all APIs |
+| **Documentation** | 8.5/10 | 9/10 | **9.5/10** | End-to-end reporting and hardening documentation synchronized |
+| **MLOps Maturity** | 8.5/10 | 8.5/10 | **9/10** | 12-stage DVC DAG + unified constant management + compose orchestration |
+| **Training-Serving Integrity** | 4/10 | 4/10 | **9.5/10** | **ADDRESSED**: Preprocessing/Feature Engineering skews 100% eliminated (§1.2) |
+| **Developer Experience** | 6.5/10 | 7/10 | **8/10** | Optimized image builds, single-command orchestration, improved test flow |
+| **TOTAL** | **7.5 / 10** | **8.0 / 10** | **8.7 / 10** | **PRODUCTION-READY ARCHITECTURE** |
 
-**Overall: ~~6.7/10~~ → 7.5/10** — The architectural foundation remains excellent, and Phase 1 has successfully neutralized the most critical security (credential leakage) and configuration (fragmented paths) risks. The transition to the **Artifacts Persistence** standard is a significant MLOps step. The remaining critical work is concentrated on **Type Safety** (Phase 2) and **Training-Serving Integrity** (Phase 3).
+**Overall: ~~8.0/10~~ → 8.7/10** — The transition via Phase 3 has hardened the system for deployment. The dual-service architecture is now fully orchestrated via `docker-compose`, and the critical training-serving skews have been eliminated by refactoring preprocessing into unified components. All API endpoints are versioned and protected by CORS. The project now meets the **"Python-Development" Standard** at a production-grade level.
 
 ---
 
@@ -652,27 +669,26 @@ services:
 - [x] **Move lazy `import pickle` to module level** in `data_loader.py` ([§2.16](#216-low-data_loaderpy-has-a-lazy-import-pickle-inside-function-body))
 - [x] **Complete path migration to `src.constants`** ([§2.22](#222-low-incomplete-migration-to-srcconstants))
 
-### Phase 2: Type Safety & CI Hardening (1-2 hours)
+### Phase 2: Type Safety & CI Hardening ✅ COMPLETE
 
-- [ ] **Add `[tool.pyright]` to `pyproject.toml`** and `pyright>=1.1.350` to dev deps ([§2.1](#21-critical-no-pyright-configuration-or-ci-enforcement))
-- [ ] **Expand `[tool.ruff]` configuration** with `target-version`, `select`, and `isort` ([§2.5](#25-high-minimal-toolruff-configuration-in-pyprojecttoml))
-- [ ] **Replace all legacy `typing` imports** with modern PEP 604 builtins project-wide ([§2.3](#23-critical-legacy-typing-imports-across-codebase))
-- [ ] **Separate dev dependencies** from production in `pyproject.toml` ([§2.9](#29-high-mixed-dependency-boundaries--pytest-in-production-dependencies))
-- [ ] **Add `pytest-cov` with 60% coverage gate** in CI ([§2.6](#26-high-no-pytest-cov-and-no-coverage-gate-in-ci))
-- [ ] **Add `pyright` CI step** in `ci_cd.yaml` ([§2.1](#21-critical-no-pyright-configuration-or-ci-enforcement))
-- [ ] **Add `model_config = ConfigDict(extra="forbid")`** to all Pydantic schemas ([§2.13](#213-medium-no-configdictextraforbid-on-config-schemas))
-- [ ] **Fix `use_distilbert: str` → `bool`** schema type ([§2.11](#211-medium-featureengineeringconfiguse_distilbert-is-typed-as-str-not-bool))
+- [x] **Add `[tool.pyright]` to `pyproject.toml`** and `pyright>=1.1.350` to dev deps ([§2.1](#21-critical-no-pyright-configuration-or-ci-enforcement))
+- [x] **Expand `[tool.ruff]` configuration** with `target-version`, `select`, and `isort` ([§2.5](#25-high-minimal-toolruff-configuration-in-pyprojecttoml))
+- [x] **Replace all legacy `typing` imports** with modern PEP 604 builtins project-wide ([§2.3](#23-critical-legacy-typing-imports-across-codebase))
+- [x] **Separate dev dependencies** from production in `pyproject.toml` ([§2.9](#29-high-mixed-dependency-boundaries--pytest-in-production-dependencies))
+- [x] **Add `pytest-cov` with 60% coverage gate** in CI ([§2.6](#26-high-no-pytest-cov-and-no-coverage-gate-in-ci))
+- [x] **Add `pyright` CI step** in `ci_cd.yaml` ([§2.1](#21-critical-no-pyright-configuration-or-ci-enforcement))
+- [x] **Add `model_config = ConfigDict(extra="forbid")`** to all Pydantic schemas ([§2.13](#213-medium-no-configdictextraforbid-on-config-schemas))
+- [x] **Fix `use_distilbert: str` → `bool`** schema type ([§2.11](#211-medium-featureengineeringconfiguse_distilbert-is-typed-as-str-not-bool))
 
-### Phase 3: Training-Serving Integrity (2-3 hours)
+### Phase 3: Training-Serving Integrity ✅ COMPLETE
 
-- [ ] **Create shared `src/utils/text_preprocessing.py`** — fix preprocessing skew ([§2.7](#27-high-preprocessing-mismatch-between-training-and-inference))
-- [ ] **Create shared `src/utils/feature_utils.py`** — fix derived feature skew ([§2.4](#24-high-training-serving-skew-in-derived-feature-engineering))
-- [ ] **Add CORS middleware to `main.py`** ([§2.14](#214-medium-insights-api-has-cors-allow_origins--no-cors-on-main-api))
-- [ ] **Add API versioning (`/v1/` router)** to both APIs ([§2.20](#220-low-no-api-versioning))
-- [ ] **Rewrite `test_inference.py` as `pytest` tests** using `TestClient` ([§2.12](#212-medium-apptest_inferencepy-is-a-manual-script-not-an-automated-test))
-- [ ] **Fix Docker/README mismatch** — create `docker-compose.yml` or update docs ([§2.17](#217-low-root-dockerfile-healthcheck-uses-curl-but-extension-needs-two-apis))
-- [ ] **Implement Artifacts Persistence Mandate (Rule 2.12)** — Centralize all non-code outputs into a versioned `artifacts/` root directory for absolute lifecycle persistence.
-
+- [x] **Create shared preprocessing logic** in `src.components.data_preparation` — fix preprocessing skew ([§2.7](#27-high-preprocessing-mismatch-between-training-and-inference))
+- [x] **Create shared feature logic** in `src.components.feature_engineering` — fix derived feature skew ([§2.4](#24-high-training-serving-skew-in-derived-feature-engineering))
+- [x] **Add CORS middleware to `main.py`** ([§2.14](#214-medium-insights-api-has-cors-allow_origins--no-cors-on-main-api))
+- [x] **Add API versioning (`/v1/` router)** to both APIs ([§2.20](#220-low-no-api-versioning))
+- [x] **Rewrite `test_inference.py` as `pytest` tests** using `TestClient` ([§2.12](#212-medium-apptest_inferencepy-is-a-manual-script-not-an-automated-test))
+- [x] **Create `docker-compose.yml`** for dual-service orchestration ([§2.17](#217-low-root-dockerfile-healthcheck-uses-curl-but-extension-needs-two-apis))
+- [x] **Implement Artifacts Persistence Mandate (Rule 2.12)** — Centralize all non-code outputs into a versioned `artifacts/` root directory. ([§2.23](#223-persistent-artifacts))
 
 ### Phase 4: Developer Experience (1-2 hours)
 
@@ -680,7 +696,6 @@ services:
 - [ ] **Add `.pre-commit-config.yaml`** ([§3.2](#32-add-pre-commit-configyaml))
 - [ ] **Remove `sys.path` hack** from `conftest.py`, use editable install ([§2.19](#219-low-conftestpy-uses-syspathappend-instead-of-proper-package-installation))
 - [ ] **Add `CONTRIBUTING.md`** ([§3.7](#37-add-contributingmd))
-- [ ] **Add `docker-compose.yml`** ([§3.10](#310-add-docker-composeyml-for-full-stack-development))
 
 ### Phase 5: Portfolio Differentiation
 

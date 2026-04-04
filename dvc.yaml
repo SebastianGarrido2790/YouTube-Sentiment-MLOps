@@ -1,241 +1,255 @@
 stages:
   data_ingestion:
-    cmd: python -m src.data.download_dataset
+    cmd: python -m src.pipeline.stage_01_data_ingestion
     deps:
-      - src/data/download_dataset.py
+      - src/pipeline/stage_01_data_ingestion.py
       - src/utils/logger.py
-      - src/utils/paths.py
+      - src/constants/__init__.py
     params:
-      - data_ingestion.url
-      - data_ingestion.output_path
+      - config/params.yaml:
+        - data_ingestion.url
+        - data_ingestion.output_path
     outs:
       - data/raw/reddit_comments.csv
 
   data_preparation:
-    cmd: python -m src.data.make_dataset
+    cmd: python -m src.pipeline.stage_02_data_preparation
     deps:
       - data/raw/reddit_comments.csv
-      - src/data/make_dataset.py
+      - src/pipeline/stage_02_data_preparation.py
+      - src/components/data_preparation.py
       - src/utils/logger.py
-      - src/utils/paths.py
+      - src/constants/__init__.py
     params:
-      - data_preparation.test_size
-      - data_preparation.random_state
+      - config/params.yaml:
+        - data_preparation.test_size
+        - data_preparation.random_state
     outs:
-      - data/processed/train.parquet
-      - data/processed/val.parquet
-      - data/processed/test.parquet
+      - artifacts/data/processed/train.parquet
+      - artifacts/data/processed/val.parquet
+      - artifacts/data/processed/test.parquet
 
   # Transient processing stage for feature comparison (no outs)
   feature_comparison:
-    cmd: python -m src.features.tfidf_vs_distilbert
+    cmd: python -m src.tools.feature_comparison
     deps:
-      - data/processed/train.parquet
-      - data/processed/val.parquet
-      - src/features/tfidf_vs_distilbert.py
+      - artifacts/data/processed/train.parquet
+      - artifacts/data/processed/val.parquet
+      - src/tools/feature_comparison.py
       - src/utils/logger.py
-      - src/features/helpers/feature_utils.py
+      - src/components/feature_utils.py
     params:
-      - feature_comparison.mlflow_uri
-      - feature_comparison.ngram_ranges
-      - feature_comparison.max_features
-      - feature_comparison.batch_size
-      - feature_comparison.n_estimators
-      - feature_comparison.max_depth
+      - config/params.yaml:
+        - feature_comparison.mlflow_uri
+        - feature_comparison.ngram_ranges
+        - feature_comparison.max_features
+        - feature_comparison.batch_size
+        - feature_comparison.n_estimators
+        - feature_comparison.max_depth
 
   feature_tuning:
-    cmd: python -m src.features.tfidf_max_features
+    cmd: python -m src.tools.feature_tuning
     deps:
-      - data/processed/train.parquet
-      - data/processed/val.parquet
-      - src/features/tfidf_max_features.py
+      - artifacts/data/processed/train.parquet
+      - artifacts/data/processed/val.parquet
+      - src/tools/feature_tuning.py
       - src/utils/logger.py
-      - src/utils/paths.py
-      - src/features/helpers/feature_utils.py
+      - src/constants/__init__.py
+      - src/components/feature_utils.py
     params:
-      - feature_tuning.max_features_values
-      - feature_tuning.best_ngram_range
-      - feature_tuning.n_estimators
-      - feature_tuning.max_depth
+      - config/params.yaml:
+        - feature_tuning.max_features_values
+        - feature_tuning.best_ngram_range
+        - feature_tuning.n_estimators
+        - feature_tuning.max_depth
     outs:
       - reports/figures/tfidf_max_features/
 
   imbalance_tuning:
-    cmd: python -m src.features.imbalance_tuning
+    cmd: python -m src.tools.imbalance_tuning
     deps:
-    - data/processed/train.parquet
-    - data/processed/val.parquet
-    - src/features/imbalance_tuning.py
+    - artifacts/data/processed/train.parquet
+    - artifacts/data/processed/val.parquet
+    - src/tools/imbalance_tuning.py
     - src/utils/logger.py
-    - src/utils/paths.py
-    - src/features/helpers/feature_utils.py
+    - src/constants/__init__.py
+    - src/components/feature_utils.py
     params:
-    - imbalance_tuning.imbalance_methods
-    - imbalance_tuning.best_max_features
-    - imbalance_tuning.best_ngram_range
-    - imbalance_tuning.rf_n_estimators
-    - imbalance_tuning.rf_max_depth
+      - config/params.yaml:
+        - imbalance_tuning.imbalance_methods
+        - imbalance_tuning.best_max_features
+        - imbalance_tuning.best_ngram_range
+        - imbalance_tuning.rf_n_estimators
+        - imbalance_tuning.rf_max_depth
     outs:
     - reports/figures/imbalance_methods/
 
   feature_engineering:
-    cmd: python -m src.features.feature_engineering
+    cmd: python -m src.pipeline.stage_03_feature_engineering
     deps:
-      - data/processed/train.parquet
-      - data/processed/val.parquet
-      - data/processed/test.parquet
-      - src/features/feature_engineering.py
+      - artifacts/data/processed/train.parquet
+      - artifacts/data/processed/val.parquet
+      - artifacts/data/processed/test.parquet
+      - src/pipeline/stage_03_feature_engineering.py
+      - src/components/feature_engineering.py
       - src/utils/logger.py
-      - src/utils/paths.py
-      - src/features/helpers/feature_utils.py
+      - src/constants/__init__.py
+      - src/components/feature_utils.py
     params:
-      - feature_engineering.use_distilbert
-      - feature_engineering.distilbert_batch_size
+      - config/params.yaml:
+        - feature_engineering.use_distilbert
+        - feature_engineering.distilbert_batch_size
       # Reuse best parameters found in tuning stages
       - imbalance_tuning.best_max_features
       - imbalance_tuning.best_ngram_range
     outs:
-      - models/features/
+      - artifacts/models/features/
 
   baseline_model:
-    cmd: python -m src.models.baseline_logistic
+    cmd: python -m src.pipeline.stage_04a_baseline_model
     deps:
-      - models/features/X_train.npz
-      - models/features/X_val.npz
-      - models/features/X_test.npz
-      - models/features/y_train.npy
-      - models/features/y_val.npy
-      - models/features/y_test.npy
-      - models/features/label_encoder.pkl
-      - src/models/baseline_logistic.py
-      - src/models/helpers/data_loader.py
-      - src/models/helpers/train_utils.py
+      - artifacts/models/features/X_train.npz
+      - artifacts/models/features/X_val.npz
+      - artifacts/models/features/X_test.npz
+      - artifacts/models/features/y_train.npy
+      - artifacts/models/features/y_val.npy
+      - artifacts/models/features/y_test.npy
+      - artifacts/models/features/label_encoder.pkl
+      - src/pipeline/stage_04a_baseline_model.py
+      - src/components/data_loader.py
+      - src/components/train_utils.py
       - src/utils/mlflow_config.py
       - src/utils/logger.py
-      - src/utils/paths.py
+      - src/constants/__init__.py
     params:
-      - train.logistic_baseline.model_type
-      - train.logistic_baseline.class_weight
-      - train.logistic_baseline.solver
-      - train.logistic_baseline.max_iter
+      - config/params.yaml:
+        - train.logistic_baseline.model_type
+        - train.logistic_baseline.class_weight
+        - train.logistic_baseline.solver
+        - train.logistic_baseline.max_iter
     outs:
-      - models/baseline/logistic_baseline.pkl
+      - artifacts/models/baseline/logistic_baseline.pkl
     metrics:
-      - models/baseline/baseline_metrics.json
+      - artifacts/models/baseline/baseline_metrics.json
 
   hyperparameter_tuning_lightgbm:
-    cmd: python -m src.models.hyperparameter_tuning --model lightgbm
+    cmd: python -m src.pipeline.stage_04b_hyperparameter_tuning --model lightgbm
     deps:
-      - src/models/hyperparameter_tuning.py
-      - src/models/helpers/data_loader.py
-      - src/models/helpers/train_utils.py
+      - src/pipeline/stage_04b_hyperparameter_tuning.py
+      - src/components/data_loader.py
+      - src/components/train_utils.py
       - src/utils/mlflow_config.py
       - src/utils/logger.py
-      - models/features/X_train.npz
-      - models/features/X_val.npz
-      - models/features/y_train.npy
-      - models/features/y_val.npy
+      - artifacts/models/features/X_train.npz
+      - artifacts/models/features/X_val.npz
+      - artifacts/models/features/y_train.npy
+      - artifacts/models/features/y_val.npy
     params:
-      - train.hyperparameter_tuning.lightgbm
+      - config/params.yaml:
+        - train.hyperparameter_tuning.lightgbm
     outs:
-      - models/advanced/lightgbm_model.pkl
-      - models/advanced/lightgbm_best_hyperparams.pkl
+      - artifacts/models/advanced/lightgbm_model.pkl
+      - artifacts/models/advanced/lightgbm_best_hyperparams.pkl
     metrics:
-      - models/advanced/lightgbm_metrics.json
+      - artifacts/models/advanced/lightgbm_metrics.json
 
   hyperparameter_tuning_xgboost:
-    cmd: python -m src.models.hyperparameter_tuning --model xgboost
+    cmd: python -m src.pipeline.stage_04b_hyperparameter_tuning --model xgboost
     deps:
-      - src/models/hyperparameter_tuning.py
-      - src/models/helpers/data_loader.py
-      - src/models/helpers/train_utils.py
+      - src/pipeline/stage_04b_hyperparameter_tuning.py
+      - src/components/data_loader.py
+      - src/components/train_utils.py
       - src/utils/mlflow_config.py
       - src/utils/logger.py
-      - models/features/X_train.npz
-      - models/features/X_val.npz
-      - models/features/y_train.npy
-      - models/features/y_val.npy
+      - artifacts/models/features/X_train.npz
+      - artifacts/models/features/X_val.npz
+      - artifacts/models/features/y_train.npy
+      - artifacts/models/features/y_val.npy
     params:
-      - train.hyperparameter_tuning.xgboost
+      - config/params.yaml:
+        - train.hyperparameter_tuning.xgboost
     outs:
-      - models/advanced/xgboost_model.pkl
-      - models/advanced/xgboost_best_hyperparams.pkl
+      - artifacts/models/advanced/xgboost_model.pkl
+      - artifacts/models/advanced/xgboost_best_hyperparams.pkl
     metrics:
-      - models/advanced/xgboost_metrics.json
+      - artifacts/models/advanced/xgboost_metrics.json
 
   train_distilbert:
-    cmd: python -m src.models.distilbert_training
+    cmd: python -m src.pipeline.stage_04c_distilbert_training
     deps:
-      - src/models/distilbert_training.py
-      - src/models/helpers/data_loader.py
-      - src/models/helpers/train_utils.py
+      - src/pipeline/stage_04c_distilbert_training.py
+      - src/components/data_loader.py
+      - src/components/train_utils.py
       - src/utils/mlflow_config.py
-      - src/utils/paths.py
+      - src/constants/__init__.py
       - src/utils/logger.py
-      - data/processed/train.parquet
-      - data/processed/val.parquet
+      - artifacts/data/processed/train.parquet
+      - artifacts/data/processed/val.parquet
     outs:
-      - models/advanced/distilbert_model.pkl
-      - models/advanced/distilbert_results
+      - artifacts/models/advanced/distilbert_model.pkl
+      - artifacts/models/advanced/distilbert_results
     params:
-      - train.distilbert.enable
-      - train.distilbert.n_trials
-      - train.distilbert.batch_size
-      - train.distilbert.lr
-      - train.distilbert.weight_decay
+      - config/params.yaml:
+        - train.distilbert.enable
+        - train.distilbert.n_trials
+        - train.distilbert.batch_size
+        - train.distilbert.lr
+        - train.distilbert.weight_decay
     metrics:
-      - models/advanced/distilbert_metrics.json
+      - artifacts/models/advanced/distilbert_metrics.json
 
   model_evaluation:
-    cmd: python -m src.models.model_evaluation
+    cmd: python -m src.pipeline.stage_05_model_evaluation
     deps:
-      - src/models/model_evaluation.py
+      - src/pipeline/stage_05_model_evaluation.py
       - src/utils/mlflow_config.py
       - src/utils/logger.py
-      - src/utils/paths.py
-      - src/models/helpers/data_loader.py
-      - src/models/helpers/train_utils.py
+      - src/constants/__init__.py
+      - src/components/data_loader.py
+      - src/components/train_utils.py
       # The model artifacts produced by the training stages
-      - models/advanced/lightgbm_model.pkl
-      - models/advanced/xgboost_model.pkl
+      - artifacts/models/advanced/lightgbm_model.pkl
+      - artifacts/models/advanced/xgboost_model.pkl
       # Baseline model artifact
-      - models/baseline/logistic_baseline.pkl
+      - artifacts/models/baseline/logistic_baseline.pkl
       # DistilBERT model artifact
-      - models/advanced/distilbert_model.pkl
-      - models/advanced/distilbert_results
+      - artifacts/models/advanced/distilbert_model.pkl
+      - artifacts/models/advanced/distilbert_results
       # The features for the test set
-      - models/features/X_test.npz
-      - models/features/y_test.npy
-      - models/features/label_encoder.pkl
+      - artifacts/models/features/X_test.npz
+      - artifacts/models/features/y_test.npy
+      - artifacts/models/features/label_encoder.pkl
     outs:
       # Output file for the next stage (registration)
-      - models/advanced/evaluation/best_model_run_info.json
+      - artifacts/models/advanced/evaluation/best_model_run_info.json
       # Corrected paths to match script output (reports/figures/evaluation/)
-      - models/advanced/evaluation/lightgbm_test_metrics.json
-      - models/advanced/evaluation/xgboost_test_metrics.json
-      - models/advanced/evaluation/logistic_baseline_test_metrics.json
-      # - models/advanced/evaluation/distilbert_test_metrics.json
+      - artifacts/models/advanced/evaluation/lightgbm_test_metrics.json
+      - artifacts/models/advanced/evaluation/xgboost_test_metrics.json
+      - artifacts/models/advanced/evaluation/logistic_baseline_test_metrics.json
+      # - artifacts/models/advanced/evaluation/distilbert_test_metrics.json
       # Visualizations
       - reports/figures/evaluation/lightgbm_confusion_matrix.png  
       - reports/figures/evaluation/xgboost_confusion_matrix.png   
       - reports/figures/evaluation/comparative_roc_curve.png     
     params:
-      - model_evaluation.models
+      - config/params.yaml:
+        - model_evaluation.models
 
   register_model:
-    cmd: python -m src.models.register_model
+    cmd: python -m src.pipeline.stage_06_register_model
     deps:
-      - src/models/register_model.py
+      - src/pipeline/stage_06_register_model.py
       - src/utils/mlflow_config.py
       - src/utils/logger.py
-      - src/utils/paths.py
+      - src/constants/__init__.py
       # Depends on the champion file and metrics from the evaluation stage
-      - models/advanced/evaluation/best_model_run_info.json
-      - models/advanced/evaluation/lightgbm_test_metrics.json
-      - models/advanced/evaluation/xgboost_test_metrics.json
-      - models/advanced/evaluation/logistic_baseline_test_metrics.json
+      - artifacts/models/advanced/evaluation/best_model_run_info.json
+      - artifacts/models/advanced/evaluation/lightgbm_test_metrics.json
+      - artifacts/models/advanced/evaluation/xgboost_test_metrics.json
+      - artifacts/models/advanced/evaluation/logistic_baseline_test_metrics.json
     params:
-      - register.f1_threshold
+      - config/params.yaml:
+        - register.f1_threshold
     
 
 

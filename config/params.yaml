@@ -1,0 +1,83 @@
+# Stores hyperparameters (ONLY tunable values)
+# These control model behavior and experiment settings.
+
+data_ingestion:
+  url: https://raw.githubusercontent.com/Himanshu-1703/reddit-sentiment-analysis/refs/heads/main/data/reddit.csv
+  output_path: data/raw/reddit_comments.csv
+
+data_preparation:
+  test_size: 0.15  # For test split (remaining 85% further split into train/val)
+  random_state: 42  # For reproducibility
+
+feature_comparison:
+  mlflow_uri: http://127.0.0.1:5000  # Local for testing, change to EC2 IP later
+  ngram_ranges:  # Native YAML list
+    - [1, 1]
+    - [1, 2]
+    - [1, 3]
+  max_features: 5000
+  use_distilbert: false  # Whether to include DistilBERT in comparison
+  batch_size: 32
+  n_estimators: 200
+  max_depth: 15
+
+feature_tuning:
+  max_features_values:  # Native YAML list
+    - 1000
+    - 2000
+    - 3000
+    - 4000
+    - 5000
+    - 6000
+    - 7000
+    - 8000
+    - 9000
+    - 10000
+  best_ngram_range: [1, 1]  # Best result from feature_comparison
+  n_estimators: 200
+  max_depth: 15
+
+imbalance_tuning:
+  imbalance_methods:
+    - class_weights
+    - oversampling
+    - adasyn
+    - undersampling
+    - smote_enn
+  best_max_features: 1000  # Best result from feature_tuning
+  best_ngram_range: [1, 1]  # Best result from feature_comparison
+  rf_n_estimators: 200
+  rf_max_depth: 15
+
+feature_engineering:
+  use_distilbert: false  # Based on tuning, TF-IDF is currently the chosen feature method
+  distilbert_batch_size: 32  # Required by the script, even if not used
+
+train:
+  logistic_baseline:
+    model_type: "LogisticRegression"
+    class_weight: "balanced"
+    solver: "liblinear"
+    max_iter: 2000
+    C: 1.0
+
+  hyperparameter_tuning:
+    lightgbm:
+      n_trials: 30
+    xgboost:
+      n_trials: 30
+
+  distilbert:
+    enable: false  # Flag to control whether DistilBERT is trained
+    n_trials: 20
+    batch_size: [8, 16, 32]
+    lr: [1e-5, 5e-5]
+    weight_decay: [0.001, 0.1]
+
+model_evaluation:
+  models: [lightgbm, xgboost, logistic_baseline]
+
+register:
+  f1_threshold: 0.75
+
+  

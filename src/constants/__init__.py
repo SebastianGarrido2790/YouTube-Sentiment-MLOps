@@ -2,80 +2,49 @@
 Project-wide path constants.
 
 Single source of truth for all configuration file paths, data directories,
-and artifact locations. Every pipeline module should import paths from here
-instead of hardcoding strings.
+and artifact locations.
 """
 
 from pathlib import Path
 
-# --- Project Root ---
-# Automatically finds the top-level directory (the one containing 'src/')
+# Provide standard hardcoded constants for the config system itself
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
-
-# --- Configuration & Schema ---
+LOGS_DIR = PROJECT_ROOT / "logs"
 CONFIG_DIR = PROJECT_ROOT / "config"
 CONFIG_FILE_PATH = CONFIG_DIR / "config.yaml"
 PARAMS_FILE_PATH = CONFIG_DIR / "params.yaml"
 SCHEMA_FILE_PATH = CONFIG_DIR / "schema.yaml"
 
-# --- Model & Reports ---
-REPORTS_DIR = PROJECT_ROOT / "reports"
-FIGURES_DIR = REPORTS_DIR / "figures"
-DOCS_DIR = REPORTS_DIR / "docs"
+import yaml
 
-# --- Logs & MLflow ---
-LOGS_DIR = PROJECT_ROOT / "logs"
-MLRUNS_DIR = PROJECT_ROOT / "mlruns"
+# Parse the system configuration dict directly to prevent circular imports
+with open(CONFIG_FILE_PATH, encoding="utf-8") as _f:
+    _sys = yaml.safe_load(_f)
 
-# --- Data Directories ---
-RAW_DATA_DIR = PROJECT_ROOT / "data" / "raw"
-EXTERNAL_DATA_DIR = PROJECT_ROOT / "data" / "external"
+# Dynamic bindings
+REPORTS_DIR = PROJECT_ROOT / _sys["reports"]["root_dir"]
+FIGURES_DIR = PROJECT_ROOT / _sys["reports"]["figures_dir"]
+DOCS_DIR = PROJECT_ROOT / _sys["reports"]["docs_dir"]
+MLRUNS_DIR = PROJECT_ROOT / _sys["ops"]["mlruns_dir"]
 
-# --- Artifact Directories ---
-ARTIFACTS_DIR = PROJECT_ROOT / "artifacts"
-PROCESSED_DATA_DIR = ARTIFACTS_DIR / "data" / "processed"
+RAW_DATA_DIR = PROJECT_ROOT / _sys["data"]["raw_dir"]
+EXTERNAL_DATA_DIR = PROJECT_ROOT / _sys["data"]["external_dir"]
+ARTIFACTS_DIR = PROJECT_ROOT / _sys["artifacts_root"]
+PROCESSED_DATA_DIR = PROJECT_ROOT / _sys["data"]["processed_dir"]
 
-# Specific file splits (DVC Artifacts)
-TRAIN_PATH = PROCESSED_DATA_DIR / "train.parquet"
-TEST_PATH = PROCESSED_DATA_DIR / "test.parquet"
-VAL_PATH = PROCESSED_DATA_DIR / "val.parquet"
+TRAIN_PATH = PROJECT_ROOT / _sys["data"]["train_path"]
+TEST_PATH = PROJECT_ROOT / _sys["data"]["test_path"]
+VAL_PATH = PROJECT_ROOT / _sys["data"]["val_path"]
 
-MODELS_DIR = ARTIFACTS_DIR / "models"
-GX_DIR = ARTIFACTS_DIR / "gx"
+MODELS_DIR = PROJECT_ROOT / _sys["models"]["root_dir"]
+GX_DIR = PROJECT_ROOT / _sys["ops"]["gx_dir"]
 
-# Specific file paths
-RAW_PATH = RAW_DATA_DIR / "reddit_comments.csv"
+RAW_PATH = PROJECT_ROOT / _sys["data"]["raw_path"]
+BASELINE_MODEL_DIR = PROJECT_ROOT / _sys["models"]["baseline_dir"]
+ADVANCED_DIR = PROJECT_ROOT / _sys["models"]["advanced_dir"]
+FEATURES_DIR = PROJECT_ROOT / _sys["models"]["features_dir"]
+EVAL_DIR = PROJECT_ROOT / _sys["models"]["evaluation_dir"]
 
-# Advanced and Baseline model directories
-BASELINE_MODEL_DIR = MODELS_DIR / "baseline"
-ADVANCED_DIR = MODELS_DIR / "advanced"
-FEATURES_DIR = MODELS_DIR / "features"
-EVAL_DIR = ADVANCED_DIR / "evaluation"
-
-# Additional figure directories
-EVAL_FIG_DIR = FIGURES_DIR / "evaluation"
-TFIDF_FIGURES_DIR = FIGURES_DIR / "tfidf_max_features"
-IMBALANCE_FIGURES_DIR = FIGURES_DIR / "imbalance_methods"
-
-# --- Ensure directories exist ---
-directories_to_create = [
-    REPORTS_DIR,
-    FIGURES_DIR,
-    DOCS_DIR,
-    LOGS_DIR,
-    MLRUNS_DIR,
-    EXTERNAL_DATA_DIR,
-    ARTIFACTS_DIR,
-    MODELS_DIR,
-    GX_DIR,
-    BASELINE_MODEL_DIR,
-    ADVANCED_DIR,
-    FEATURES_DIR,
-    EVAL_DIR,
-    EVAL_FIG_DIR,
-    TFIDF_FIGURES_DIR,
-    IMBALANCE_FIGURES_DIR,
-]
-
-for path in directories_to_create:
-    path.mkdir(parents=True, exist_ok=True)
+EVAL_FIG_DIR = PROJECT_ROOT / _sys["reports"]["eval_fig_dir"]
+TFIDF_FIGURES_DIR = PROJECT_ROOT / _sys["reports"]["tfidf_fig_dir"]
+IMBALANCE_FIGURES_DIR = PROJECT_ROOT / _sys["reports"]["imbalance_fig_dir"]

@@ -1,0 +1,52 @@
+# =============================================================================
+# Docker Compose for Local Development
+#
+# This file orchestrates the dual-service architecture for the YouTube Sentiment
+# Analysis project. It manages the Sentiment Inference API (port 8000) and the
+# Analytics Insights API (port 8001), ensuring consistent artifacts access.
+# =============================================================================
+
+services:
+  sentiment-api:
+    build: .
+    image: youtube-sentiment-api:latest
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./artifacts:/app/artifacts
+    environment:
+      - PREFER_LOCAL_MODEL=true
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/v1/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+
+  insights-api:
+    build: .
+    image: youtube-sentiment-api:latest
+    ports:
+      - "8001:8001"
+    volumes:
+      - ./artifacts:/app/artifacts
+    environment:
+      - PREFER_LOCAL_MODEL=true
+    # Overriding the default CMD from Dockerfile
+    command:
+      [
+        "uv",
+        "run",
+        "uvicorn",
+        "src.api.insights_api:app",
+        "--host",
+        "0.0.0.0",
+        "--port",
+        "8001",
+      ]
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8001/v1/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped

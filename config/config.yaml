@@ -1,0 +1,33 @@
+# Stores system paths (ONLY immutable structure)
+# These define where pipeline artifacts are stored — no tunable values here.
+
+artifacts_root: artifacts
+
+data:
+  raw_dir: data/raw
+  external_dir: data/external
+  processed_dir: artifacts/data/processed
+  raw_path: data/raw/reddit_comments.csv
+  train_path: artifacts/data/processed/train.parquet
+  test_path: artifacts/data/processed/test.parquet
+  val_path: artifacts/data/processed/val.parquet
+
+models:
+  root_dir: artifacts/models
+  baseline_dir: artifacts/models/baseline
+  advanced_dir: artifacts/models/advanced
+  features_dir: artifacts/models/features
+  evaluation_dir: artifacts/models/advanced/evaluation
+
+reports:
+  root_dir: reports
+  figures_dir: reports/figures
+  docs_dir: reports/docs
+  eval_fig_dir: reports/figures/evaluation
+  tfidf_fig_dir: reports/figures/tfidf_max_features
+  imbalance_fig_dir: reports/figures/imbalance_methods
+
+ops:
+  logs_dir: logs
+  mlruns_dir: mlruns
+  gx_dir: artifacts/gx

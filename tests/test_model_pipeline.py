@@ -1,8 +1,10 @@
-import pytest
 from unittest.mock import MagicMock, patch
+
 import numpy as np
-from src.models.baseline_logistic import train_baseline
+import pytest
+
 from src.config.schemas import LogisticBaselineConfig
+from src.models.baseline_logistic import train_baseline
 
 
 @pytest.fixture

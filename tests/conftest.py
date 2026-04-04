@@ -15,7 +15,8 @@ nltk.download("wordnet")
 
 import pytest
 import yaml
-from src.config.manager import ConfigurationManager
+
+from src.config.configuration import ConfigurationManager
 
 
 @pytest.fixture

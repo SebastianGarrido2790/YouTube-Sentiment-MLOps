@@ -1,5 +1,6 @@
 import pytest
-from src.config.manager import ConfigurationManager
+
+from src.config.configuration import ConfigurationManager
 from src.config.schemas import AppConfig, DataPreparationConfig
 
 

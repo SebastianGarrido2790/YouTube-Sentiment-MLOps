@@ -1,0 +1,9 @@
+# Data schema definitions
+# Full column-level schema of the raw dataset.
+# Used by the data-validation stage
+
+columns:
+  clean_comment: str
+  category: int
+
+target: category

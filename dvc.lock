@@ -1,22 +1,22 @@
 schema: '2.0'
 stages:
   data_ingestion:
-    cmd: python -m src.data.download_dataset
+    cmd: python -m src.pipeline.stage_01_data_ingestion
     deps:
-    - path: src/data/download_dataset.py
+    - path: src/constants/__init__.py
       hash: md5
-      md5: 99adf98517f94d248e55644bb539ef19
-      size: 3320
+      md5: b64bb20197697117b9c8120ce41e2ff2
+      size: 1916
+    - path: src/pipeline/stage_01_data_ingestion.py
+      hash: md5
+      md5: 9664fb1af799bbd337f7a97d1b548eb3
+      size: 3330
     - path: src/utils/logger.py
       hash: md5
-      md5: 73106bb3de64f8ef8c097a990a6e2f49
-      size: 2345
-    - path: src/utils/paths.py
-      hash: md5
-      md5: 7b2d73cb9e053c99e1e0296ee965bdff
-      size: 2156
+      md5: ac7a93384b2822bdd157295328ad2a51
+      size: 3134
     params:
-      params.yaml:
+      config/params.yaml:
         data_ingestion.output_path: data/raw/reddit_comments.csv
         data_ingestion.url: 
           https://raw.githubusercontent.com/Himanshu-1703/reddit-sentiment-analysis/refs/heads/main/data/reddit.csv
@@ -26,38 +26,42 @@ stages:
       md5: 38ee083169162dbac0cb07c80ac0f04e
       size: 6888934
   data_preparation:
-    cmd: python -m src.data.make_dataset
+    cmd: python -m src.pipeline.stage_02_data_preparation
     deps:
     - path: data/raw/reddit_comments.csv
       hash: md5
       md5: 38ee083169162dbac0cb07c80ac0f04e
       size: 6888934
-    - path: src/data/make_dataset.py
+    - path: src/components/data_preparation.py
       hash: md5
-      md5: babb0d5658c34d6d99125c6b75878123
-      size: 6398
+      md5: 2c02716e977d01407a2cfaee28012448
+      size: 3846
+    - path: src/constants/__init__.py
+      hash: md5
+      md5: b64bb20197697117b9c8120ce41e2ff2
+      size: 1916
+    - path: src/pipeline/stage_02_data_preparation.py
+      hash: md5
+      md5: 6feb3afb73f12e7033a26599c8a5f009
+      size: 1171
     - path: src/utils/logger.py
       hash: md5
-      md5: 73106bb3de64f8ef8c097a990a6e2f49
-      size: 2345
-    - path: src/utils/paths.py
-      hash: md5
-      md5: 7b2d73cb9e053c99e1e0296ee965bdff
-      size: 2156
+      md5: ac7a93384b2822bdd157295328ad2a51
+      size: 3134
     params:
-      params.yaml:
+      config/params.yaml:
         data_preparation.random_state: 42
         data_preparation.test_size: 0.15
     outs:
-    - path: data/processed/test.parquet
+    - path: artifacts/data/processed/test.parquet
       hash: md5
       md5: 27afcf1e4e595381b70f8fd8b8e6ae7b
       size: 513629
-    - path: data/processed/train.parquet
+    - path: artifacts/data/processed/train.parquet
       hash: md5
       md5: ef9df44b106362663b835efdefe950c3
       size: 2394224
-    - path: data/processed/val.parquet
+    - path: artifacts/data/processed/val.parquet
       hash: md5
       md5: c55232be629f4fba0cdc3cce4329c594
       size: 499418

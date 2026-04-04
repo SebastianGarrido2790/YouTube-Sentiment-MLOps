@@ -31,10 +31,11 @@ jobs:
       - name: Install dependencies
         run: uv sync --all-extras --dev
 
-      - name: Lint with Ruff
+      - name: Lint with Ruff and Pyright
         run: |
           uv run ruff check .
           uv run ruff format --check .
+          uv run pyright src
 
       - name: Configure AWS Credentials (for DVC)
         if: env.AWS_ACCESS_KEY_ID != '' # Only if secrets are set
@@ -53,7 +54,7 @@ jobs:
       - name: Run Tests
         # If DVC pull fails (e.g. no creds), tests expecting data will fail.
         # This is expected behavior for a robust pipeline.
-        run: uv run pytest
+        run: uv run pytest --cov=src --cov=app --cov-fail-under=60 --cov-report=term-missing tests/
 
   build:
     name: Build & Push Docker Image

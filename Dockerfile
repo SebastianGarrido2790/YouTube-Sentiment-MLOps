@@ -62,4 +62,4 @@ ENV MLFLOW_TRACKING_URI=http://127.0.0.1:5000 \
 
 # Default command (production mode)
 # Using `uv run` which will detect the .venv in /app/.venv
-CMD ["uv", "run", "uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["uv", "run", "uvicorn", "src.api.main:app", "--host", "0.0.0.0", "--port", "8000"]

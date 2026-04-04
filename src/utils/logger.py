@@ -10,9 +10,11 @@ Usage:
 import logging
 from datetime import datetime
 from logging.handlers import RotatingFileHandler
+from pathlib import Path
 
-from src.constants import LOGS_DIR
-
+# Break circular dependency by defining LOGS_DIR locally
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
+LOGS_DIR = PROJECT_ROOT / "logs"
 LOG_FILE = LOGS_DIR / "running_logs.log"
 
 

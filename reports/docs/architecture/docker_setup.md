@@ -32,8 +32,8 @@ The `Dockerfile` defines the steps to create a secure, production-ready containe
 
 The [`.dockerignore`](../../.dockerignore) file is essential for keeping the build context small and secure. It excludes:
 
--   **Data (`data/`)**: prevents gigabytes of training data from bloating the image.
--   **Models (`models/`, `mlruns/`)**: Models should be loaded from a model registry (like MLflow) or mounted at runtime, not baked into the code image.
+-   **Artifacts (`artifacts/`)**: prevents gigabytes of metrics, data splits, and model versions from bloating the image.
+-   **Experiment Tracking (`mlruns/`)**: Logs should be captured by a persistent MLflow server, not baked into the code image.
 -   **Secrets (`.env`)**: prevents accidental leakage of API keys.
 -   **Git/DVC metafiles**: unnecessary for the production runtime.
 
@@ -88,12 +88,12 @@ To force the application to use the **local model artifact**, set `PREFER_LOCAL_
 docker run -d \
   --name youtube-api \
   -e PREFER_LOCAL_MODEL=true \
-  -v ${PWD}/models:/app/models \
+  -v ${PWD}/artifacts:/app/artifacts \
   -p 8000:8000 \
   youtube-sentiment-api:latest
 ```
 
--   **`PREFER_LOCAL_MODEL=true`**: Checks for `models/advanced/lightgbm_model.pkl` FIRST. This avoids the 30s MLflow connection timeout.
+-   **`PREFER_LOCAL_MODEL=true`**: Checks for `artifacts/models/advanced/lightgbm_model.pkl` FIRST. This avoids the 30s MLflow connection timeout.
 -   **Default (`false`)**: Checks MLflow Registry first, falls back to local only on failure.
 
 ### 5.2 Lazy Loading (ABSA Model)

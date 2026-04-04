@@ -1,5 +1,6 @@
-import pytest
 import pandas as pd
+import pytest
+
 from src.data.make_dataset import clean_text
 
 
