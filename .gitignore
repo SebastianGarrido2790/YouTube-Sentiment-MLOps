@@ -40,11 +40,12 @@ models/advanced/
 # MLflow runs and artifacts
 mlruns/
 mlartifacts/
+mlruns_system/
 mlflow.db
+mlflow_system.db
+
 # Agents
 AGENTS.md
-
-
 
 # PyInstaller
 *.manifest

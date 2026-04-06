@@ -112,6 +112,7 @@ class DataPreparation:
             (TEST_PATH, test),
         ]
         for out_path, split_df in outputs:
+            out_path.parent.mkdir(parents=True, exist_ok=True)
             split_df.to_parquet(out_path, index=False)
             if split_df.empty:
                 raise ValueError(f"Empty split for {out_path}.")

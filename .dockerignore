@@ -20,6 +20,7 @@ models/       # Contains trained models, evaluation artifacts (large files)
 mlruns/       # MLflow run metadata and artifacts
 mlflow_data/  # Includes mlruns, mlartifacts, and mlflow.db
 mlflow.db
+mlflow_system.db
 logs/         # Application logs
 reports/      # Generated analysis, figures, docs
 

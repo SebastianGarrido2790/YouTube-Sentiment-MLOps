@@ -46,16 +46,15 @@ except ImportError:
 from datasets import Dataset
 from sklearn.metrics import f1_score
 
-from src.components.data_loader import load_text_data
-from src.components.mlflow_tracking_utils import setup_experiment
-from src.components.train_utils import save_hyperparams_bundle, save_metrics_json
-
 # --- Project Utilities ---
 from src.config.configuration import ConfigurationManager
 from src.constants import ADVANCED_DIR
 from src.entity.config_entity import DistilBERTConfig
+from src.utils.data_loader import load_text_data
 from src.utils.logger import get_logger
 from src.utils.mlflow_config import get_mlflow_uri
+from src.utils.mlflow_tracking_utils import setup_experiment
+from src.utils.train_utils import save_hyperparams_bundle, save_metrics_json
 
 logger = get_logger(__name__, headline="DistilBERT_Training.py")
 

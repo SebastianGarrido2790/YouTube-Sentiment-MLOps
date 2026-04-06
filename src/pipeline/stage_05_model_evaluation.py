@@ -41,17 +41,6 @@ from sklearn.metrics import (
 )
 from sklearn.preprocessing import LabelBinarizer
 
-from src.components.data_loader import load_feature_data
-from src.components.mlflow_tracking_utils import (
-    log_confusion_matrix_as_artifact,
-    log_metrics_to_mlflow,
-    setup_experiment,
-)
-from src.components.train_utils import (
-    save_best_model_run_info,
-    save_test_metrics_json,
-)
-
 # --- Project Utilities ---
 from src.config.configuration import ConfigurationManager
 from src.constants import (
@@ -60,8 +49,18 @@ from src.constants import (
     EVAL_FIG_DIR,
     PROJECT_ROOT,
 )
+from src.utils.data_loader import load_feature_data
 from src.utils.logger import get_logger
 from src.utils.mlflow_config import get_mlflow_uri
+from src.utils.mlflow_tracking_utils import (
+    log_confusion_matrix_as_artifact,
+    log_metrics_to_mlflow,
+    setup_experiment,
+)
+from src.utils.train_utils import (
+    save_best_model_run_info,
+    save_test_metrics_json,
+)
 
 # --- Configuration ---
 EXPERIMENT_NAME = "Final Model Evaluation - Test Set"

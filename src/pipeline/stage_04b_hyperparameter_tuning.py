@@ -30,18 +30,17 @@ import optuna
 import xgboost as xgb
 from sklearn.metrics import f1_score
 
-from src.components.data_loader import apply_adasyn, load_feature_data
-from src.components.mlflow_tracking_utils import setup_experiment
-from src.components.train_utils import (
+# --- Project Utilities ---
+from src.config.configuration import ConfigurationManager
+from src.utils.data_loader import apply_adasyn, load_feature_data
+from src.utils.logger import get_logger
+from src.utils.mlflow_config import get_mlflow_uri
+from src.utils.mlflow_tracking_utils import setup_experiment
+from src.utils.train_utils import (
     save_hyperparams_bundle,
     save_metrics_json,
     save_model_object,
 )
-
-# --- Project Utilities ---
-from src.config.configuration import ConfigurationManager
-from src.utils.logger import get_logger
-from src.utils.mlflow_config import get_mlflow_uri
 
 logger = get_logger(__name__, headline="hyperparameter_tuning.py")
 

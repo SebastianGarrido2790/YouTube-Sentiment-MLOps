@@ -21,22 +21,21 @@ import mlflow.sklearn
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import accuracy_score, classification_report, f1_score
 
-from src.components.data_loader import load_feature_data
-from src.components.mlflow_tracking_utils import (
-    log_metrics_to_mlflow,
-    setup_experiment,
-)
-from src.components.train_utils import (
-    save_baseline_metrics_json,
-    save_model_bundle,
-)
-
 # --- Project Utilities ---
 from src.config.configuration import ConfigurationManager
 from src.constants import BASELINE_MODEL_DIR
 from src.entity.config_entity import LogisticBaselineConfig
+from src.utils.data_loader import load_feature_data
 from src.utils.logger import get_logger
 from src.utils.mlflow_config import get_mlflow_uri
+from src.utils.mlflow_tracking_utils import (
+    log_metrics_to_mlflow,
+    setup_experiment,
+)
+from src.utils.train_utils import (
+    save_baseline_metrics_json,
+    save_model_bundle,
+)
 
 # --- Logging Setup ---
 logger = get_logger(__name__, headline="baseline_logistic_training.py")

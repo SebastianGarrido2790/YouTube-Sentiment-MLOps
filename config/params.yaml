@@ -52,6 +52,8 @@ imbalance_tuning:
 feature_engineering:
   use_distilbert: false  # Based on tuning, TF-IDF is currently the chosen feature method
   distilbert_batch_size: 32  # Required by the script, even if not used
+  best_max_features: 1000
+  best_ngram_range: "(1, 1)"
 
 train:
   logistic_baseline:

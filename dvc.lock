@@ -9,8 +9,8 @@ stages:
       size: 1916
     - path: src/pipeline/stage_01_data_ingestion.py
       hash: md5
-      md5: 9664fb1af799bbd337f7a97d1b548eb3
-      size: 3330
+      md5: 2d69c42e40b0703f9afff74473b008af
+      size: 3334
     - path: src/utils/logger.py
       hash: md5
       md5: ac7a93384b2822bdd157295328ad2a51
@@ -34,16 +34,16 @@ stages:
       size: 6888934
     - path: src/components/data_preparation.py
       hash: md5
-      md5: 2c02716e977d01407a2cfaee28012448
-      size: 3846
+      md5: 23649400500e348550fe28b5ed14003a
+      size: 4855
     - path: src/constants/__init__.py
       hash: md5
       md5: b64bb20197697117b9c8120ce41e2ff2
       size: 1916
     - path: src/pipeline/stage_02_data_preparation.py
       hash: md5
-      md5: 6feb3afb73f12e7033a26599c8a5f009
-      size: 1171
+      md5: d599984524276dcf307b3ca7a28bdc47
+      size: 1957
     - path: src/utils/logger.py
       hash: md5
       md5: ac7a93384b2822bdd157295328ad2a51
@@ -66,30 +66,30 @@ stages:
       md5: c55232be629f4fba0cdc3cce4329c594
       size: 499418
   feature_comparison:
-    cmd: python -m src.features.tfidf_vs_distilbert
+    cmd: python -m src.tools.feature_comparison
     deps:
-    - path: data/processed/train.parquet
+    - path: artifacts/data/processed/train.parquet
       hash: md5
       md5: ef9df44b106362663b835efdefe950c3
       size: 2394224
-    - path: data/processed/val.parquet
+    - path: artifacts/data/processed/val.parquet
       hash: md5
       md5: c55232be629f4fba0cdc3cce4329c594
       size: 499418
-    - path: src/features/helpers/feature_utils.py
+    - path: src/components/feature_utils.py
       hash: md5
-      md5: f9730f34b1a910c7ba2aa8b3fb82d1a5
-      size: 6731
-    - path: src/features/tfidf_vs_distilbert.py
+      md5: 9ddc976c4a1bef27c8dea3b000e9f2da
+      size: 6622
+    - path: src/tools/feature_comparison.py
       hash: md5
-      md5: 674cb4b42aa0b7f79ee755dad4130cf9
-      size: 10135
+      md5: 4f838a9f0fc48968c928b4844d7b51d8
+      size: 10130
     - path: src/utils/logger.py
       hash: md5
-      md5: 73106bb3de64f8ef8c097a990a6e2f49
-      size: 2345
+      md5: ac7a93384b2822bdd157295328ad2a51
+      size: 3134
     params:
-      params.yaml:
+      config/params.yaml:
         feature_comparison.batch_size: 32
         feature_comparison.max_depth: 15
         feature_comparison.max_features: 5000
@@ -103,37 +103,49 @@ stages:
         - - 1
           - 3
   feature_tuning:
-    cmd: uv run python -m src.features.tfidf_max_features
+    cmd: python -m src.tools.feature_tuning
     deps:
-    - path: data/processed/train.parquet
+    - path: artifacts/data/processed/train.parquet
       hash: md5
       md5: ef9df44b106362663b835efdefe950c3
       size: 2394224
-    - path: data/processed/val.parquet
+    - path: artifacts/data/processed/val.parquet
       hash: md5
       md5: c55232be629f4fba0cdc3cce4329c594
       size: 499418
-    - path: src/features/helpers/feature_utils.py
+    - path: src/components/feature_utils.py
       hash: md5
-      md5: f9730f34b1a910c7ba2aa8b3fb82d1a5
-      size: 6731
-    - path: src/features/tfidf_max_features.py
+      md5: 9ddc976c4a1bef27c8dea3b000e9f2da
+      size: 6622
+    - path: src/constants/__init__.py
       hash: md5
-      md5: e3fbfc43bdb17f9758e21fdff7db3e6d
-      size: 8005
+      md5: b64bb20197697117b9c8120ce41e2ff2
+      size: 1916
+    - path: src/tools/feature_tuning.py
+      hash: md5
+      md5: ef641cccba3b6952358bfeaad0d5bdf5
+      size: 5562
     - path: src/utils/logger.py
       hash: md5
-      md5: 73106bb3de64f8ef8c097a990a6e2f49
-      size: 2345
-    - path: src/utils/paths.py
-      hash: md5
-      md5: 7b2d73cb9e053c99e1e0296ee965bdff
-      size: 2156
+      md5: ac7a93384b2822bdd157295328ad2a51
+      size: 3134
     params:
-      params.yaml:
-        feature_tuning.best_ngram_range: (1,1)
+      config/params.yaml:
+        feature_tuning.best_ngram_range:
+        - 1
+        - 1
         feature_tuning.max_depth: 15
-        feature_tuning.max_features_values: '[1000,2000,3000,4000,5000,6000,7000,8000,9000,10000]'
+        feature_tuning.max_features_values:
+        - 1000
+        - 2000
+        - 3000
+        - 4000
+        - 5000
+        - 6000
+        - 7000
+        - 8000
+        - 9000
+        - 10000
         feature_tuning.n_estimators: 200
     outs:
     - path: reports/figures/tfidf_max_features/
@@ -142,118 +154,122 @@ stages:
       size: 353869
       nfiles: 10
   feature_engineering:
-    cmd: uv run python -m src.features.feature_engineering
+    cmd: python -m src.pipeline.stage_03_feature_engineering
     deps:
-    - path: data/processed/test.parquet
+    - path: artifacts/data/processed/test.parquet
       hash: md5
       md5: 27afcf1e4e595381b70f8fd8b8e6ae7b
       size: 513629
-    - path: data/processed/train.parquet
+    - path: artifacts/data/processed/train.parquet
       hash: md5
       md5: ef9df44b106362663b835efdefe950c3
       size: 2394224
-    - path: data/processed/val.parquet
+    - path: artifacts/data/processed/val.parquet
       hash: md5
       md5: c55232be629f4fba0cdc3cce4329c594
       size: 499418
-    - path: src/features/feature_engineering.py
+    - path: src/components/feature_engineering.py
       hash: md5
-      md5: fc35965a609753ccc07005b9979c20ce
-      size: 11648
-    - path: src/features/helpers/feature_utils.py
+      md5: 86764d188c769b7f59332937d48f7eb2
+      size: 7647
+    - path: src/components/feature_utils.py
       hash: md5
-      md5: f9730f34b1a910c7ba2aa8b3fb82d1a5
-      size: 6731
+      md5: 9ddc976c4a1bef27c8dea3b000e9f2da
+      size: 6622
+    - path: src/constants/__init__.py
+      hash: md5
+      md5: b64bb20197697117b9c8120ce41e2ff2
+      size: 1916
+    - path: src/pipeline/stage_03_feature_engineering.py
+      hash: md5
+      md5: e8ebb99a46e895e943d22a9e0030f830
+      size: 720
     - path: src/utils/logger.py
       hash: md5
-      md5: 73106bb3de64f8ef8c097a990a6e2f49
-      size: 2345
-    - path: src/utils/paths.py
-      hash: md5
-      md5: 7b2d73cb9e053c99e1e0296ee965bdff
-      size: 2156
+      md5: ac7a93384b2822bdd157295328ad2a51
+      size: 3134
     params:
-      params.yaml:
+      config/params.yaml:
+        feature_engineering.best_max_features: 1000
+        feature_engineering.best_ngram_range: (1, 1)
         feature_engineering.distilbert_batch_size: 32
-        feature_engineering.use_distilbert: 'False'
-        imbalance_tuning.best_max_features: 1000
-        imbalance_tuning.best_ngram_range: (1,1)
+        feature_engineering.use_distilbert: false
     outs:
-    - path: models/features/
+    - path: artifacts/models/features/
       hash: md5
-      md5: 3cf9cb738a066e38431dd22cfed94727.dir
-      size: 3053483
+      md5: df1c18ae551b8042035489d8520882f5.dir
+      size: 3513957
       nfiles: 8
   baseline_model:
-    cmd: uv run python -m src.models.baseline_logistic
+    cmd: python -m src.pipeline.stage_04a_baseline_model
     deps:
-    - path: models/features/X_test.npz
+    - path: artifacts/models/features/X_test.npz
       hash: md5
-      md5: 5ad9362bddb9771a265e72d40a3e568c
-      size: 411831
-    - path: models/features/X_train.npz
+      md5: 2640e78ba8270d373197bc669d7fc737
+      size: 481413
+    - path: artifacts/models/features/X_train.npz
       hash: md5
-      md5: 0da3db618a4facc78e97d864e1962590
-      size: 1911617
-    - path: models/features/X_val.npz
+      md5: fa02fc5aaf530ddd347cc22f7a02f537
+      size: 2235318
+    - path: artifacts/models/features/X_val.npz
       hash: md5
-      md5: 262666f9552c8532a609e22fbaae5631
-      size: 398166
-    - path: models/features/label_encoder.pkl
+      md5: b07485760c8fb0faf1a1c4edcd1f7203
+      size: 465502
+    - path: artifacts/models/features/label_encoder.pkl
       hash: md5
-      md5: e4605a38643e9060a9b7203131961036
-      size: 275
-    - path: models/features/y_test.npy
+      md5: ac5ed47e7ca7d37e5257f86722aec4c6
+      size: 266
+    - path: artifacts/models/features/y_test.npy
       hash: md5
       md5: 3d93b2947650aff2973d57248ddfa80d
       size: 44320
-    - path: models/features/y_train.npy
+    - path: artifacts/models/features/y_train.npy
       hash: md5
       md5: ff2992f566f145e0dabff508b76fd5de
       size: 206344
-    - path: models/features/y_val.npy
+    - path: artifacts/models/features/y_val.npy
       hash: md5
       md5: 6170668e1d3ef3e4b157d5a76a85299e
       size: 44320
-    - path: src/models/baseline_logistic.py
+    - path: src/components/data_loader.py
       hash: md5
-      md5: 8e862e44cbbfcddc2e3863d17e35da4f
-      size: 7983
-    - path: src/models/helpers/data_loader.py
+      md5: 943f171894bd73ecf9011685176176f8
+      size: 4105
+    - path: src/components/train_utils.py
       hash: md5
-      md5: 7a89b90d5c30a18dd6288af65d98984e
-      size: 4150
-    - path: src/models/helpers/train_utils.py
+      md5: 7e29b97eb9eff32b0717a396e5b78728
+      size: 4806
+    - path: src/constants/__init__.py
       hash: md5
-      md5: 4faff6a55ee646192baff189b1fb276d
-      size: 4913
+      md5: b64bb20197697117b9c8120ce41e2ff2
+      size: 1916
+    - path: src/pipeline/stage_04a_baseline_model.py
+      hash: md5
+      md5: bfba81ea9ddc0587c0f9834322976c0e
+      size: 5833
     - path: src/utils/logger.py
       hash: md5
-      md5: 73106bb3de64f8ef8c097a990a6e2f49
-      size: 2345
+      md5: ac7a93384b2822bdd157295328ad2a51
+      size: 3134
     - path: src/utils/mlflow_config.py
       hash: md5
-      md5: 80c4e94241c5d684a2e28ce2456005eb
-      size: 4882
-    - path: src/utils/paths.py
-      hash: md5
-      md5: 7b2d73cb9e053c99e1e0296ee965bdff
-      size: 2156
+      md5: ef60034aae994b97024b0ff72240cdca
+      size: 2566
     params:
-      params.yaml:
+      config/params.yaml:
         train.logistic_baseline.class_weight: balanced
         train.logistic_baseline.max_iter: 2000
         train.logistic_baseline.model_type: LogisticRegression
         train.logistic_baseline.solver: liblinear
     outs:
-    - path: models/baseline/baseline_metrics.json
+    - path: artifacts/models/baseline/baseline_metrics.json
       hash: md5
-      md5: 5a0a57395b776119f21089a296cbe468
-      size: 44
-    - path: models/baseline/logistic_baseline.pkl
+      md5: bdc5f303a0df5b713759a380c1f01846
+      size: 43
+    - path: artifacts/models/baseline/logistic_baseline.pkl
       hash: md5
-      md5: 044600b82899fb34284a4867eecf3c7e
-      size: 25056
+      md5: ec7e829e1feead6551cae21a1081c4eb
+      size: 25045
   train_xgboost:
     cmd: uv run python -m src.models.xgboost_training
     deps:
@@ -306,37 +322,44 @@ stages:
       md5: 4fe3e88dd447a78f18eb078fec88d886
       size: 1088061
   imbalance_tuning:
-    cmd: uv run python -m src.features.imbalance_tuning
+    cmd: python -m src.tools.imbalance_tuning
     deps:
-    - path: data/processed/train.parquet
+    - path: artifacts/data/processed/train.parquet
       hash: md5
       md5: ef9df44b106362663b835efdefe950c3
       size: 2394224
-    - path: data/processed/val.parquet
+    - path: artifacts/data/processed/val.parquet
       hash: md5
       md5: c55232be629f4fba0cdc3cce4329c594
       size: 499418
-    - path: src/features/helpers/feature_utils.py
+    - path: src/components/feature_utils.py
       hash: md5
-      md5: f9730f34b1a910c7ba2aa8b3fb82d1a5
-      size: 6731
-    - path: src/features/imbalance_tuning.py
+      md5: 9ddc976c4a1bef27c8dea3b000e9f2da
+      size: 6622
+    - path: src/constants/__init__.py
       hash: md5
-      md5: e4d2a120e8dc9206fa16f1dadd32415c
-      size: 10627
+      md5: b64bb20197697117b9c8120ce41e2ff2
+      size: 1916
+    - path: src/tools/imbalance_tuning.py
+      hash: md5
+      md5: 5bbea8926c3b085a966f3c271df3f54f
+      size: 8120
     - path: src/utils/logger.py
       hash: md5
-      md5: 73106bb3de64f8ef8c097a990a6e2f49
-      size: 2345
-    - path: src/utils/paths.py
-      hash: md5
-      md5: 7b2d73cb9e053c99e1e0296ee965bdff
-      size: 2156
+      md5: ac7a93384b2822bdd157295328ad2a51
+      size: 3134
     params:
-      params.yaml:
+      config/params.yaml:
         imbalance_tuning.best_max_features: 1000
-        imbalance_tuning.best_ngram_range: (1,1)
-        imbalance_tuning.imbalance_methods: "['class_weights','oversampling','adasyn','undersampling','smote_enn']"
+        imbalance_tuning.best_ngram_range:
+        - 1
+        - 1
+        imbalance_tuning.imbalance_methods:
+        - class_weights
+        - oversampling
+        - adasyn
+        - undersampling
+        - smote_enn
         imbalance_tuning.rf_max_depth: 15
         imbalance_tuning.rf_n_estimators: 200
     outs:
@@ -397,100 +420,101 @@ stages:
       md5: 063a94ac7c077d4e4b8e5a35815486bf
       size: 1530346
   model_evaluation:
-    cmd: python -m src.models.model_evaluation
+    cmd: python -m src.pipeline.stage_05_model_evaluation
     deps:
-    - path: models/advanced/distilbert_model.pkl
+    - path: artifacts/models/advanced/distilbert_model.pkl
       hash: md5
       md5: d41d8cd98f00b204e9800998ecf8427e
       size: 0
-    - path: models/advanced/distilbert_results
+    - path: artifacts/models/advanced/distilbert_results
       hash: md5
       md5: d751713988987e9331980363e24189ce.dir
       size: 0
       nfiles: 0
-    - path: models/advanced/lightgbm_model.pkl
+    - path: artifacts/models/advanced/lightgbm_model.pkl
       hash: md5
-      md5: 566ef3b7429699ef9c878f2a79862145
-      size: 1079941
-    - path: models/advanced/xgboost_model.pkl
+      md5: 4027535c2e12a7db5bece8255261ebf3
+      size: 1764209
+    - path: artifacts/models/advanced/xgboost_model.pkl
       hash: md5
-      md5: 3dfbfedf24c96faf7d8b17a301facb39
-      size: 3660037
-    - path: models/baseline/logistic_baseline.pkl
+      md5: 7f28f52c3c3457197e114202e587180f
+      size: 2368779
+    - path: artifacts/models/baseline/logistic_baseline.pkl
       hash: md5
-      md5: 044600b82899fb34284a4867eecf3c7e
-      size: 25056
-    - path: models/features/X_test.npz
+      md5: ec7e829e1feead6551cae21a1081c4eb
+      size: 25045
+    - path: artifacts/models/features/X_test.npz
       hash: md5
-      md5: 5ad9362bddb9771a265e72d40a3e568c
-      size: 411831
-    - path: models/features/label_encoder.pkl
+      md5: 2640e78ba8270d373197bc669d7fc737
+      size: 481413
+    - path: artifacts/models/features/label_encoder.pkl
       hash: md5
-      md5: e4605a38643e9060a9b7203131961036
-      size: 275
-    - path: models/features/y_test.npy
+      md5: ac5ed47e7ca7d37e5257f86722aec4c6
+      size: 266
+    - path: artifacts/models/features/y_test.npy
       hash: md5
       md5: 3d93b2947650aff2973d57248ddfa80d
       size: 44320
-    - path: src/models/helpers/data_loader.py
+    - path: src/components/data_loader.py
       hash: md5
-      md5: 0f9560e9e95328ccfeb849248a09b2cc
-      size: 4123
-    - path: src/models/helpers/train_utils.py
+      md5: 943f171894bd73ecf9011685176176f8
+      size: 4105
+    - path: src/components/train_utils.py
       hash: md5
-      md5: a7fc222d49690c7659f8e0fc62b236bc
-      size: 4886
-    - path: src/models/model_evaluation.py
+      md5: 7e29b97eb9eff32b0717a396e5b78728
+      size: 4806
+    - path: src/constants/__init__.py
       hash: md5
-      md5: 66f2853f9501aa5f3b7a7bf1d4362efe
-      size: 16394
+      md5: b64bb20197697117b9c8120ce41e2ff2
+      size: 1916
+    - path: src/pipeline/stage_05_model_evaluation.py
+      hash: md5
+      md5: aec583ded5b4bc84e1eebbe3b164aef8
+      size: 16573
     - path: src/utils/logger.py
       hash: md5
-      md5: 73106bb3de64f8ef8c097a990a6e2f49
-      size: 2345
+      md5: ac7a93384b2822bdd157295328ad2a51
+      size: 3134
     - path: src/utils/mlflow_config.py
       hash: md5
-      md5: 407c62f4427579c46492a1ffe02fab22
-      size: 4760
-    - path: src/utils/paths.py
-      hash: md5
-      md5: 7b2d73cb9e053c99e1e0296ee965bdff
-      size: 2156
+      md5: ef60034aae994b97024b0ff72240cdca
+      size: 2566
     params:
-      params.yaml:
+      config/params.yaml:
         model_evaluation.models:
         - lightgbm
         - xgboost
         - logistic_baseline
     outs:
-    - path: models/advanced/evaluation/best_model_run_info.json
+    - path: artifacts/models/advanced/evaluation/best_model_run_info.json
       hash: md5
-      md5: 448f01925d4e9cdd974c9544c708588f
+      md5: 797b3c0899f1fde951a20a539f323a54
       size: 184
-    - path: models/advanced/evaluation/lightgbm_test_metrics.json
+    - path: artifacts/models/advanced/evaluation/lightgbm_test_metrics.json
       hash: md5
-      md5: c1143c6d9d11e8f6c3ea0a3d04699c99
-      size: 90
-    - path: models/advanced/evaluation/logistic_baseline_test_metrics.json
-      hash: md5
-      md5: b0c33891d9caa2f3090f174311713d5c
-      size: 90
-    - path: models/advanced/evaluation/xgboost_test_metrics.json
-      hash: md5
-      md5: a27f6dfaaad5e419a6342a3291f61144
+      md5: 0ee04c85a5efd56bb11695cfb1eb0870
       size: 89
+    - path: 
+        artifacts/models/advanced/evaluation/logistic_baseline_test_metrics.json
+      hash: md5
+      md5: 2f153b83e1c1eb3c27bf9681f2112a7a
+      size: 90
+    - path: artifacts/models/advanced/evaluation/xgboost_test_metrics.json
+      hash: md5
+      md5: 3cc7973a5befb1bc411ac689559909f5
+      size: 90
     - path: reports/figures/evaluation/comparative_roc_curve.png
       hash: md5
-      md5: 2e3dbfbea30896e5b9bb11fc5f4b474e
-      size: 89993
+      md5: ec47e6fb0768466f2f900924829eb235
+      size: 86594
     - path: reports/figures/evaluation/lightgbm_confusion_matrix.png
       hash: md5
-      md5: 617ebeacc863c59c566ae0bab1d127e3
-      size: 33318
+      md5: 8005c4212fa4777bdd3ede4bb49d4d22
+      size: 26930
     - path: reports/figures/evaluation/xgboost_confusion_matrix.png
       hash: md5
-      md5: 50968b7c36c66a10e0929b292fd12925
-      size: 33900
+      md5: 3719270cf7c6b7710487b98814450a72
+      size: 27069
   train_bert:
     cmd: uv run python -m src.models.bert_training
     deps:
@@ -581,196 +605,198 @@ stages:
       params.yaml:
         register.f1_threshold: 0.75
   hyperparameter_tuning_lightgbm:
-    cmd: uv run python -m src.models.hyperparameter_tuning --model lightgbm
+    cmd: python -m src.pipeline.stage_04b_hyperparameter_tuning --model lightgbm
     deps:
-    - path: models/features/X_train.npz
+    - path: artifacts/models/features/X_train.npz
       hash: md5
-      md5: 0da3db618a4facc78e97d864e1962590
-      size: 1911617
-    - path: models/features/X_val.npz
+      md5: fa02fc5aaf530ddd347cc22f7a02f537
+      size: 2235318
+    - path: artifacts/models/features/X_val.npz
       hash: md5
-      md5: 262666f9552c8532a609e22fbaae5631
-      size: 398166
-    - path: models/features/y_train.npy
+      md5: b07485760c8fb0faf1a1c4edcd1f7203
+      size: 465502
+    - path: artifacts/models/features/y_train.npy
       hash: md5
       md5: ff2992f566f145e0dabff508b76fd5de
       size: 206344
-    - path: models/features/y_val.npy
+    - path: artifacts/models/features/y_val.npy
       hash: md5
       md5: 6170668e1d3ef3e4b157d5a76a85299e
       size: 44320
-    - path: src/models/helpers/data_loader.py
+    - path: src/components/data_loader.py
       hash: md5
-      md5: 7a89b90d5c30a18dd6288af65d98984e
-      size: 4150
-    - path: src/models/helpers/train_utils.py
+      md5: 943f171894bd73ecf9011685176176f8
+      size: 4105
+    - path: src/components/train_utils.py
       hash: md5
-      md5: 4faff6a55ee646192baff189b1fb276d
-      size: 4913
-    - path: src/models/hyperparameter_tuning.py
+      md5: 7e29b97eb9eff32b0717a396e5b78728
+      size: 4806
+    - path: src/pipeline/stage_04b_hyperparameter_tuning.py
       hash: md5
-      md5: 3499988e16c5a46abe79a2df195d27aa
-      size: 8443
+      md5: 126e2601bf34e22f44bc4f61e5359626
+      size: 9106
     - path: src/utils/logger.py
       hash: md5
-      md5: 73106bb3de64f8ef8c097a990a6e2f49
-      size: 2345
+      md5: ac7a93384b2822bdd157295328ad2a51
+      size: 3134
     - path: src/utils/mlflow_config.py
       hash: md5
-      md5: 80c4e94241c5d684a2e28ce2456005eb
-      size: 4882
+      md5: ef60034aae994b97024b0ff72240cdca
+      size: 2566
     params:
-      params.yaml:
+      config/params.yaml:
         train.hyperparameter_tuning.lightgbm:
           n_trials: 30
     outs:
-    - path: models/advanced/lightgbm_best_hyperparams.pkl
+    - path: artifacts/models/advanced/lightgbm_best_hyperparams.pkl
       hash: md5
-      md5: e9595a6c186e2d9611b43a96462cfa1e
+      md5: 5c2526396c56a7f5085cff7bb7f314ff
       size: 152
-    - path: models/advanced/lightgbm_metrics.json
+    - path: artifacts/models/advanced/lightgbm_metrics.json
       hash: md5
-      md5: e3cad23b04bfa935522f3f29681eb922
+      md5: 730b79688a38a1ae962f792c3018e346
       size: 44
-    - path: models/advanced/lightgbm_model.pkl
+    - path: artifacts/models/advanced/lightgbm_model.pkl
       hash: md5
-      md5: a0a6c40522e704e547638d6421c12f3f
-      size: 1114687
+      md5: 4027535c2e12a7db5bece8255261ebf3
+      size: 1764209
   hyperparameter_tuning_xgboost:
-    cmd: uv run python -m src.models.hyperparameter_tuning --model xgboost
+    cmd: python -m src.pipeline.stage_04b_hyperparameter_tuning --model xgboost
     deps:
-    - path: models/features/X_train.npz
+    - path: artifacts/models/features/X_train.npz
       hash: md5
-      md5: 0da3db618a4facc78e97d864e1962590
-      size: 1911617
-    - path: models/features/X_val.npz
+      md5: fa02fc5aaf530ddd347cc22f7a02f537
+      size: 2235318
+    - path: artifacts/models/features/X_val.npz
       hash: md5
-      md5: 262666f9552c8532a609e22fbaae5631
-      size: 398166
-    - path: models/features/y_train.npy
+      md5: b07485760c8fb0faf1a1c4edcd1f7203
+      size: 465502
+    - path: artifacts/models/features/y_train.npy
       hash: md5
       md5: ff2992f566f145e0dabff508b76fd5de
       size: 206344
-    - path: models/features/y_val.npy
+    - path: artifacts/models/features/y_val.npy
       hash: md5
       md5: 6170668e1d3ef3e4b157d5a76a85299e
       size: 44320
-    - path: src/models/helpers/data_loader.py
+    - path: src/components/data_loader.py
       hash: md5
-      md5: 7a89b90d5c30a18dd6288af65d98984e
-      size: 4150
-    - path: src/models/helpers/train_utils.py
+      md5: 943f171894bd73ecf9011685176176f8
+      size: 4105
+    - path: src/components/train_utils.py
       hash: md5
-      md5: 4faff6a55ee646192baff189b1fb276d
-      size: 4913
-    - path: src/models/hyperparameter_tuning.py
+      md5: 7e29b97eb9eff32b0717a396e5b78728
+      size: 4806
+    - path: src/pipeline/stage_04b_hyperparameter_tuning.py
       hash: md5
-      md5: 3499988e16c5a46abe79a2df195d27aa
-      size: 8443
+      md5: 126e2601bf34e22f44bc4f61e5359626
+      size: 9106
     - path: src/utils/logger.py
       hash: md5
-      md5: 73106bb3de64f8ef8c097a990a6e2f49
-      size: 2345
+      md5: ac7a93384b2822bdd157295328ad2a51
+      size: 3134
     - path: src/utils/mlflow_config.py
       hash: md5
-      md5: 80c4e94241c5d684a2e28ce2456005eb
-      size: 4882
+      md5: ef60034aae994b97024b0ff72240cdca
+      size: 2566
     params:
-      params.yaml:
+      config/params.yaml:
         train.hyperparameter_tuning.xgboost:
           n_trials: 30
     outs:
-    - path: models/advanced/xgboost_best_hyperparams.pkl
+    - path: artifacts/models/advanced/xgboost_best_hyperparams.pkl
       hash: md5
-      md5: 79421b7d880f9c9de030316c3ebbc259
+      md5: 8c9a3dfeabea4bdf7a0be3e14b741d6b
       size: 152
-    - path: models/advanced/xgboost_metrics.json
+    - path: artifacts/models/advanced/xgboost_metrics.json
       hash: md5
-      md5: 3050dc5ca0bdb28018bd26ee95bd4f83
+      md5: 06190025d3c6c2972c19a812de832392
       size: 44
-    - path: models/advanced/xgboost_model.pkl
+    - path: artifacts/models/advanced/xgboost_model.pkl
       hash: md5
-      md5: 3dfbfedf24c96faf7d8b17a301facb39
-      size: 3660037
+      md5: 7f28f52c3c3457197e114202e587180f
+      size: 2368779
   register_model:
-    cmd: uv run python -m src.models.register_model
+    cmd: python -m src.pipeline.stage_06_register_model
     deps:
-    - path: models/advanced/evaluation/best_model_run_info.json
+    - path: artifacts/models/advanced/evaluation/best_model_run_info.json
       hash: md5
-      md5: 6c44cbdf65008bf229e2f92ab6d27794
-      size: 185
-    - path: models/advanced/evaluation/lightgbm_test_metrics.json
+      md5: 797b3c0899f1fde951a20a539f323a54
+      size: 184
+    - path: artifacts/models/advanced/evaluation/lightgbm_test_metrics.json
       hash: md5
-      md5: f1a214fce4bad1dcde25d8c25f4c1dc2
-      size: 90
-    - path: models/advanced/evaluation/logistic_baseline_test_metrics.json
-      hash: md5
-      md5: b0c33891d9caa2f3090f174311713d5c
-      size: 90
-    - path: models/advanced/evaluation/xgboost_test_metrics.json
-      hash: md5
-      md5: a27f6dfaaad5e419a6342a3291f61144
+      md5: 0ee04c85a5efd56bb11695cfb1eb0870
       size: 89
-    - path: src/models/register_model.py
+    - path: 
+        artifacts/models/advanced/evaluation/logistic_baseline_test_metrics.json
       hash: md5
-      md5: 25fa99abd6e0c3b22d75554e101ebebe
-      size: 7670
+      md5: 2f153b83e1c1eb3c27bf9681f2112a7a
+      size: 90
+    - path: artifacts/models/advanced/evaluation/xgboost_test_metrics.json
+      hash: md5
+      md5: 3cc7973a5befb1bc411ac689559909f5
+      size: 90
+    - path: src/constants/__init__.py
+      hash: md5
+      md5: b64bb20197697117b9c8120ce41e2ff2
+      size: 1916
+    - path: src/pipeline/stage_06_register_model.py
+      hash: md5
+      md5: 0ee6860ab7479a1c0b55b1dbce199a3f
+      size: 7668
     - path: src/utils/logger.py
       hash: md5
-      md5: 73106bb3de64f8ef8c097a990a6e2f49
-      size: 2345
+      md5: ac7a93384b2822bdd157295328ad2a51
+      size: 3134
     - path: src/utils/mlflow_config.py
       hash: md5
-      md5: 80c4e94241c5d684a2e28ce2456005eb
-      size: 4882
-    - path: src/utils/paths.py
-      hash: md5
-      md5: 7b2d73cb9e053c99e1e0296ee965bdff
-      size: 2156
+      md5: ef60034aae994b97024b0ff72240cdca
+      size: 2566
     params:
-      params.yaml:
+      config/params.yaml:
         register.f1_threshold: 0.75
   train_distilbert:
-    cmd: uv run python -m src.models.distilbert_training
+    cmd: python -m src.pipeline.stage_04c_distilbert_training
     deps:
-    - path: data/processed/train.parquet
+    - path: artifacts/data/processed/train.parquet
       hash: md5
       md5: ef9df44b106362663b835efdefe950c3
       size: 2394224
-    - path: data/processed/val.parquet
+    - path: artifacts/data/processed/val.parquet
       hash: md5
       md5: c55232be629f4fba0cdc3cce4329c594
       size: 499418
-    - path: src/models/distilbert_training.py
+    - path: src/components/data_loader.py
       hash: md5
-      md5: cc0c6537e6747bd2cb76295f684288d0
-      size: 11568
-    - path: src/models/helpers/data_loader.py
+      md5: 943f171894bd73ecf9011685176176f8
+      size: 4105
+    - path: src/components/train_utils.py
       hash: md5
-      md5: 7a89b90d5c30a18dd6288af65d98984e
-      size: 4150
-    - path: src/models/helpers/train_utils.py
+      md5: 7e29b97eb9eff32b0717a396e5b78728
+      size: 4806
+    - path: src/constants/__init__.py
       hash: md5
-      md5: 4faff6a55ee646192baff189b1fb276d
-      size: 4913
+      md5: b64bb20197697117b9c8120ce41e2ff2
+      size: 1916
+    - path: src/pipeline/stage_04c_distilbert_training.py
+      hash: md5
+      md5: 097a3f12f3b147442633ea6cd5872749
+      size: 9394
     - path: src/utils/logger.py
       hash: md5
-      md5: 73106bb3de64f8ef8c097a990a6e2f49
-      size: 2345
+      md5: ac7a93384b2822bdd157295328ad2a51
+      size: 3134
     - path: src/utils/mlflow_config.py
       hash: md5
-      md5: 80c4e94241c5d684a2e28ce2456005eb
-      size: 4882
-    - path: src/utils/paths.py
-      hash: md5
-      md5: 7b2d73cb9e053c99e1e0296ee965bdff
-      size: 2156
+      md5: ef60034aae994b97024b0ff72240cdca
+      size: 2566
     params:
-      params.yaml:
+      config/params.yaml:
         train.distilbert.batch_size:
         - 8
         - 16
         - 32
+        train.distilbert.enable: false
         train.distilbert.lr:
         - 1e-05
         - 5e-05
@@ -779,15 +805,15 @@ stages:
         - 0.001
         - 0.1
     outs:
-    - path: models/advanced/distilbert_metrics.json
+    - path: artifacts/models/advanced/distilbert_metrics.json
       hash: md5
       md5: dc0d9ce7dab44784d6f81ab8636b646e
       size: 22
-    - path: models/advanced/distilbert_model.pkl
+    - path: artifacts/models/advanced/distilbert_model.pkl
       hash: md5
       md5: d41d8cd98f00b204e9800998ecf8427e
       size: 0
-    - path: models/advanced/distilbert_results
+    - path: artifacts/models/advanced/distilbert_results
       hash: md5
       md5: d751713988987e9331980363e24189ce.dir
       size: 0

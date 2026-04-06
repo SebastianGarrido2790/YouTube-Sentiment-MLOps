@@ -28,16 +28,15 @@ from scipy.sparse import spmatrix  # For sparse matrix type hint
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.feature_extraction.text import TfidfVectorizer
 
-from src.components.feature_utils import (
-    evaluate_and_log,
-    load_train_val_data,
-)
-from src.components.mlflow_tracking_utils import setup_experiment
-
 # --- Project Utilities ---
 from src.config.configuration import ConfigurationManager
 from src.entity.config_entity import FeatureComparisonConfig
+from src.utils.feature_utils import (
+    evaluate_and_log,
+    load_train_val_data,
+)
 from src.utils.logger import get_logger
+from src.utils.mlflow_tracking_utils import setup_experiment
 
 # --- Logging Setup ---
 logger = get_logger(__name__, headline="tfidf_vs_distilbert.py")

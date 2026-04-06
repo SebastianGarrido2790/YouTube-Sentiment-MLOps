@@ -92,6 +92,9 @@ class FeatureEngineering:
         logger.info("Initializing Feature Engineering")
         logger.info(f"Targeting outputs to: {FEATURES_DIR}")
 
+        # Ensure directory exists
+        FEATURES_DIR.mkdir(parents=True, exist_ok=True)
+
         train_df = pd.read_parquet(TRAIN_PATH)
         val_df = pd.read_parquet(VAL_PATH)
         test_df = pd.read_parquet(TEST_PATH)

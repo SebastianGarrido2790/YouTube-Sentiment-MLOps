@@ -99,9 +99,8 @@ stages:
       - config/params.yaml:
         - feature_engineering.use_distilbert
         - feature_engineering.distilbert_batch_size
-      # Reuse best parameters found in tuning stages
-      - imbalance_tuning.best_max_features
-      - imbalance_tuning.best_ngram_range
+        - feature_engineering.best_max_features
+        - feature_engineering.best_ngram_range
     outs:
       - artifacts/models/features/
 
