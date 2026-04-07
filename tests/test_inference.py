@@ -1,6 +1,5 @@
 """
 Inference Endpoint Validation Suite
-==================================
 
 Automated integration tests for the YouTube Sentiment Analysis API.
 This suite validates sentiment prediction, Aspect-Based Sentiment Analysis (ABSA),
@@ -33,6 +32,7 @@ ABSA_TEST_PAYLOADS = [
     },
 ]
 
+
 @pytest.mark.parametrize("payload, expected_sentiment", PREDICT_TEST_PAYLOADS)
 def test_predict_sentiment(payload: dict[str, list[str]], expected_sentiment: str):
     """
@@ -45,6 +45,7 @@ def test_predict_sentiment(payload: dict[str, list[str]], expected_sentiment: st
     assert "predictions" in data
     assert "encoded_labels" in data
     assert data["predictions"][0] == expected_sentiment
+
 
 def test_predict_absa():
     """
@@ -60,6 +61,7 @@ def test_predict_absa():
             assert "aspect" in item
             assert "sentiment" in item
             assert "score" in item
+
 
 def test_health_check():
     """

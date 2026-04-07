@@ -1,3 +1,12 @@
+"""
+Model Pipeline Orchestration Suite
+
+Automated integration tests for the model training and evaluation pipelines.
+This suite uses comprehensive mocking to verify that the pipeline conductor
+correctly orchestrates data loading, experiment tracking with MLflow,
+and artifact persistence.
+"""
+
 from unittest.mock import MagicMock, patch
 
 import numpy as np
@@ -8,8 +17,13 @@ from src.models.baseline_logistic import train_baseline
 
 
 @pytest.fixture
-def mock_data():
-    """Create dummy training data."""
+def mock_data() -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, MagicMock]:
+    """
+    Creates dummy training, validation, and test data for pipeline testing.
+
+    Returns:
+        Tuple: A tuple containing (X_train, X_val, X_test, y_train, y_val, y_test, label_encoder).
+    """
     X_train = np.random.rand(10, 5)
     X_val = np.random.rand(5, 5)
     X_test = np.random.rand(5, 5)
@@ -24,8 +38,13 @@ def mock_data():
 
 
 @pytest.fixture
-def mock_config():
-    """Create a dummy logistic baseline configuration."""
+def mock_config() -> LogisticBaselineConfig:
+    """
+    Creates a dummy logistic baseline configuration.
+
+    Returns:
+        LogisticBaselineConfig: A mock configuration with balanced weights.
+    """
     return LogisticBaselineConfig(
         model_type="LogisticRegression",
         class_weight="balanced",
@@ -40,31 +59,29 @@ def mock_config():
 @patch("src.models.baseline_logistic.save_baseline_metrics_json")
 @patch("src.models.baseline_logistic.save_model_bundle")
 def test_train_baseline(
-    mock_save_bundle,
-    mock_save_metrics,
-    mock_mlflow,
-    mock_load_data,
-    mock_data,
-    mock_config,
+    mock_save_bundle: MagicMock,
+    mock_save_metrics: MagicMock,
+    mock_mlflow: MagicMock,
+    mock_load_data: MagicMock,
+    mock_data: tuple,
+    mock_config: LogisticBaselineConfig,
 ):
     """
-    Test the `train_baseline` function end-to-end with mocks to verify pipeline orchestration.
+    Tests the `train_baseline` function end-to-end with mocks.
 
-    Arrange:
-        - Mock `load_feature_data` to return dummy arrays.
-        - Mock `mlflow` to simulate experiment tracking.
-        - Mock `save_...` functions to prevent disk I/O.
-        - Create a dummy `LogisticBaselineConfig`.
+    This test verifies that the pipeline conductor correctly coordinates:
+    1. Loading feature data from the artifact store.
+    2. Starting and managing an MLflow experiment run.
+    3. Logging model artifacts and performance metrics.
+    4. Persisting final metrics and model bundles locally.
 
-    Act:
-        - Call `train_baseline(config)`.
-
-    Assert:
-        - **Data Loading**: `load_feature_data` is called once.
-        - **Experiment Tracking**: `mlflow.start_run` is initialized.
-        - **Model Logging**: `mlflow.sklearn.log_model` is called to register the model artifact.
-        - **Metrics Logging**: `mlflow.log_metric` is called (indirectly via `log_metrics_to_mlflow`).
-        - **Artifact Persistence**: `save_baseline_metrics_json` and `save_model_bundle` are triggered to save outputs locally.
+    Args:
+        mock_save_bundle: Mock for model bundle persistence.
+        mock_save_metrics: Mock for JSON metrics persistence.
+        mock_mlflow: Mock for MLflow tracking API.
+        mock_load_data: Mock for data loading utility.
+        mock_data: Data fixture providing dummy arrays.
+        mock_config: Configuration fixture.
     """
 
     # Setup mocks
@@ -84,11 +101,9 @@ def test_train_baseline(
     mock_mlflow.start_run.assert_called()
 
     # 3. Model trained and logged?
-    # We can check if sklearn.log_model was called
     mock_mlflow.sklearn.log_model.assert_called()
 
     # 4. Metrics logged?
-    # We check if log_metrics_to_mlflow (which calls mlflow.log_metric) was effectively used.
     assert mock_mlflow.log_metric.called
 
     # 5. Files saved locally?

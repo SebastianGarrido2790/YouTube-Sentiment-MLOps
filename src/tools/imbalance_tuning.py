@@ -83,9 +83,7 @@ def run_imbalanced_experiment(
     X_val_text = val_df["clean_comment"].tolist()
     y_val = val_df["category_encoded"].values
 
-    logger.info(
-        f"Data split: Train {train_df.shape[0]} ({np.bincount(y_train)}), Val {val_df.shape[0]}"
-    )
+    logger.info(f"Data split: Train {train_df.shape[0]} ({np.bincount(y_train)}), Val {val_df.shape[0]}")
 
     # --- Vectorization using TF-IDF (Fit on training, transform both) ---
     vectorizer = TfidfVectorizer(
@@ -95,8 +93,8 @@ def run_imbalanced_experiment(
         lowercase=False,
         min_df=2,
     )
-    X_train_vec: spmatrix = vectorizer.fit_transform(X_train_text)
-    X_val_vec: spmatrix = vectorizer.transform(X_val_text)
+    X_train_vec: spmatrix = vectorizer.fit_transform(X_train_text)  # type: ignore
+    X_val_vec: spmatrix = vectorizer.transform(X_val_text)  # type: ignore
     feature_dim = X_train_vec.shape[1]
 
     # --- Handle class imbalance (train set only) ---
@@ -123,7 +121,7 @@ def run_imbalanced_experiment(
             resampling_applied = True
             logger.info(f"Applying {imbalance_method.upper()} to training data...")
             # imblearn samplers expect dense arrays or sparse matrices, and return them
-            X_train_vec, y_train = sampler.fit_resample(X_train_vec, y_train)
+            X_train_vec, y_train = sampler.fit_resample(X_train_vec, y_train)  # type: ignore
             logger.info(
                 f"New training sample size: {X_train_vec.shape[0]} (Classes: {np.bincount(y_train)})"
             )  # np.bincount for sanity check: count of samples per class after resampling
@@ -181,9 +179,7 @@ def run_imbalanced_experiment(
         logger.info(f"Model Val Accuracy: {val_accuracy:.4f}")
         logger.info(f"Class 1 F1-Score: {f1_score_1:.4f}")
 
-        logger.info(
-            f"🏁 Experiment finished: {run_name} | MLflow Run ID: {mlflow.last_active_run().info.run_id} 🏁"
-        )
+        logger.info(f"🏁 Experiment finished: {run_name} | MLflow Run ID: {mlflow.last_active_run().info.run_id} 🏁")
 
 
 def main() -> None:

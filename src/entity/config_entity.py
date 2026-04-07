@@ -45,9 +45,7 @@ class FeatureComparisonConfig(BaseModel):
     model_config = ConfigDict(frozen=True, extra="forbid")
 
     mlflow_uri: str = Field(description="URI for the MLflow tracking server.")
-    ngram_ranges: list[list[int]] = Field(
-        description="List of n-gram ranges to test (e.g., [[1,1], [1,2]])."
-    )
+    ngram_ranges: list[list[int]] = Field(description="List of n-gram ranges to test (e.g., [[1,1], [1,2]]).")
     max_features: int = Field(description="Maximum vocabulary size for TF-IDF.")
     use_distilbert: bool = Field(description="Flag to enable/disable DistilBERT embeddings.")
     batch_size: int = Field(description="Batch size for deep learning inference.")
@@ -62,12 +60,8 @@ class FeatureTuningConfig(BaseModel):
 
     model_config = ConfigDict(frozen=True, extra="forbid")
 
-    max_features_values: list[int] = Field(
-        description="List of max_features candidates to evaluate."
-    )
-    best_ngram_range: list[int] = Field(
-        description="The chosen best performing n-gram range from the previous stage."
-    )
+    max_features_values: list[int] = Field(description="List of max_features candidates to evaluate.")
+    best_ngram_range: list[int] = Field(description="The chosen best performing n-gram range from the previous stage.")
     n_estimators: int = Field(description="Trees in the Random Forest baseline.")
     max_depth: int = Field(description="Max depth for the Random Forest baseline.")
 
@@ -79,9 +73,7 @@ class ImbalanceTuningConfig(BaseModel):
 
     model_config = ConfigDict(frozen=True, extra="forbid")
 
-    imbalance_methods: list[str] = Field(
-        description="List of methods to test (e.g., ['smote', 'adasyn'])."
-    )
+    imbalance_methods: list[str] = Field(description="List of methods to test (e.g., ['smote', 'adasyn']).")
     best_max_features: int = Field(description="Best max_features from tuning stage.")
     best_ngram_range: list[int] = Field(description="Best n-gram range from comparison stage.")
     rf_n_estimators: int

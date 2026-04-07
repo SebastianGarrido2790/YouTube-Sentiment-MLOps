@@ -37,9 +37,7 @@ def load_train_val_data() -> tuple[pd.DataFrame, pd.DataFrame]:
 
     Reliability: Includes robust error handling for missing files.
     """
-    logger.info(
-        f"Loading data from {TRAIN_PATH.relative_to(PROJECT_ROOT)} and {VAL_PATH.relative_to(PROJECT_ROOT)}..."
-    )
+    logger.info(f"Loading data from {TRAIN_PATH.relative_to(PROJECT_ROOT)} and {VAL_PATH.relative_to(PROJECT_ROOT)}...")
     try:
         train_df = pd.read_parquet(TRAIN_PATH)
         val_df = pd.read_parquet(VAL_PATH)
@@ -67,9 +65,7 @@ def parse_dvc_param(param_value: str, name: str, expected_type: type = str) -> A
         if expected_type in (list, tuple, dict):
             parsed_value = ast.literal_eval(param_value)
             if not isinstance(parsed_value, expected_type):
-                raise ValueError(
-                    f"Type mismatch: Expected {expected_type}, got {type(parsed_value)}"
-                )
+                raise ValueError(f"Type mismatch: Expected {expected_type}, got {type(parsed_value)}")
             return parsed_value
 
         # For simple types (str, int, float)
@@ -77,7 +73,8 @@ def parse_dvc_param(param_value: str, name: str, expected_type: type = str) -> A
 
     except (ValueError, SyntaxError) as e:
         logger.error(
-            f"Error parsing DVC parameter '{name}' with value '{param_value}'. Expected type: {expected_type.__name__}. Error: {e}"
+            f"Error parsing DVC parameter '{name}' with value '{param_value}'. "
+            f"Expected type: {expected_type.__name__}. Error: {e}"
         )
         # Re-raise to ensure the DVC stage fails with a clear message
         raise ValueError(f"Invalid DVC parameter format for '{name}'. Check params.yaml.") from e

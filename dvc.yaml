@@ -37,7 +37,7 @@ stages:
       - artifacts/data/processed/val.parquet
       - src/tools/feature_comparison.py
       - src/utils/logger.py
-      - src/components/feature_utils.py
+      - src/utils/feature_utils.py
     params:
       - config/params.yaml:
         - feature_comparison.mlflow_uri
@@ -55,7 +55,7 @@ stages:
       - src/tools/feature_tuning.py
       - src/utils/logger.py
       - src/constants/__init__.py
-      - src/components/feature_utils.py
+      - src/utils/feature_utils.py
     params:
       - config/params.yaml:
         - feature_tuning.max_features_values
@@ -73,7 +73,7 @@ stages:
     - src/tools/imbalance_tuning.py
     - src/utils/logger.py
     - src/constants/__init__.py
-    - src/components/feature_utils.py
+    - src/utils/feature_utils.py
     params:
       - config/params.yaml:
         - imbalance_tuning.imbalance_methods
@@ -94,7 +94,7 @@ stages:
       - src/components/feature_engineering.py
       - src/utils/logger.py
       - src/constants/__init__.py
-      - src/components/feature_utils.py
+      - src/utils/feature_utils.py
     params:
       - config/params.yaml:
         - feature_engineering.use_distilbert
@@ -115,8 +115,9 @@ stages:
       - artifacts/models/features/y_test.npy
       - artifacts/models/features/label_encoder.pkl
       - src/pipeline/stage_04a_baseline_model.py
-      - src/components/data_loader.py
-      - src/components/train_utils.py
+      - src/components/baseline_model.py
+      - src/utils/data_loader.py
+      - src/utils/train_utils.py
       - src/utils/mlflow_config.py
       - src/utils/logger.py
       - src/constants/__init__.py
@@ -135,8 +136,9 @@ stages:
     cmd: python -m src.pipeline.stage_04b_hyperparameter_tuning --model lightgbm
     deps:
       - src/pipeline/stage_04b_hyperparameter_tuning.py
-      - src/components/data_loader.py
-      - src/components/train_utils.py
+      - src/components/hyperparameter_tuning.py
+      - src/utils/data_loader.py
+      - src/utils/train_utils.py
       - src/utils/mlflow_config.py
       - src/utils/logger.py
       - artifacts/models/features/X_train.npz
@@ -156,8 +158,9 @@ stages:
     cmd: python -m src.pipeline.stage_04b_hyperparameter_tuning --model xgboost
     deps:
       - src/pipeline/stage_04b_hyperparameter_tuning.py
-      - src/components/data_loader.py
-      - src/components/train_utils.py
+      - src/components/hyperparameter_tuning.py
+      - src/utils/data_loader.py
+      - src/utils/train_utils.py
       - src/utils/mlflow_config.py
       - src/utils/logger.py
       - artifacts/models/features/X_train.npz
@@ -177,8 +180,9 @@ stages:
     cmd: python -m src.pipeline.stage_04c_distilbert_training
     deps:
       - src/pipeline/stage_04c_distilbert_training.py
-      - src/components/data_loader.py
-      - src/components/train_utils.py
+      - src/components/distilbert_training.py
+      - src/utils/data_loader.py
+      - src/utils/train_utils.py
       - src/utils/mlflow_config.py
       - src/constants/__init__.py
       - src/utils/logger.py
@@ -201,11 +205,12 @@ stages:
     cmd: python -m src.pipeline.stage_05_model_evaluation
     deps:
       - src/pipeline/stage_05_model_evaluation.py
+      - src/components/model_evaluation.py
       - src/utils/mlflow_config.py
       - src/utils/logger.py
       - src/constants/__init__.py
-      - src/components/data_loader.py
-      - src/components/train_utils.py
+      - src/utils/data_loader.py
+      - src/utils/train_utils.py
       # The model artifacts produced by the training stages
       - artifacts/models/advanced/lightgbm_model.pkl
       - artifacts/models/advanced/xgboost_model.pkl
@@ -238,6 +243,7 @@ stages:
     cmd: python -m src.pipeline.stage_06_register_model
     deps:
       - src/pipeline/stage_06_register_model.py
+      - src/components/register_model.py
       - src/utils/mlflow_config.py
       - src/utils/logger.py
       - src/constants/__init__.py

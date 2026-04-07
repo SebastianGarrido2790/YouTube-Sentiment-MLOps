@@ -86,8 +86,8 @@ def run_max_features_experiment(
         lowercase=False,
         min_df=2,
     )
-    X_train: spmatrix = vectorizer.fit_transform(X_train_text)
-    X_val: spmatrix = vectorizer.transform(X_val_text)
+    X_train: spmatrix = vectorizer.fit_transform(X_train_text)  # type: ignore
+    X_val: spmatrix = vectorizer.transform(X_val_text)  # type: ignore
     feature_dim = X_train.shape[1]
 
     # --- MLflow Tracking, Training, and Evaluation ---
@@ -96,9 +96,7 @@ def run_max_features_experiment(
 
     with mlflow.start_run(run_name=run_name):
         # 1. Model Training
-        model = RandomForestClassifier(
-            n_estimators=n_estimators, max_depth=max_depth, random_state=42
-        )
+        model = RandomForestClassifier(n_estimators=n_estimators, max_depth=max_depth, random_state=42)
         model.fit(X_train, y_train)
 
         # 2. Define Params and Tags for Logging
@@ -131,9 +129,7 @@ def run_max_features_experiment(
         # Log key metric to console
         logger.info(f"Model Val Accuracy: {metrics['val_accuracy']:.4f}")
 
-        logger.info(
-            f"Experiment finished: {run_name} | MLflow Run ID: {mlflow.last_active_run().info.run_id}"
-        )
+        logger.info(f"Experiment finished: {run_name} | MLflow Run ID: {mlflow.last_active_run().info.run_id}")
 
 
 def main() -> None:

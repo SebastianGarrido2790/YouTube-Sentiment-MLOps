@@ -60,9 +60,7 @@ def load_feature_data(validate_files: bool = True):
     with open(feature_files["label_encoder"], "rb") as f:
         le = pickle.load(f)
 
-    logger.info(
-        f"Loaded features: X_train={X_train.shape}, X_val={X_val.shape}, X_test={X_test.shape}"
-    )
+    logger.info(f"Loaded features: X_train={X_train.shape}, X_val={X_val.shape}, X_test={X_test.shape}")
 
     return X_train, X_val, X_test, y_train, y_val, y_test, le
 
@@ -74,19 +72,21 @@ def load_text_data():
     """
     Load text data for transformer-based models (e.g., BERT) from data/processed/.
     Returns:
-        tuple: (train_df, val_df)
+        tuple: (train_df, val_df, test_df)
     """
     train_path = PROCESSED_DATA_DIR / "train.parquet"
     val_path = PROCESSED_DATA_DIR / "val.parquet"
+    test_path = PROCESSED_DATA_DIR / "test.parquet"
 
-    if not train_path.exists() or not val_path.exists():
+    if not train_path.exists() or not val_path.exists() or not test_path.exists():
         raise FileNotFoundError("Processed text data not found in data/processed/.")
 
     train_df = pd.read_parquet(train_path)
     val_df = pd.read_parquet(val_path)
+    test_df = pd.read_parquet(test_path)
 
-    logger.info(f"Loaded text data: Train={len(train_df)}, Val={len(val_df)}")
-    return train_df, val_df
+    logger.info(f"Loaded text data: Train={len(train_df)}, Val={len(val_df)}, Test={len(test_df)}")
+    return train_df, val_df, test_df
 
 
 # ============================================================
@@ -105,7 +105,7 @@ def apply_adasyn(X_train, y_train):
     """
     logger.info("Applying ADASYN oversampling for class imbalance correction...")
     adasyn = ADASYN(random_state=42, n_neighbors=5)
-    X_res, y_res = adasyn.fit_resample(X_train, y_train)
+    X_res, y_res = adasyn.fit_resample(X_train, y_train) # type: ignore
 
     logger.info(
         f"Resampled dataset shapes — X: {X_res.shape}, y: {y_res.shape} | "

@@ -1,0 +1,135 @@
+c:\Users\sebas\Desktop\youtube-sentiment-analysis\src\api\main.py
+  c:\Users\sebas\Desktop\youtube-sentiment-analysis\src\api\main.py:156:35 - warning: Argument of type "Unknown | Any | None" cannot be assigned to parameter "iterable" of type "Iterable[_T@list]" in function "__init__"
+    Type "Unknown | Any | None" is not assignable to type "Iterable[_T@list]"
+      "None" is incompatible with protocol "Iterable[_T@list]"
+        "__iter__" is not present (reportArgumentType)
+c:\Users\sebas\Desktop\youtube-sentiment-analysis\src\components\baseline_model.py
+  c:\Users\sebas\Desktop\youtube-sentiment-analysis\src\components\baseline_model.py:111:42 - warning: Cannot access attribute "items" for class "str"
+    Attribute "items" is unknown (reportAttributeAccessIssue)
+c:\Users\sebas\Desktop\youtube-sentiment-analysis\src\components\data_preparation.py
+  c:\Users\sebas\Desktop\youtube-sentiment-analysis\src\components\data_preparation.py:123:53 - warning: Cannot access attribute "shape" for class "list[Unknown]"
+    Attribute "shape" is unknown (reportAttributeAccessIssue)
+  c:\Users\sebas\Desktop\youtube-sentiment-analysis\src\components\data_preparation.py:123:73 - warning: Cannot access attribute "shape" for class "list[Unknown]"
+    Attribute "shape" is unknown (reportAttributeAccessIssue)
+  c:\Users\sebas\Desktop\youtube-sentiment-analysis\src\components\data_preparation.py:123:95 - warning: Cannot access attribute "shape" for class "list[Unknown]"
+    Attribute "shape" is unknown (reportAttributeAccessIssue)
+c:\Users\sebas\Desktop\youtube-sentiment-analysis\src\components\feature_engineering.py
+  c:\Users\sebas\Desktop\youtube-sentiment-analysis\src\components\feature_engineering.py:53:18 - warning: Argument of type "str" cannot be assigned to parameter "self" of type "DistilBertModel" in function "__call__"
+    "str" is not assignable to "DistilBertModel" (reportArgumentType)
+  c:\Users\sebas\Desktop\youtube-sentiment-analysis\src\components\feature_engineering.py:167:17 - warning: Argument of type "NDArray[Unknown] | Any | tuple[NDArray[Unknown] | Any, ...] | tuple[NDArray[Unknown], ...] | tuple[NDArray[Unknown], Any] | tuple[Any | None, ...] | tuple[Any, ...] | tuple[Any, Any | None] | Unknown | None" cannot be assigned to parameter "iterable" of type "Iterable[_T@list]" in function "__init__"
+    Type "NDArray[Unknown] | Any | tuple[NDArray[Unknown] | Any, ...] | tuple[NDArray[Unknown], ...] | tuple[NDArray[Unknown], Any] | tuple[Any | None, ...] | tuple[Any, ...] | tuple[Any, Any | None] | Unknown | None" is not assignable to type "Iterable[Any]"
+      "None" is incompatible with protocol "Iterable[Any]"
+        "__iter__" is not present (reportArgumentType)
+  c:\Users\sebas\Desktop\youtube-sentiment-analysis\src\components\feature_engineering.py:170:47 - warning: Argument of type "Any | NDArray[Unknown] | Unknown | None" cannot be assigned to parameter "arr" of type "ArrayLike" in function "save"
+    Type "Any | NDArray[Unknown] | Unknown | None" is not assignable to type "ArrayLike"
+      Type "None" is not assignable to type "ArrayLike"
+        "None" is incompatible with protocol "_Buffer"
+          "__buffer__" is not present
+        "None" is incompatible with protocol "_SupportsArray[dtype[Any]]"
+          "__array__" is not present
+        "None" is incompatible with protocol "_NestedSequence[_SupportsArray[dtype[Any]]]"
+          "__len__" is not present
+    ... (reportArgumentType)
+c:\Users\sebas\Desktop\youtube-sentiment-analysis\src\components\model_evaluation.py
+  c:\Users\sebas\Desktop\youtube-sentiment-analysis\src\components\model_evaluation.py:165:41 - warning: Argument of type "Literal['label']" cannot be assigned to parameter "key" of type "SupportsIndex | slice[Any, Any, Any]" in function "__getitem__"
+    Type "Literal['label']" is not assignable to type "SupportsIndex | slice[Any, Any, Any]"
+      "Literal['label']" is incompatible with protocol "SupportsIndex"
+        "__index__" is not present
+      "Literal['label']" is not assignable to "slice[Any, Any, Any]" (reportArgumentType)
+  c:\Users\sebas\Desktop\youtube-sentiment-analysis\src\components\model_evaluation.py:166:54 - warning: Argument of type "Literal['score']" cannot be assigned to parameter "key" of type "SupportsIndex | slice[Any, Any, Any]" in function "__getitem__"
+    Type "Literal['score']" is not assignable to type "SupportsIndex | slice[Any, Any, Any]"
+      "Literal['score']" is incompatible with protocol "SupportsIndex"
+        "__index__" is not present
+      "Literal['score']" is not assignable to "slice[Any, Any, Any]" (reportArgumentType)
+  c:\Users\sebas\Desktop\youtube-sentiment-analysis\src\components\model_evaluation.py:352:58 - warning: Cannot access attribute "items" for class "str"
+    Attribute "items" is unknown (reportAttributeAccessIssue)
+  c:\Users\sebas\Desktop\youtube-sentiment-analysis\src\components\model_evaluation.py:360:60 - warning: Argument of type "dict[Unknown, Unknown] | str" cannot be assigned to parameter "report" of type "dict[Unknown, Unknown]" in function "save_test_metrics_json"
+    Type "dict[Unknown, Unknown] | str" is not assignable to type "dict[Unknown, Unknown]"
+      "str" is not assignable to "dict[Unknown, Unknown]" (reportArgumentType)
+  c:\Users\sebas\Desktop\youtube-sentiment-analysis\src\components\model_evaluation.py:373:50 - warning: Argument of type "Literal['macro avg']" cannot be assigned to parameter "key" of type "SupportsIndex | slice[Any, Any, Any]" in function "__getitem__"
+    Type "Literal['macro avg']" is not assignable to type "SupportsIndex | slice[Any, Any, Any]"
+      "Literal['macro avg']" is incompatible with protocol "SupportsIndex"
+        "__index__" is not present
+      "Literal['macro avg']" is not assignable to "slice[Any, Any, Any]" (reportArgumentType)
+  c:\Users\sebas\Desktop\youtube-sentiment-analysis\src\components\model_evaluation.py:373:50 - warning: Argument of type "Literal['f1-score']" cannot be assigned to parameter "key" of type "SupportsIndex | slice[Any, Any, Any]" in function "__getitem__"
+    Type "Literal['f1-score']" is not assignable to type "SupportsIndex | slice[Any, Any, Any]"
+      "Literal['f1-score']" is incompatible with protocol "SupportsIndex"
+        "__index__" is not present
+      "Literal['f1-score']" is not assignable to "slice[Any, Any, Any]" (reportArgumentType)
+  c:\Users\sebas\Desktop\youtube-sentiment-analysis\src\components\model_evaluation.py:379:47 - warning: Argument of type "Literal['macro avg']" cannot be assigned to parameter "key" of type "SupportsIndex | slice[Any, Any, Any]" in function "__getitem__"
+    Type "Literal['macro avg']" is not assignable to type "SupportsIndex | slice[Any, Any, Any]"
+      "Literal['macro avg']" is incompatible with protocol "SupportsIndex"
+        "__index__" is not present
+      "Literal['macro avg']" is not assignable to "slice[Any, Any, Any]" (reportArgumentType)
+  c:\Users\sebas\Desktop\youtube-sentiment-analysis\src\components\model_evaluation.py:379:47 - warning: Argument of type "Literal['f1-score']" cannot be assigned to parameter "key" of type "SupportsIndex | slice[Any, Any, Any]" in function "__getitem__"
+    Type "Literal['f1-score']" is not assignable to type "SupportsIndex | slice[Any, Any, Any]"
+      "Literal['f1-score']" is incompatible with protocol "SupportsIndex"
+        "__index__" is not present
+      "Literal['f1-score']" is not assignable to "slice[Any, Any, Any]" (reportArgumentType)
+c:\Users\sebas\Desktop\youtube-sentiment-analysis\src\tools\feature_comparison.py
+  c:\Users\sebas\Desktop\youtube-sentiment-analysis\src\tools\feature_comparison.py:217:19 - warning: Argument of type "np_1darray[Any] | ExtensionArray | Categorical" cannot be assigned to parameter "y_val" of type "ndarray[_AnyShape, dtype[Any]]" in function "evaluate_and_log"
+    Type "np_1darray[Any] | ExtensionArray | Categorical" is not assignable to type "ndarray[_AnyShape, dtype[Any]]"
+      "ExtensionArray" is not assignable to "ndarray[_AnyShape, dtype[Any]]" (reportArgumentType)
+  c:\Users\sebas\Desktop\youtube-sentiment-analysis\src\tools\feature_comparison.py:241:25 - warning: Argument of type "tuple[int, ...]" cannot be assigned to parameter "ngram_range" of type "tuple[int, int]" in function "run_comparison_experiment"
+    "tuple[int, ...]" is not assignable to "tuple[int, int]"
+      Tuple size mismatch; expected 2 but received indeterminate (reportArgumentType)
+c:\Users\sebas\Desktop\youtube-sentiment-analysis\src\tools\feature_tuning.py
+  c:\Users\sebas\Desktop\youtube-sentiment-analysis\src\tools\feature_tuning.py:121:19 - warning: Argument of type "np_1darray[Any] | ExtensionArray | Categorical" cannot be assigned to parameter "y_val" of type "ndarray[_AnyShape, dtype[Any]]" in function "evaluate_and_log"
+    Type "np_1darray[Any] | ExtensionArray | Categorical" is not assignable to type "ndarray[_AnyShape, dtype[Any]]"
+      "ExtensionArray" is not assignable to "ndarray[_AnyShape, dtype[Any]]" (reportArgumentType)
+  c:\Users\sebas\Desktop\youtube-sentiment-analysis\src\tools\feature_tuning.py:155:25 - warning: Argument of type "tuple[int, ...]" cannot be assigned to parameter "ngram_range" of type "tuple[int, int]" in function "run_max_features_experiment"
+    "tuple[int, ...]" is not assignable to "tuple[int, int]"
+      Tuple size mismatch; expected 2 but received indeterminate (reportArgumentType)
+c:\Users\sebas\Desktop\youtube-sentiment-analysis\src\tools\imbalance_tuning.py
+  c:\Users\sebas\Desktop\youtube-sentiment-analysis\src\tools\imbalance_tuning.py:86:71 - warning: Argument of type "np_1darray[Any] | ExtensionArray | Categorical" cannot be assigned to parameter "x" of type "ArrayLike" in function "bincount"
+    Type "np_1darray[Any] | ExtensionArray | Categorical" is not assignable to type "ArrayLike"
+      Type "ExtensionArray" is not assignable to type "ArrayLike"
+        "ExtensionArray" is incompatible with protocol "_Buffer"
+          "__buffer__" is not present
+        "ExtensionArray" is incompatible with protocol "_SupportsArray[dtype[Any]]"
+          "__array__" is not present
+        "ExtensionArray" is incompatible with protocol "_NestedSequence[_SupportsArray[dtype[Any]]]"
+          "__reversed__" is not present
+    ... (reportArgumentType)
+  c:\Users\sebas\Desktop\youtube-sentiment-analysis\src\tools\imbalance_tuning.py:166:19 - warning: Argument of type "np_1darray[Any] | ExtensionArray | Categorical" cannot be assigned to parameter "y_val" of type "ndarray[_AnyShape, dtype[Any]]" in function "evaluate_and_log"
+    Type "np_1darray[Any] | ExtensionArray | Categorical" is not assignable to type "ndarray[_AnyShape, dtype[Any]]"
+      "ExtensionArray" is not assignable to "ndarray[_AnyShape, dtype[Any]]" (reportArgumentType)
+  c:\Users\sebas\Desktop\youtube-sentiment-analysis\src\tools\imbalance_tuning.py:206:25 - warning: Argument of type "tuple[int, ...]" cannot be assigned to parameter "ngram_range" of type "tuple[int, int]" in function "run_imbalanced_experiment"
+    "tuple[int, ...]" is not assignable to "tuple[int, int]"
+      Tuple size mismatch; expected 2 but received indeterminate (reportArgumentType)
+c:\Users\sebas\Desktop\youtube-sentiment-analysis\src\utils\feature_utils.py
+  c:\Users\sebas\Desktop\youtube-sentiment-analysis\src\utils\feature_utils.py:106:20 - warning: Cannot access attribute "predict" for class "ClassifierMixin"
+    Attribute "predict" is unknown (reportAttributeAccessIssue)
+  c:\Users\sebas\Desktop\youtube-sentiment-analysis\src\utils\feature_utils.py:111:83 - warning: Argument of type "Literal[0]" cannot be assigned to parameter "zero_division" of type "str" in function "classification_report"
+    "Literal[0]" is not assignable to "str" (reportArgumentType)
+  c:\Users\sebas\Desktop\youtube-sentiment-analysis\src\utils\feature_utils.py:116:31 - warning: Argument of type "Literal['macro avg']" cannot be assigned to parameter "key" of type "SupportsIndex | slice[Any, Any, Any]" in function "__getitem__"
+    Type "Literal['macro avg']" is not assignable to type "SupportsIndex | slice[Any, Any, Any]"
+      "Literal['macro avg']" is incompatible with protocol "SupportsIndex"
+        "__index__" is not present
+      "Literal['macro avg']" is not assignable to "slice[Any, Any, Any]" (reportArgumentType)
+  c:\Users\sebas\Desktop\youtube-sentiment-analysis\src\utils\feature_utils.py:116:31 - warning: Argument of type "Literal['f1-score']" cannot be assigned to parameter "key" of type "SupportsIndex | slice[Any, Any, Any]" in function "__getitem__"
+    Type "Literal['f1-score']" is not assignable to type "SupportsIndex | slice[Any, Any, Any]"
+      "Literal['f1-score']" is incompatible with protocol "SupportsIndex"
+        "__index__" is not present
+      "Literal['f1-score']" is not assignable to "slice[Any, Any, Any]" (reportArgumentType)
+  c:\Users\sebas\Desktop\youtube-sentiment-analysis\src\utils\feature_utils.py:117:32 - warning: Argument of type "Literal['macro avg']" cannot be assigned to parameter "key" of type "SupportsIndex | slice[Any, Any, Any]" in function "__getitem__"
+    Type "Literal['macro avg']" is not assignable to type "SupportsIndex | slice[Any, Any, Any]"
+      "Literal['macro avg']" is incompatible with protocol "SupportsIndex"
+        "__index__" is not present
+      "Literal['macro avg']" is not assignable to "slice[Any, Any, Any]" (reportArgumentType)
+  c:\Users\sebas\Desktop\youtube-sentiment-analysis\src\utils\feature_utils.py:117:32 - warning: Argument of type "Literal['precision']" cannot be assigned to parameter "key" of type "SupportsIndex | slice[Any, Any, Any]" in function "__getitem__"
+    Type "Literal['precision']" is not assignable to type "SupportsIndex | slice[Any, Any, Any]"
+      "Literal['precision']" is incompatible with protocol "SupportsIndex"
+        "__index__" is not present
+      "Literal['precision']" is not assignable to "slice[Any, Any, Any]" (reportArgumentType)
+  c:\Users\sebas\Desktop\youtube-sentiment-analysis\src\utils\feature_utils.py:118:29 - warning: Argument of type "Literal['macro avg']" cannot be assigned to parameter "key" of type "SupportsIndex | slice[Any, Any, Any]" in function "__getitem__"
+    Type "Literal['macro avg']" is not assignable to type "SupportsIndex | slice[Any, Any, Any]"
+      "Literal['macro avg']" is incompatible with protocol "SupportsIndex"
+        "__index__" is not present
+      "Literal['macro avg']" is not assignable to "slice[Any, Any, Any]" (reportArgumentType)
+  c:\Users\sebas\Desktop\youtube-sentiment-analysis\src\utils\feature_utils.py:118:29 - warning: Argument of type "Literal['recall']" cannot be assigned to parameter "key" of type "SupportsIndex | slice[Any, Any, Any]" in function "__getitem__"
+    Type "Literal['recall']" is not assignable to type "SupportsIndex | slice[Any, Any, Any]"
+      "Literal['recall']" is incompatible with protocol "SupportsIndex"
+        "__index__" is not present
+      "Literal['recall']" is not assignable to "slice[Any, Any, Any]" (reportArgumentType)
+0 errors, 31 warnings, 0 informations

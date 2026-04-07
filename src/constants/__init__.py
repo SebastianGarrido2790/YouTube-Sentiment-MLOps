@@ -7,6 +7,8 @@ and artifact locations.
 
 from pathlib import Path
 
+import yaml
+
 # Provide standard hardcoded constants for the config system itself
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 LOGS_DIR = PROJECT_ROOT / "logs"
@@ -15,7 +17,6 @@ CONFIG_FILE_PATH = CONFIG_DIR / "config.yaml"
 PARAMS_FILE_PATH = CONFIG_DIR / "params.yaml"
 SCHEMA_FILE_PATH = CONFIG_DIR / "schema.yaml"
 
-import yaml
 
 # Parse the system configuration dict directly to prevent circular imports
 with open(CONFIG_FILE_PATH, encoding="utf-8") as _f:

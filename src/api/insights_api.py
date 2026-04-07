@@ -186,11 +186,7 @@ def predict_internal(comments: list[str]) -> list[int]:
 
     # Convert 2D score/probability array (N, C) to 1D class label array (N,).
     # This aligns the logic with predict_model.py and fixes the scalar error.
-    if raw_preds.ndim > 1 and raw_preds.shape[1] > 1:
-        preds_encoded = np.argmax(raw_preds, axis=1)
-    else:
-        # For binary or direct label output
-        preds_encoded = raw_preds
+    preds_encoded = np.argmax(raw_preds, axis=1) if raw_preds.ndim > 1 and raw_preds.shape[1] > 1 else raw_preds
 
     # Map to original numeric (-1,0,1)
     preds_numeric = [SENTIMENT_MAP.get(int(p), 0) for p in preds_encoded]
@@ -220,7 +216,7 @@ def predict(request: PredictRequest):
         return {"results": response}
     except Exception as e:
         logger.error(f"Prediction failed: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 @v1_router.post("/predict_with_timestamps")
@@ -237,7 +233,7 @@ def predict_with_timestamps(request: PredictWithTimestampsRequest):
         return {"results": response}
     except Exception as e:
         logger.error(f"Timestamped prediction failed: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 @v1_router.post("/generate_chart")
@@ -275,7 +271,7 @@ def generate_chart(request: SentimentCountsRequest):
         return StreamingResponse(img_io, media_type="image/png")
     except Exception as e:
         logger.error(f"Chart generation failed: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 @v1_router.post("/generate_wordcloud")
@@ -305,7 +301,7 @@ def generate_wordcloud(request: WordCloudRequest):
         return StreamingResponse(img_io, media_type="image/png")
     except Exception as e:
         logger.error(f"Wordcloud generation failed: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 @v1_router.post("/generate_trend_graph")
@@ -364,7 +360,7 @@ def generate_trend_graph(request: TrendGraphRequest):
         return StreamingResponse(img_io, media_type="image/png")
     except Exception as e:
         logger.error(f"Trend graph generation failed: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 app.include_router(v1_router)

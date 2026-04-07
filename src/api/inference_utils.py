@@ -68,9 +68,7 @@ def load_champion_model_name():
             logger.info(f"Dynamically loaded champion model name: {full_model_name}")
             return full_model_name
     except Exception as e:
-        logger.error(
-            f"Error loading champion model info: {e}. Falling back to {default_model_name}"
-        )
+        logger.error(f"Error loading champion model info: {e}. Falling back to {default_model_name}")
         return default_model_name
 
 
@@ -108,10 +106,7 @@ def load_production_model(alias_name: str = "Production") -> Any:
         model_uri = f"models:/{model_name}@{alias_name}"
         logger.info(f"Attempting to load model from MLflow URI: {model_uri}")
         model = mlflow.pyfunc.load_model(model_uri=model_uri)
-        logger.info(
-            f"✅ Loaded model from MLflow registry → {model_name}@{alias_name} "
-            f"(Tracking URI: {mlflow_uri})"
-        )
+        logger.info(f"✅ Loaded model from MLflow registry → {model_name}@{alias_name} (Tracking URI: {mlflow_uri})")
         return model
 
     def _load_from_local():
@@ -120,9 +115,7 @@ def load_production_model(alias_name: str = "Production") -> Any:
             raise FileNotFoundError(f"Local model file not found at {local_model_path}")
 
         model = joblib.load(local_model_path)
-        logger.info(
-            f"✅ Loaded local LightGBM model from {local_model_path.relative_to(PROJECT_ROOT)}"
-        )
+        logger.info(f"✅ Loaded local LightGBM model from {local_model_path.relative_to(PROJECT_ROOT)}")
         return model
 
     # === STEP 2: Execute Loading Strategy ===
@@ -137,7 +130,7 @@ def load_production_model(alias_name: str = "Production") -> Any:
             except Exception as e_mlflow:
                 raise RuntimeError(
                     f"Failed to load model from Local (Error: {e}) AND MLflow (Error: {e_mlflow})"
-                )
+                ) from e_mlflow
 
     else:
         # Default behavior: MLflow first
@@ -154,7 +147,7 @@ def load_production_model(alias_name: str = "Production") -> Any:
             except Exception as e_local:
                 raise RuntimeError(
                     f"Failed to load model from MLflow (Error: {e}) AND Local (Error: {e_local})"
-                )
+                ) from e_local
 
 
 def preprocess_text_inference(texts: list[str]) -> pd.DataFrame:

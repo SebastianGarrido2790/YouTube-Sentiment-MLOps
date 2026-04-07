@@ -77,6 +77,4 @@ def log_confusion_matrix_as_artifact(cm, model_name: str, labels: list):
 
     # Log to MLflow
     mlflow.log_artifact(str(filepath), artifact_path="evaluation_plots")
-    logger.info(
-        f"Confusion Matrix saved to {filepath.relative_to(REPORTS_DIR.parent)} and logged to MLflow."
-    )
+    logger.info(f"Confusion Matrix saved to {filepath.relative_to(REPORTS_DIR.parent)} and logged to MLflow.")

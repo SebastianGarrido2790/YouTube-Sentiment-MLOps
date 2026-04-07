@@ -54,9 +54,7 @@ def load_params() -> FeatureComparisonConfig:
         raise e
 
 
-def get_distilbert_embeddings(
-    texts: list[str], device: str | None = None, batch_size: int = 32
-) -> np.ndarray:
+def get_distilbert_embeddings(texts: list[str], device: str | None = None, batch_size: int = 32) -> np.ndarray:
     """
     Generate mean-pooled DistilBERT embeddings for texts.
 
@@ -183,9 +181,7 @@ def run_comparison_experiment(
     # --- MLflow Tracking, Training, and Evaluation ---
     with mlflow.start_run(run_name=run_name):
         # 1. Train Model
-        model = RandomForestClassifier(
-            n_estimators=n_estimators, max_depth=max_depth, random_state=42
-        )
+        model = RandomForestClassifier(n_estimators=n_estimators, max_depth=max_depth, random_state=42)
         model.fit(X_train, y_train)
 
         # 2. Define Params and Tags for Logging
@@ -225,9 +221,7 @@ def run_comparison_experiment(
             log_model=False,
         )
 
-        logger.info(
-            f"Experiment finished: {run_name} | MLflow Run ID: {mlflow.last_active_run().info.run_id}"
-        )
+        logger.info(f"Experiment finished: {run_name} | MLflow Run ID: {mlflow.last_active_run().info.run_id}")
 
 
 def main() -> None:

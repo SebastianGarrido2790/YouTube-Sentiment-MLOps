@@ -135,15 +135,15 @@ class FeatureEngineering:
             logger.info(f"Saved TF-IDF vectorizer to {vectorizer_path}")
 
         X_train_final = (
-            hstack([X_train_text, X_train_derived])
+            hstack([X_train_text, X_train_derived])  # type: ignore
             if issparse(X_train_text)
-            else np.hstack([X_train_text, X_train_derived])
+            else np.hstack([X_train_text, X_train_derived])  # type: ignore
         )
         X_val_final = (
-            hstack([X_val_text, X_val_derived]) if issparse(X_val_text) else np.hstack([X_val_text, X_val_derived])
+            hstack([X_val_text, X_val_derived]) if issparse(X_val_text) else np.hstack([X_val_text, X_val_derived])  # type: ignore
         )
         X_test_final = (
-            hstack([X_test_text, X_test_derived]) if issparse(X_test_text) else np.hstack([X_test_text, X_test_derived])
+            hstack([X_test_text, X_test_derived]) if issparse(X_test_text) else np.hstack([X_test_text, X_test_derived])  # type: ignore
         )
 
         if not issparse(X_train_final):

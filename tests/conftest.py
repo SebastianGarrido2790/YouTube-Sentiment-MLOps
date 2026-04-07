@@ -1,3 +1,11 @@
+"""
+Shared Test Configuration and Fixtures
+
+This module contains shared pytest fixtures and setup logic for the
+YouTube Sentiment Analysis test suite. It handles project path resolution,
+NLTK resource management, and configuration mocking.
+"""
+
 import sys
 from pathlib import Path
 
@@ -20,8 +28,20 @@ from src.config.configuration import ConfigurationManager
 
 
 @pytest.fixture
-def mock_params_yaml(tmp_path):
-    """Creates a temporary params.yaml for testing."""
+def mock_params_yaml(tmp_path: Path) -> str:
+    """
+    Creates a temporary params.yaml for testing.
+
+    This fixture generates a comprehensive mock parameters file containing
+    settings for all pipeline stages (data ingestion, preparation, tuning, etc.)
+    to ensure the ConfigurationManager can be tested without production files.
+
+    Args:
+        tmp_path: Pytest built-in fixture for temporary directory paths.
+
+    Returns:
+        str: Absolute path to the created mock params.yaml file.
+    """
     params = {
         "data_ingestion": {
             "url": "http://example.com/data.csv",
@@ -88,7 +108,19 @@ def mock_params_yaml(tmp_path):
 
 
 @pytest.fixture
-def config_manager(mock_params_yaml):
+def config_manager(mock_params_yaml: str) -> ConfigurationManager:
+    """
+    Initializes a ConfigurationManager with a mock params file.
+
+    This fixture resets the ConfigurationManager singleton instance to ensure
+    test isolation and hydrates it with the temporary mock parameters.
+
+    Args:
+        mock_params_yaml: Path to the mock parameters file from the `mock_params_yaml` fixture.
+
+    Returns:
+        ConfigurationManager: A ready-to-use configuration manager instance.
+    """
     # Reset singleton
     ConfigurationManager._instance = None
     return ConfigurationManager(params_path=mock_params_yaml)

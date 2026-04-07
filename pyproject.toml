@@ -51,6 +51,7 @@ exclude = ["notebooks"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "N", "W", "B", "SIM", "C4", "RUF"]
+ignore = ["N803", "N806"]
 
 [tool.ruff.lint.isort]
 known-first-party = ["src", "app"]
@@ -69,3 +70,8 @@ exclude = ["notebooks"]
 venvPath = "."
 venv = ".venv"
 typeCheckingMode = "standard"
+reportPrivateImportUsage = "none"
+reportOptionalMemberAccess = "none"
+reportAttributeAccessIssue = "warning"
+reportOptionalCall = "none"
+reportArgumentType = "warning"

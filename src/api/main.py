@@ -189,7 +189,7 @@ def predict_absa(data: ABSAPredictRequest):
         return analysis
     except Exception as e:
         logger.error(f"ABSA prediction failed: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 app.include_router(v1_router)

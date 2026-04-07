@@ -4,8 +4,8 @@ from transformers import pipeline
 class ABSAModel:
     """
     A wrapper for a Hugging Face Aspect-Based Sentiment Analysis (ABSA) pipeline.
-    This model analyzes sentiments towards specific topics (aspects) and the sentiment associated with each one within the comment.
-
+    This model analyzes sentiments towards specific topics (aspects) and the sentiment
+    associated with each one within the comment.
     """
 
     def __init__(self, model_name="yangheng/deberta-v3-large-absa-v1.1"):

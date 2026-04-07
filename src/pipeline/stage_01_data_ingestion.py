@@ -1,100 +1,60 @@
 """
-Download a raw dataset from an external source using DVC parameters.
+Execution Conductor: Data Ingestion.
 
-This script fetches a dataset (e.g., Reddit sentiment CSV) as a proxy for initial
-model training and saves it to the `data/raw/` directory.
+This pipeline stage orchestrates the downloading of the raw dataset.
+It acts as a thin wrapper that initializes the DataIngestion component
+(the "Business Logic") using configuration parameters tracked by DVC.
 
 Usage (preferred):
-    uv run dvc repro               # Uses params.yaml → fully reproducible
+    uv run dvc repro
 Run specific pipeline stage:
     uv run dvc repro data_ingestion
 """
 
-import os
-
-import requests
-
+from src.components.data_ingestion import DataIngestion
 from src.config.configuration import ConfigurationManager
-
-# --- Project Utilities ---
 from src.constants import RAW_PATH
 from src.entity.config_entity import DataIngestionConfig
 from src.utils.logger import get_logger
 
-# --- Logging Setup ---
 logger = get_logger(__name__, headline="download_dataset.py")
 
 
-def load_params() -> DataIngestionConfig:
+class DataIngestionPipeline:
     """
-    Load data ingestion parameters from params.yaml using ConfigurationManager.
+    Pipeline stage execution class orchestrating the Data Ingestion phase.
     """
-    try:
-        logger.info("Loading params via ConfigurationManager")
-        config = ConfigurationManager().get_data_ingestion_config()
-        return config
-    except Exception as e:
-        logger.warning(f"Could not load params via ConfigurationManager: {e}")
-        logger.warning("Falling back to defaults (only for local debugging).")
-        # Provide a fallback URL for standalone execution without DVC
-        return DataIngestionConfig(
-            url="https://raw.githubusercontent.com/Himanshu-1703/reddit-sentiment-analysis/refs/heads/main/data/reddit.csv",
-            output_path=str(RAW_PATH),
-        )
 
+    def __init__(self):
+        """Initialize the execution pipeline stage."""
+        pass
 
-def download_file(url: str, output_path: str):
-    """
-    Downloads a file from a URL and saves it to the specified path.
+    def main(self):
+        """Execute the data ingestion step by triggering the worker component."""
+        logger.info("🚀 Starting Download Process 🚀")
+        try:
+            logger.info("Loading params via ConfigurationManager")
+            config = ConfigurationManager().get_data_ingestion_config()
+        except Exception as e:
+            logger.warning(f"Could not load params via ConfigurationManager: {e}")
+            logger.warning("Falling back to defaults (only for local debugging).")
+            config = DataIngestionConfig(
+                url="https://raw.githubusercontent.com/Himanshu-1703/reddit-sentiment-analysis/refs/heads/main/data/reddit.csv",
+                output_path=str(RAW_PATH),
+            )
 
-    Args:
-        url (str): The public URL of the file to download.
-        output_path (str): The local path to save the downloaded file.
-    """
-    # Create the output directory if it doesn't exist
-    output_dir = os.path.dirname(output_path)
-    if not os.path.exists(output_dir):
-        os.makedirs(output_dir)
-        logger.info(f"Created directory: {output_dir}")
+        if not config.url:
+            logger.error("URL not found in configuration. Aborting.")
+            return
 
-    try:
-        # Use requests to download the file content
-        logger.info(f"Downloading data from: {url}")
-        response = requests.get(url, stream=True, timeout=30)
-        response.raise_for_status()  # Raise an exception for bad status codes
-
-        # Write the content to the file
-        with open(output_path, "wb") as f:
-            for chunk in response.iter_content(chunk_size=8192):
-                f.write(chunk)
-
-        logger.info(f"✅ Successfully downloaded and saved data to: {output_path} ✅")
-
-    except requests.exceptions.RequestException as e:
-        logger.error(f"Error downloading data: {e}")
-        raise
-    except Exception as e:
-        logger.error(f"An unexpected error occurred: {e}")
-        raise
-
-
-def main():
-    """
-    Main function to initiate the data download.
-    Parameters are sourced exclusively from params.yaml via ConfigurationManager.
-    """
-    logger.info("🚀 Starting Download Process 🚀")
-
-    # Load parameters from params.yaml
-    config = load_params()
-
-    if not config.url:
-        logger.error("URL not found in configuration. Aborting.")
-        return
-
-    # Download the file
-    download_file(config.url, config.output_path)
+        data_ingestion = DataIngestion(config=config)
+        data_ingestion.download_file()
 
 
 if __name__ == "__main__":
-    main()
+    try:
+        pipeline = DataIngestionPipeline()
+        pipeline.main()
+    except Exception as e:
+        logger.exception(e)
+        raise e

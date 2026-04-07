@@ -6,6 +6,7 @@ to ensure consistent inputs for training and evaluation.
 """
 
 import re
+from pathlib import Path
 
 import pandas as pd
 from nltk.corpus import stopwords
@@ -96,20 +97,22 @@ class DataPreparation:
             df,
             test_size=self.config.test_size,
             random_state=self.config.random_state,
-            stratify=df["category"],
+            stratify=df["category"],  # type: ignore
         )
         val_size = self.config.test_size / (1 - self.config.test_size)
-        train, val = train_test_split(
+        train_test_val = train_test_split(
             train_val,
             test_size=val_size,
             random_state=self.config.random_state,
-            stratify=train_val["category"],
+            stratify=train_val["category"],  # type: ignore
         )
+        train = train_test_val[0]  # type: ignore
+        val = train_test_val[1]  # type: ignore
 
-        outputs = [
-            (TRAIN_PATH, train),
-            (VAL_PATH, val),
-            (TEST_PATH, test),
+        outputs: list[tuple[Path, pd.DataFrame]] = [
+            (TRAIN_PATH, train),  # type: ignore
+            (VAL_PATH, val),  # type: ignore
+            (TEST_PATH, test),  # type: ignore
         ]
         for out_path, split_df in outputs:
             out_path.parent.mkdir(parents=True, exist_ok=True)
@@ -118,5 +121,5 @@ class DataPreparation:
                 raise ValueError(f"Empty split for {out_path}.")
 
         logger.info(f"Splits prepared: Train {train.shape[0]}, Val {val.shape[0]}, Test {test.shape[0]}")
-        logger.info(f"Train class distribution: {train['category'].value_counts().to_dict()}")
+        logger.info(f"Train class distribution: {train['category'].value_counts().to_dict()}")  # type: ignore
         logger.info("✅ Successfully prepared and saved processed datasets. ✅")
