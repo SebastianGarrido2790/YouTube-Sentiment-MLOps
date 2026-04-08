@@ -12,6 +12,21 @@ stages:
     outs:
       - data/raw/reddit_comments.csv
 
+  data_validation:
+    cmd: python -m src.pipeline.stage_01b_data_validation
+    deps:
+      - data/raw/reddit_comments.csv
+      - src/pipeline/stage_01b_data_validation.py
+      - src/components/data_validation.py
+      - src/utils/logger.py
+    params:
+      - config/params.yaml:
+        - data_validation.null_threshold_percent
+        - data_validation.min_text_length
+        - data_validation.max_text_length
+    outs:
+      - artifacts/gx/
+
   data_preparation:
     cmd: python -m src.pipeline.stage_02_data_preparation
     deps:

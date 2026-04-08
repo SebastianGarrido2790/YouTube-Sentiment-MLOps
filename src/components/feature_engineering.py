@@ -6,6 +6,7 @@ combined with domain-specific derived metrics.
 """
 
 import pickle
+from typing import Any, cast
 
 import numpy as np
 import pandas as pd
@@ -164,12 +165,12 @@ class FeatureEngineering:
 
         # Verify classes
         expected_classes = [0, 1, 2]
-        if list(le.classes_) != expected_classes:
+        if list(cast(Any, le.classes_)) != expected_classes:
             logger.warning(f"LabelEncoder classes {le.classes_} do not match expected {expected_classes}")
 
-        np.save(FEATURES_DIR / "y_train.npy", train_encoded)
-        np.save(FEATURES_DIR / "y_val.npy", val_encoded)
-        np.save(FEATURES_DIR / "y_test.npy", test_encoded)
+        np.save(FEATURES_DIR / "y_train.npy", cast(Any, train_encoded))
+        np.save(FEATURES_DIR / "y_val.npy", cast(Any, val_encoded))
+        np.save(FEATURES_DIR / "y_test.npy", cast(Any, test_encoded))
         logger.info("Saved y label arrays (.npy)")
 
         le_path = FEATURES_DIR / "label_encoder.pkl"

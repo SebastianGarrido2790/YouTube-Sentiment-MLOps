@@ -105,7 +105,7 @@ def apply_adasyn(X_train, y_train):
     """
     logger.info("Applying ADASYN oversampling for class imbalance correction...")
     adasyn = ADASYN(random_state=42, n_neighbors=5)
-    X_res, y_res = adasyn.fit_resample(X_train, y_train) # type: ignore
+    X_res, y_res = adasyn.fit_resample(X_train, y_train)  # type: ignore
 
     logger.info(
         f"Resampled dataset shapes — X: {X_res.shape}, y: {y_res.shape} | "

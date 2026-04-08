@@ -5,6 +5,11 @@ data_ingestion:
   url: https://raw.githubusercontent.com/Himanshu-1703/reddit-sentiment-analysis/refs/heads/main/data/reddit.csv
   output_path: data/raw/reddit_comments.csv
 
+data_validation:
+  null_threshold_percent: 5.0
+  min_text_length: 2
+  max_text_length: 5000
+
 data_preparation:
   test_size: 0.15  # For test split (remaining 85% further split into train/val)
   random_state: 42  # For reproducibility

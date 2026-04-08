@@ -9,7 +9,28 @@ This project includes two user-facing Chrome extensions for real-time sentiment 
 
 This document provides a guide for setting up, running, and developing both extensions.
 
-## 2. Available Extensions
+## 2. API Key Management
+
+The location to save your API key depends on which part of the system you are targeting. Because the Chrome extension and the MLOps backend are independent, you now manage the key in two different places:
+
+### **1. Chrome Extension (Popup UI)**
+Since my last update, **you no longer need to edit the source code.** 
+*   **Where to save:** Open the **YouTube Sentiment Insights** extension on any YouTube page. At the top, you'll see a **YouTube API Key** field under the *Settings* section. 
+*   **How:** Paste your key there and click **Save**. The extension will store this securely in your browser's local storage (`chrome.storage.local`).
+
+### **2. MLOps Backend & Pipelines (`.env` file)**
+For the Python-based data ingestion and training pipelines (the "Hands" that execute the FTI pattern), the key is still managed via an environment file.
+*   **Where to save:** In the project root, create or edit the `.env` file (copied from [`.env.example`](../../../.env.example)).
+*   **The Line:**
+    ```env
+    YOUTUBE_API_KEY=your_real_api_key_here
+    ```
+*   **Why:** This ensures that when you run `dvc repro` or initiate a training stage, the backend can fetch historical comments and perform quantitative lifting without human intervention.
+
+> [!TIP]
+> This "Dual-Key" approach follows the **Separation of Concerns** principle: the extension handles user-facing real-time analysis (Probabilistic Brain), while the backend handles persistent MLOps data ingestion (Deterministic Brawn).
+
+## 3. Available Extensions
 
 ### Standard Sentiment Analysis Extension (`chrome-extension/`)
 
@@ -25,7 +46,7 @@ This advanced extension allows users to analyze sentiment with respect to specif
 -   **Functionality:** Extracts comments, combines them into a single text block, and sends it to the `/predict_absa` endpoint along with a list of user-defined aspects. It then displays the sentiment for each aspect.
 -   **Location:** `chrome-extension-absa/`
 
-## 3. Core Components and Architecture
+## 4. Core Components and Architecture
 
 Both extensions are built with vanilla JavaScript, HTML, and CSS to keep them lightweight and secure. They share an identical file structure:
 
@@ -43,7 +64,7 @@ Both extensions are built with vanilla JavaScript, HTML, and CSS to keep them li
 4.  The backend service returns the sentiment predictions.
 5.  `popup.js` receives the predictions and updates the UI to display the results.
 
-## 4. Local Development Setup
+## 5. Local Development Setup
 
 Follow these steps to set up and run the extensions on your local machine.
 
@@ -84,7 +105,7 @@ uv run python -m app.predict_model_absa
 
 You should now see both extensions in your Chrome toolbar.
 
-## 5. How to Use
+## 6. How to Use the Extensions
 
 ### Standard Extension
 
@@ -101,7 +122,7 @@ You should now see both extensions in your Chrome toolbar.
 4.  Click the "Analyze Aspects" button.
 5.  View the sentiment breakdown for each aspect.
 
-## 6. Development and Configuration
+## 7. Development and Configuration
 
 ### Backend Endpoint
 

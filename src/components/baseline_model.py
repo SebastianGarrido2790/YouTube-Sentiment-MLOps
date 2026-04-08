@@ -5,6 +5,8 @@ This module provides the worker component that utilizes pre-engineered TF-IDF fe
 to train a baseline Logistic Regression model while logging metrics to MLflow.
 """
 
+from typing import Any
+
 import mlflow
 import mlflow.sklearn
 from sklearn.linear_model import LogisticRegression
@@ -107,7 +109,8 @@ class BaselineModel:
 
             save_baseline_metrics_json(score=val_f1)
 
-            report = classification_report(y_test_orig, y_pred_test_orig, output_dict=True)
+            # Output is a dictionary because of output_dict=True
+            report: dict[str, Any] = classification_report(y_test_orig, y_pred_test_orig, output_dict=True)  # type: ignore
             for label, metrics in report.items():
                 if label not in ("accuracy", "macro avg", "weighted avg"):
                     mlflow.log_metric(f"test_f1_{label}", metrics["f1-score"])

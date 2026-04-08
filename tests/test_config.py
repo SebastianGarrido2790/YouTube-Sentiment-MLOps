@@ -1,75 +1,44 @@
 """
-Configuration Validation Suite
+Configuration Manager Validation Suite
 
-Automated unit tests for the ConfigurationManager and configuration hydration
-system. This suite ensures that the Pydantic-based configuration schemas
-correctly validate parameters and that the singleton manager loads the
-environment as expected.
+Tests the loading and validation of system configurations using Pydantic.
+Verifies that parameters, paths, and data contracts are correctly hydrated
+from YAML files into immutable entity objects.
 """
 
-import pytest
-
 from src.config.configuration import ConfigurationManager
-from src.config.schemas import AppConfig, DataPreparationConfig
+from src.entity.config_entity import AppConfig, DataPreparationConfig
 
 
-def test_config_loading(config_manager: ConfigurationManager):
+def test_configuration_manager_initialization(config_manager: ConfigurationManager):
     """
-    Tests that the configuration is loaded and validated correctly.
-
-    Arrange:
-        - The `config_manager` fixture is initialized with a mock `params.yaml`.
-
-    Act:
-        - Access the `config` attribute of the ConfigurationManager.
-
-    Assert:
-        - `config` is not None and is an instance of `AppConfig`.
-        - Specific values (e.g., `test_size`) match the mock parameters.
+    Validates that the ConfigurationManager correctly loads all primary
+    configuration objects and initializes them as the expected Pydantic entities.
     """
-    assert config_manager.config is not None
-    assert isinstance(config_manager.config, AppConfig)
-    assert config_manager.config.data_preparation.test_size == 0.2
+    assert isinstance(config_manager, ConfigurationManager)
+    assert isinstance(config_manager.get_params(), AppConfig)
 
 
-def test_get_data_preparation_config(config_manager: ConfigurationManager):
+def test_data_preparation_config(config_manager: ConfigurationManager):
     """
-    Tests retrieval of specific configuration sections.
-
-    Arrange:
-        - The `config_manager` fixture is initialized with a mock `params.yaml`.
-
-    Act:
-        - Call `get_data_preparation_config()`.
-
-    Assert:
-        - Returned object is an instance of `DataPreparationConfig`.
-        - Attributes (`test_size`, `random_state`) match the mock parameters.
+    Tests the retrieval of a specific stage configuration (Data Preparation).
+    Ensures that default values and overrides from the mock are applied.
     """
-    data_prep_config = config_manager.get_data_preparation_config()
-    assert isinstance(data_prep_config, DataPreparationConfig)
-    assert data_prep_config.test_size == 0.2
-    assert data_prep_config.random_state == 123
+    dp_config = config_manager.get_data_preparation_config()
+
+    assert isinstance(dp_config, DataPreparationConfig)
+    # Based on our mock in conftest.py
+    assert dp_config.test_size == 0.2
+    assert dp_config.random_state == 42
 
 
-def test_missing_config_file():
+def test_invalid_config_path():
     """
-    Tests the system behavior when the configuration file is missing.
-
-    Arrange:
-        - Reset the ConfigurationManager singleton instance.
-        - Initialize `ConfigurationManager` with a non-existent path.
-
-    Act:
-        - Attempt to access configuration or getter methods.
-
-    Assert:
-        - `config` attribute is None.
-        - `get_data_preparation_config()` raises a `RuntimeError` due to missing data.
+    Verifies that the ConfigurationManager raises an error when provided
+    with a non-existent configuration path, ensuring early failure for misconfiguration.
     """
+    import pytest
+
     ConfigurationManager._instance = None
-    manager = ConfigurationManager(params_path="non_existent.yaml")
-    assert manager.config is None
-
-    with pytest.raises(RuntimeError, match="Configuration not loaded"):
-        manager.get_data_preparation_config()
+    with pytest.raises(FileNotFoundError):
+        ConfigurationManager(params_path="non_existent.yaml")

@@ -29,6 +29,9 @@ Test with:
      "aspects": ["video quality", "presenter"] }'
 """
 
+from contextlib import asynccontextmanager
+from typing import Any, cast
+
 import joblib
 import numpy as np
 from fastapi import APIRouter, FastAPI, HTTPException
@@ -70,25 +73,37 @@ app.add_middleware(
 )
 
 # ============================================================
-# Artifact Loading (Run on startup only)
+# Global Artifact Placeholders
 # ============================================================
-# This block handles loading all artifacts. The service will fail
-# to launch if any critical files are missing.
-
-try:
-    # Load the main sentiment prediction model (MLflow or local fallback)
-    model = load_production_model()
-
-    # Load preprocessing artifacts for the main model (Gap 2.23)
-    vectorizer = joblib.load(FEATURES_DIR / "vectorizer.pkl")
-    label_encoder = joblib.load(FEATURES_DIR / "label_encoder.pkl")
-    logger.info("✅ Loaded TF-IDF vectorizer and label encoder successfully.")
+model = None
+vectorizer = None
+label_encoder = None
+absa_model = None
 
 
-except Exception as e:
-    logger.error(f"❌ FATAL: Service cannot start. Artifact loading failed. Error: {e}")
-    # Re-raise the exception to prevent the application from starting
-    raise
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """
+    Handles application startup and shutdown lifecycle.
+    Loads critical artifacts (model, vectorizer, encoder) before handling requests.
+    """
+    global model, vectorizer, label_encoder
+    logger.info("⏳ Initializing FastAPI unified service (lifespan startup)...")
+    try:
+        # Load main artifacts
+        model = load_production_model()
+        vectorizer = joblib.load(FEATURES_DIR / "vectorizer.pkl")
+        label_encoder = joblib.load(FEATURES_DIR / "label_encoder.pkl")
+        logger.info("✅ Core artifacts loaded successfully.")
+    except Exception as e:
+        logger.error(f"⚠️ Warning: Non-fatal artifact load failure during startup: {e}")
+        logger.info("The service will continue starting, but /predict may fail until artifacts are restored.")
+
+    yield
+    logger.info("🛑 Shutting down service.")
+
+
+app = FastAPI(title="YouTube Sentiment Analysis API", version="1.0", lifespan=lifespan)
 
 
 # ============================================================
@@ -118,7 +133,7 @@ v1_router = APIRouter(prefix="/v1")
 @v1_router.get("/health", tags=["system"])
 async def health_check():
     """Health check endpoint to confirm the API is running."""
-    return {"status": "ok", "message": "YouTube Sentiment Analysis API is running."}
+    return {"status": "healthy", "message": "YouTube Sentiment Analysis API is running."}
 
 
 @v1_router.post("/predict")
@@ -126,6 +141,10 @@ def predict(data: PredictRequest):
     """
     Predicts the overall sentiment of a list of comments.
     """
+    if not all([model, vectorizer, label_encoder]):
+        logger.error("❌ Prediction aborted: Artifacts (model, vectorizer, encoder) are not loaded.")
+        raise HTTPException(status_code=503, detail="Service uninitialized: Artifacts missing.")
+
     try:
         # --- Text Preprocessing (Consistent with Training) ---
         df_input = preprocess_text_inference(data.texts)
@@ -138,8 +157,11 @@ def predict(data: PredictRequest):
         # --- Prediction ---
         raw_preds = model.predict(x_combined)
 
-        # Post-process predictions to get class labels
-        preds = np.argmax(raw_preds, axis=1) if raw_preds.ndim > 1 and raw_preds.shape[1] > 1 else raw_preds
+        # Post-process predictions to get class labels (supporting both sklearn and lightgbm wrappers)
+        if hasattr(raw_preds, "ndim") and raw_preds.ndim > 1 and raw_preds.shape[1] > 1:
+            preds = np.argmax(raw_preds, axis=1)
+        else:
+            preds = raw_preds
 
         # Map to original numeric (-1,0,1)
         preds_numeric = [SENTIMENT_MAP.get(int(p), 0) for p in preds]
@@ -153,7 +175,7 @@ def predict(data: PredictRequest):
             "predictions": safe_to_list(decoded_preds),
             "encoded_labels": safe_to_list(preds),
             "numeric_labels": preds_numeric,
-            "feature_shape": list(x_combined.shape),
+            "feature_shape": list(cast(Any, x_combined).shape) if hasattr(x_combined, "shape") else [],
         }
 
     except Exception as e:

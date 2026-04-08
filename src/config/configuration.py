@@ -3,7 +3,7 @@ Configuration Management Module.
 
 This module provides a singleton `ConfigurationManager` class that centralizes
 the loading, validation, and access of project configurations. It serves as
-the **Single Source of Truth** for all pipelines.
+the Single Source of Truth for all pipelines.
 """
 
 from pathlib import Path
@@ -15,6 +15,7 @@ from src.entity.config_entity import (
     AppConfig,
     DataIngestionConfig,
     DataPreparationConfig,
+    DataValidationConfig,
     DistilBERTConfig,
     FeatureComparisonConfig,
     FeatureEngineeringConfig,
@@ -67,25 +68,22 @@ class ConfigurationManager:
         """Loads and validates all configs."""
         try:
             # 1. Hyperparameters
-            if self.params_path.exists():
-                with open(self.params_path) as f:
-                    self.config = AppConfig(**yaml.safe_load(f))
-            else:
-                logger.warning(f"{self.params_path} not found.")
+            if not self.params_path.exists():
+                raise FileNotFoundError(f"Configuration file not found: {self.params_path}")
+            with open(self.params_path) as f:
+                self.config = AppConfig(**yaml.safe_load(f))
 
             # 2. System Paths
-            if self.config_path.exists():
-                with open(self.config_path) as f:
-                    self.system = SystemConfig(**yaml.safe_load(f))
-            else:
-                logger.warning(f"{self.config_path} not found.")
+            if not self.config_path.exists():
+                raise FileNotFoundError(f"Configuration file not found: {self.config_path}")
+            with open(self.config_path) as f:
+                self.system = SystemConfig(**yaml.safe_load(f))
 
             # 3. Data Schema
-            if self.schema_path.exists():
-                with open(self.schema_path) as f:
-                    self.data_schema = SchemaConfig(**yaml.safe_load(f))
-            else:
-                logger.warning(f"{self.schema_path} not found.")
+            if not self.schema_path.exists():
+                raise FileNotFoundError(f"Configuration file not found: {self.schema_path}")
+            with open(self.schema_path) as f:
+                self.data_schema = SchemaConfig(**yaml.safe_load(f))
 
             logger.info("All configurations loaded and validated successfully.")
 
@@ -94,6 +92,11 @@ class ConfigurationManager:
             raise e
 
     # --- System & Schema Getters ---
+    def get_params(self) -> AppConfig:
+        if not self.config:
+            raise RuntimeError("App configuration not loaded.")
+        return self.config
+
     def get_system_config(self) -> SystemConfig:
         if not self.system:
             raise RuntimeError("System configuration not loaded.")
@@ -109,6 +112,11 @@ class ConfigurationManager:
         if not self.config:
             raise RuntimeError("App Config not loaded.")
         return self.config.data_ingestion
+
+    def get_data_validation_config(self) -> DataValidationConfig:
+        if not self.config:
+            raise RuntimeError("App Config not loaded.")
+        return self.config.data_validation
 
     def get_data_preparation_config(self) -> DataPreparationConfig:
         if not self.config:

@@ -82,6 +82,31 @@ MLflow is used to log the details of every experiment and manage the lifecycle o
 
 ### How it Works in This Project
 
+Two commands are used to start the MLflow server. The difference lies in **explicit control vs. default behavior**. In professional MLOps, we use the first version to ensure **isolation, persistence, and reproducibility**.
+
+#### **1. The "Naked" Command**
+`uv run python -m mlflow server`
+*   **Host/Port**: Defaults to `127.0.0.1:5000`.
+*   **Backend Store**: By default, it uses the **local filesystem** (creating an `./mlruns` directory). It stores metadata (metrics, params) as YAML/Parquet files in that folder.
+*   **Artifact Root**: Defaults to the same `./mlruns` folder.
+*   **Risk**: If you run this in different directories, your data becomes scattered. Performance is also slower for large numbers of runs compared to a database.
+
+#### **2. Our Explicit Command**
+`uv run python -m mlflow server --host 127.0.0.1 --port 5000 --backend-store-uri sqlite:///mlflow_system.db --default-artifact-root ./mlruns_system`
+
+| Argument | Purpose | Why it matters |
+| :--- | :--- | :--- |
+| `--backend-store-uri sqlite:///mlflow_system.db` | Uses a **SQL database** (SQLite) for metadata. | **Reliability**: SQLite handles concurrent writes better than flat files. It keeps your metrics/params structured and separate from the physical files. |
+| `--default-artifact-root ./mlruns_system` | Changes the default folder for **large files** (models, plots). | **Isolation**: We use `mlruns_system` to distinguish system-level tracking from standard local experiments. |
+| `--host 127.0.0.1 --port 5000` | Explicitly binds the network address. | **Connectivity**: Ensures the server is reachable and avoids conflicts if you have other services on different ports. |
+
+### **Summary for our MLOps Workflow:**
+By using the **explicit (Command 1)** version, we are decoupling the **Metadata** (database) from the **Artifacts** (files). This aligns with FTI Pattern (Feature Training Inference) and Configuration Management from our architecture:
+
+1.  **Persistence**: Even if you delete the `./mlruns` folder, your training history remains safe in `mlflow_system.db`.
+2.  **Scalability**: SQL-based searching for the "Best Model" is significantly faster than parsing hundreds of text files.
+3.  **Cleanliness**: It prevents the standard `./mlruns` folder from becoming a "garbage dump" of both system logs and code-generated artifacts.
+
 #### Experiment Tracking (`src/features/**` & `src/models/**`)
 Scripts are instrumented with MLflow logging.
 

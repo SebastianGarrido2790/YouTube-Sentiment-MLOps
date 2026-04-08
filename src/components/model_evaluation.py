@@ -9,6 +9,7 @@ and selecting the champion model based on the highest Test Macro AUC.
 
 import pickle
 from itertools import cycle
+from typing import Any, cast
 
 import matplotlib.pyplot as plt
 import mlflow
@@ -159,11 +160,13 @@ class ModelEvaluation:
 
                 # preds is a list of lists of dicts [{'label': 'LABEL_0', 'score': 0.1}, ...]
                 y_pred_proba = np.zeros((len(x_test), 3))
-                for i, pred_list in enumerate(preds):
+                # cast to inform pyright of the expected structure from transformers pipeline
+                preds_cast = cast(list[list[dict[str, Any]]], preds)
+                for i, pred_list in enumerate(preds_cast):
                     for pred_dict in pred_list:
                         # Extract class index from LABEL_0 format
-                        class_idx = int(pred_dict["label"].split("_")[-1])
-                        y_pred_proba[i, class_idx] = pred_dict["score"]
+                        class_idx = int(str(pred_dict["label"]).split("_")[-1])
+                        y_pred_proba[i, class_idx] = float(pred_dict["score"])
 
                 y_pred = np.argmax(y_pred_proba, axis=1)
             else:
@@ -347,9 +350,11 @@ class ModelEvaluation:
 
                         test_macro_auc = roc_auc_score(y_test, y_pred_proba, multi_class="ovr", average="macro")
 
+                        # report is a dict due to output_dict=True, but type checker sees it as ambiguous
+                        report_dict = cast(dict[str, Any], report)
                         flat_metrics = {
                             f"test_{label}_{metric_name.replace('-score', '_f1')}": value
-                            for label, metrics in report.items()
+                            for label, metrics in report_dict.items()
                             if isinstance(metrics, dict)
                             for metric_name, value in metrics.items()
                             if metric_name not in ("support")
@@ -357,7 +362,7 @@ class ModelEvaluation:
                         flat_metrics["test_macro_auc"] = test_macro_auc
                         log_metrics_to_mlflow(flat_metrics)
 
-                        save_test_metrics_json(model_name, report)
+                        save_test_metrics_json(model_name, report_dict)
 
                         log_confusion_matrix_as_artifact(cm, model_name, labels)
 
@@ -370,13 +375,13 @@ class ModelEvaluation:
                                 "model_name": model_name,
                                 "run_id": child_run.info.run_id,
                                 "test_macro_auc": test_macro_auc,
-                                "test_macro_f1": report["macro avg"]["f1-score"],
+                                "test_macro_f1": report_dict["macro avg"]["f1-score"],
                             }
                         )
 
                         logger.info(
                             f"✅ Evaluation complete for {model_name}. "
-                            f"Test Macro F1: {report['macro avg']['f1-score']:.4f} | "
+                            f"Test Macro F1: {report_dict['macro avg']['f1-score']:.4f} | "
                             f"Test Macro AUC: {test_macro_auc:.4f} ✅"
                         )
 

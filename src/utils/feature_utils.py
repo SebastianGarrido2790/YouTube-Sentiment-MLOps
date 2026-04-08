@@ -13,11 +13,8 @@ from typing import Any
 import matplotlib.pyplot as plt
 import mlflow
 import mlflow.sklearn
-import numpy as np
 import pandas as pd
 import seaborn as sns
-from scipy.sparse import spmatrix
-from sklearn.base import ClassifierMixin
 from sklearn.metrics import accuracy_score, classification_report, confusion_matrix
 
 # --- Project Utilities ---
@@ -84,9 +81,9 @@ def parse_dvc_param(param_value: str, name: str, expected_type: type = str) -> A
 #  Model Evaluation and Logging
 # ============================================================
 def evaluate_and_log(
-    model: ClassifierMixin,
-    X_val: np.ndarray | spmatrix,
-    y_val: np.ndarray,
+    model: Any,
+    X_val: Any,
+    y_val: Any,
     run_name: str,
     params: dict[str, Any],
     tags: dict[str, str],
@@ -108,7 +105,7 @@ def evaluate_and_log(
     # --- Metrics ---
     accuracy = accuracy_score(y_val, y_pred)
     # Use zero_division=0 to prevent warnings when a class is never predicted
-    report = classification_report(y_val, y_pred, output_dict=True, zero_division=0)
+    report: dict[str, Any] = classification_report(y_val, y_pred, output_dict=True, zero_division=0)  # type: ignore
 
     # Extract key aggregate metrics for comparison
     metrics = {

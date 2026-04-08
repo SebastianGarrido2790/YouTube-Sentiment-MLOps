@@ -39,6 +39,56 @@ header small {
   color: var(--muted);
 }
 
+.settings {
+  margin-top: 10px;
+  padding: 8px;
+  background: var(--card);
+  border-radius: 8px;
+  border: 1px dashed #e5e7eb;
+}
+
+.settings label {
+  font-size: 11px;
+  color: var(--muted);
+  font-weight: 600;
+}
+
+.api-key-container {
+  display: flex;
+  gap: 6px;
+  margin-top: 4px;
+}
+
+#apiKey {
+  flex: 1;
+  padding: 4px 8px;
+  border-radius: 6px;
+  border: 1px solid #e6edf3;
+  font-size: 12px;
+}
+
+#saveKeyBtn {
+  padding: 4px 10px;
+  border-radius: 6px;
+  border: none;
+  background: var(--neutral);
+  color: white;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+#saveKeyBtn:hover {
+  background: var(--muted);
+}
+
+#keyStatus {
+  font-size: 10px;
+  color: var(--success);
+  margin-top: 2px;
+  display: block;
+}
+
 .controls {
   margin-top: 10px;
   display: grid;

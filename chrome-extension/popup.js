@@ -7,7 +7,7 @@ import { fetchYouTubeComments } from "./youtube_api.js";
 // ========================
 // CONFIGURATION
 // ========================
-const API_KEY = "";  // Use your YouTube API key
+let currentApiKey = "";
 const INSIGHTS_URL = "http://127.0.0.1:8001";                   // Insights API base URL (port 8001)
 
 // ========================
@@ -26,6 +26,11 @@ const backendUrlEl = document.getElementById("backendUrl");
 const loadingTextEl = document.getElementById("loadingText");
 const videoIdEl = document.getElementById("videoId");           // Video ID display
 
+// Settings elements
+const apiKeyInput = document.getElementById("apiKey");
+const saveKeyBtn = document.getElementById("saveKeyBtn");
+const keyStatusEl = document.getElementById("keyStatus");
+
 // Summary metrics
 const totalCommentsSummaryEl = document.getElementById("totalCommentsSummary");
 const uniqueCommentersEl = document.getElementById("uniqueCommenters");
@@ -38,6 +43,36 @@ const wordcloudImg = document.getElementById("wordcloudImg");   // <img> for wor
 const topCommentsEl = document.getElementById("topComments");   // <ul> or <div> for top 25
 
 backendUrlEl.textContent = INSIGHTS_URL;
+
+// ========================
+// INITIALIZATION
+// ========================
+async function init() {
+  const result = await chrome.storage.local.get(["yt_api_key"]);
+  if (result.yt_api_key) {
+    currentApiKey = result.yt_api_key;
+    if (apiKeyInput) apiKeyInput.value = currentApiKey;
+    if (keyStatusEl) {
+      keyStatusEl.textContent = "Key loaded from storage";
+      keyStatusEl.classList.remove("hidden");
+    }
+  }
+}
+
+init();
+
+saveKeyBtn.addEventListener("click", async () => {
+  const key = apiKeyInput.value.trim();
+  if (!key) {
+    showError("Please enter a valid API Key.");
+    return;
+  }
+  await chrome.storage.local.set({ yt_api_key: key });
+  currentApiKey = key;
+  keyStatusEl.textContent = "Key saved!";
+  keyStatusEl.classList.remove("hidden");
+  setTimeout(() => keyStatusEl.classList.add("hidden"), 3000);
+});
 
 // ========================
 // UI HELPERS
@@ -93,7 +128,10 @@ async function getCommentsFromAPI(maxResults = 100) {
       if (videoIdEl) videoIdEl.textContent = videoId;
 
       try {
-        const comments = await fetchYouTubeComments(videoId, API_KEY, maxResults);
+        if (!currentApiKey) {
+          return reject("API Key missing. Please enter and save your YouTube API Key first.");
+        }
+        const comments = await fetchYouTubeComments(videoId, currentApiKey, maxResults);
         resolve(comments);  // Now [{text, timestamp}]
       } catch (err) {
         reject(err);

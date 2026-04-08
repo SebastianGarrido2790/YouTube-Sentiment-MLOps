@@ -7,6 +7,7 @@ to ensure consistent inputs for training and evaluation.
 
 import re
 from pathlib import Path
+from typing import cast
 
 import pandas as pd
 from nltk.corpus import stopwords
@@ -120,6 +121,11 @@ class DataPreparation:
             if split_df.empty:
                 raise ValueError(f"Empty split for {out_path}.")
 
-        logger.info(f"Splits prepared: Train {train.shape[0]}, Val {val.shape[0]}, Test {test.shape[0]}")
+        # cast to pd.DataFrame to satisfy Pyright shape/empty checks
+        train_df = cast(pd.DataFrame, train)
+        val_df = cast(pd.DataFrame, val)
+        test_df = cast(pd.DataFrame, test)
+
+        logger.info(f"Splits prepared: Train {train_df.shape[0]}, Val {val_df.shape[0]}, Test {test_df.shape[0]}")
         logger.info(f"Train class distribution: {train['category'].value_counts().to_dict()}")  # type: ignore
         logger.info("✅ Successfully prepared and saved processed datasets. ✅")

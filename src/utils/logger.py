@@ -2,9 +2,20 @@
 Centralized logging configuration for the entire project.
 
 Usage:
-    from src.utils.logger import get_logger
-    logger = get_logger(__name__, headline="main.py")
+    from src.utils.logger import get_logger, log_spacer
+
+    # Initialize (Headline is optional, adds visual separator in files)
+    logger = get_logger(__name__, headline="Data Ingestion")
+
+    # Regular logging
     logger.info("Started data download...")
+    logger.warning("Found 5 empty comments, skipping.")
+    logger.error("Failed to connect to MLflow registry!")
+
+    # Visual spacer for file readability (skipped in JSON mode)
+    log_spacer()
+
+    # NOTE: Set env var JSON_LOGS=1 to switch to structured JSON output.
 """
 
 import logging
@@ -41,10 +52,21 @@ def get_logger(name: str | None = None, headline: str | None = None) -> logging.
 
     # Prevent duplicate handlers if logger already configured
     if not logger.handlers:
-        formatter = logging.Formatter(
-            "%(asctime)s | %(levelname)s | %(name)s | %(message)s",
-            datefmt="%Y-%m-%d %H:%M",
-        )
+        import os
+
+        import json_log_formatter
+
+        use_json = os.environ.get("JSON_LOGS", "false").lower() in ("1", "true")
+
+        if use_json:
+            file_formatter = json_log_formatter.JSONFormatter()
+            console_formatter = file_formatter
+        else:
+            file_formatter = logging.Formatter(
+                "%(asctime)s | %(levelname)s | %(name)s | %(message)s",
+                datefmt="%Y-%m-%d %H:%M",
+            )
+            console_formatter = logging.Formatter("%(message)s")
 
         file_handler = RotatingFileHandler(
             LOG_FILE,
@@ -52,34 +74,41 @@ def get_logger(name: str | None = None, headline: str | None = None) -> logging.
             backupCount=5,  # Keep up to 5 old logs
             encoding="utf-8",
         )
-        file_handler.setFormatter(formatter)
+        file_handler.setFormatter(file_formatter)
 
-        try:
-            from rich.logging import RichHandler
-
-            console_handler = RichHandler(rich_tracebacks=True, markup=True)
-            console_handler.setFormatter(logging.Formatter("%(message)s"))
-        except ImportError:
+        if use_json:
             console_handler = logging.StreamHandler()
-            console_handler.setFormatter(formatter)
+            console_handler.setFormatter(console_formatter)
+        else:
+            try:
+                from rich.logging import RichHandler
+
+                console_handler = RichHandler(rich_tracebacks=True, markup=True)
+                console_handler.setFormatter(console_formatter)
+            except ImportError:
+                console_handler = logging.StreamHandler()
+                console_handler.setFormatter(file_formatter)
 
         logger.addHandler(file_handler)
         logger.addHandler(console_handler)
 
         logger.propagate = False
 
-        # Add a newline separator before each run (for readability)
-        with LOG_FILE.open("a", encoding="utf-8") as f:
-            f.write("\n\n")
-
-        # Add a visually distinct headline
-        if headline:
-            headline_text = (
-                f"========================= START: {headline} "
-                f"({datetime.now():%Y-%m-%d %H:%M}) =========================\n"
-            )
+        # Only add visual separators for human-readable logs
+        if not use_json:
             with LOG_FILE.open("a", encoding="utf-8") as f:
-                f.write(headline_text)
+                f.write("\n\n")
+
+            if headline:
+                headline_text = (
+                    f"========================= START: {headline} "
+                    f"({datetime.now():%Y-%m-%d %H:%M}) =========================\n"
+                )
+                with LOG_FILE.open("a", encoding="utf-8") as f:
+                    f.write(headline_text)
+        elif headline:
+            # For JSON logs, just log the headline as a standard event
+            logger.info(f"START: {headline}")
 
     return logger
 
@@ -88,6 +117,10 @@ def log_spacer() -> None:
     """
     Appends a raw newline to the log file to provide visual spacing
     without the log formatter prefix (timestamp/levelname).
+    Skipped if JSON output is active.
     """
-    with LOG_FILE.open("a", encoding="utf-8") as f:
-        f.write("\n")
+    import os
+
+    if os.environ.get("JSON_LOGS", "false").lower() not in ("1", "true"):
+        with LOG_FILE.open("a", encoding="utf-8") as f:
+            f.write("\n")

@@ -1,25 +1,11 @@
 """
-Shared Test Configuration and Fixtures
+Test Configuration and Fixtures
 
-This module contains shared pytest fixtures and setup logic for the
-YouTube Sentiment Analysis test suite. It handles project path resolution,
-NLTK resource management, and configuration mocking.
+This module provides shared fixtures for the YouTube Sentiment Analysis test suite,
+including mock configuration files and common components.
 """
 
-import sys
 from pathlib import Path
-
-# Add project root to sys.path so we can import src
-project_root = Path(__file__).resolve().parent.parent
-sys.path.append(str(project_root))
-
-# Ensure NLTK resources are available for tests
-import nltk
-
-nltk.download("punkt")
-nltk.download("punkt_tab")
-nltk.download("stopwords")
-nltk.download("wordnet")
 
 import pytest
 import yaml
@@ -30,51 +16,48 @@ from src.config.configuration import ConfigurationManager
 @pytest.fixture
 def mock_params_yaml(tmp_path: Path) -> str:
     """
-    Creates a temporary params.yaml for testing.
-
-    This fixture generates a comprehensive mock parameters file containing
-    settings for all pipeline stages (data ingestion, preparation, tuning, etc.)
-    to ensure the ConfigurationManager can be tested without production files.
-
-    Args:
-        tmp_path: Pytest built-in fixture for temporary directory paths.
-
-    Returns:
-        str: Absolute path to the created mock params.yaml file.
+    Creates a temporary mock params.yaml file for testing.
+    Includes all necessary sections to satisfy the AppConfig strict schema.
     """
     params = {
         "data_ingestion": {
             "url": "http://example.com/data.csv",
-            "output_path": "data/raw/test.csv",
+            "output_path": "data/raw/data.csv",
         },
-        "data_preparation": {"test_size": 0.2, "random_state": 123},
+        "data_validation": {
+            "null_threshold_percent": 0.05,
+            "min_text_length": 5,
+            "max_text_length": 500,
+        },
+        "data_preparation": {
+            "test_size": 0.2,
+            "random_state": 42,
+        },
         "feature_comparison": {
             "mlflow_uri": "http://localhost:5000",
             "ngram_ranges": [[1, 1]],
             "max_features": 1000,
             "use_distilbert": False,
-            "batch_size": 16,
-            "n_estimators": 100,
-            "max_depth": 10,
+            "batch_size": 32,
+            "n_estimators": 10,
+            "max_depth": 5,
         },
         "feature_tuning": {
             "max_features_values": [100, 200],
             "best_ngram_range": [1, 1],
-            "n_estimators": 100,
-            "max_depth": 10,
+            "n_estimators": 10,
+            "max_depth": 5,
         },
         "imbalance_tuning": {
             "imbalance_methods": ["smote"],
-            "best_max_features": 1000,
+            "best_max_features": 100,
             "best_ngram_range": [1, 1],
-            "rf_n_estimators": 100,
-            "rf_max_depth": 10,
+            "rf_n_estimators": 10,
+            "rf_max_depth": 5,
         },
         "feature_engineering": {
-            "use_distilbert": "False",
-            "distilbert_batch_size": 16,
-            "best_max_features": 1000,
-            "best_ngram_range": "[1, 1]",  # Kept as string/optional based on schema but let's check
+            "use_distilbert": False,
+            "distilbert_batch_size": 32,
         },
         "train": {
             "logistic_baseline": {
@@ -108,19 +91,71 @@ def mock_params_yaml(tmp_path: Path) -> str:
 
 
 @pytest.fixture
-def config_manager(mock_params_yaml: str) -> ConfigurationManager:
+def mock_config_yaml(tmp_path: Path) -> str:
+    """Creates a temporary mock config.yaml for system paths."""
+    config = {
+        "artifacts_root": "artifacts",
+        "data": {
+            "raw_dir": "data/raw",
+            "external_dir": "data/external",
+            "processed_dir": "data/processed",
+            "raw_path": "data/raw/dataset.csv",
+            "train_path": "data/processed/train.csv",
+            "test_path": "data/processed/test.csv",
+            "val_path": "data/processed/val.csv",
+        },
+        "models": {
+            "root_dir": "models",
+            "baseline_dir": "models/baseline",
+            "advanced_dir": "models/advanced",
+            "features_dir": "models/features",
+            "evaluation_dir": "models/evaluation",
+        },
+        "reports": {
+            "root_dir": "reports",
+            "figures_dir": "reports/figures",
+            "docs_dir": "reports/docs",
+            "eval_fig_dir": "reports/figures/eval",
+            "tfidf_fig_dir": "reports/figures/tfidf",
+            "imbalance_fig_dir": "reports/figures/imbalance",
+        },
+        "ops": {
+            "logs_dir": "logs",
+            "mlruns_dir": "mlruns",
+            "gx_dir": "gx",
+        },
+    }
+
+    p = tmp_path / "config.yaml"
+    with open(p, "w") as f:
+        yaml.dump(config, f)
+
+    return str(p)
+
+
+@pytest.fixture
+def mock_schema_yaml(tmp_path: Path) -> str:
+    """Creates a temporary mock schema.yaml for data contracts."""
+    schema = {
+        "columns": {"text": "string", "label": "integer"},
+        "target": "label",
+    }
+    p = tmp_path / "schema.yaml"
+    with open(p, "w") as f:
+        yaml.dump(schema, f)
+    return str(p)
+
+
+@pytest.fixture
+def config_manager(mock_params_yaml: str, mock_config_yaml: str, mock_schema_yaml: str) -> ConfigurationManager:
     """
-    Initializes a ConfigurationManager with a mock params file.
-
-    This fixture resets the ConfigurationManager singleton instance to ensure
-    test isolation and hydrates it with the temporary mock parameters.
-
-    Args:
-        mock_params_yaml: Path to the mock parameters file from the `mock_params_yaml` fixture.
-
-    Returns:
-        ConfigurationManager: A ready-to-use configuration manager instance.
+    Initializes a ConfigurationManager with mock files.
+    Ensures singletons are reset for test isolation.
     """
-    # Reset singleton
+    # Reset singleton effectively by clearing its internal state or creating new
     ConfigurationManager._instance = None
-    return ConfigurationManager(params_path=mock_params_yaml)
+    return ConfigurationManager(
+        config_path=mock_config_yaml,
+        params_path=mock_params_yaml,
+        schema_path=mock_schema_yaml,
+    )

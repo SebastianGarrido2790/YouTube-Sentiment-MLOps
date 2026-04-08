@@ -12,8 +12,8 @@ from unittest.mock import MagicMock, patch
 import numpy as np
 import pytest
 
-from src.config.schemas import LogisticBaselineConfig
-from src.models.baseline_logistic import train_baseline
+from src.components.baseline_model import BaselineModel
+from src.entity.config_entity import LogisticBaselineConfig
 
 
 @pytest.fixture
@@ -54,13 +54,15 @@ def mock_config() -> LogisticBaselineConfig:
     )
 
 
-@patch("src.models.baseline_logistic.load_feature_data")
-@patch("src.models.baseline_logistic.mlflow")
-@patch("src.models.baseline_logistic.save_baseline_metrics_json")
-@patch("src.models.baseline_logistic.save_model_bundle")
+@patch("src.components.baseline_model.load_feature_data")
+@patch("src.components.baseline_model.mlflow")
+@patch("src.components.baseline_model.log_metrics_to_mlflow")
+@patch("src.components.baseline_model.save_baseline_metrics_json")
+@patch("src.components.baseline_model.save_model_bundle")
 def test_train_baseline(
     mock_save_bundle: MagicMock,
     mock_save_metrics: MagicMock,
+    mock_log_metrics: MagicMock,
     mock_mlflow: MagicMock,
     mock_load_data: MagicMock,
     mock_data: tuple,
@@ -91,7 +93,8 @@ def test_train_baseline(
     mock_mlflow.active_run.return_value.info.run_id = "test_run_id"
 
     # Run training
-    train_baseline(config=mock_config)
+    baseline = BaselineModel(config=mock_config)
+    baseline.train_baseline()
 
     # Assertions
     # 1. Data loaded?

@@ -238,7 +238,7 @@ def main() -> None:
     for ngram_range in config.ngram_ranges:
         run_comparison_experiment(
             vectorizer_type="TF-IDF",
-            ngram_range=tuple(ngram_range),  # Ensure it's a tuple for the function
+            ngram_range=(ngram_range[0], ngram_range[1]),  # Ensure it's a tuple[int, int] for the function
             max_features=config.max_features,
             n_estimators=config.n_estimators,
             max_depth=config.max_depth,

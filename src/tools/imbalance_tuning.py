@@ -83,7 +83,7 @@ def run_imbalanced_experiment(
     X_val_text = val_df["clean_comment"].tolist()
     y_val = val_df["category_encoded"].values
 
-    logger.info(f"Data split: Train {train_df.shape[0]} ({np.bincount(y_train)}), Val {val_df.shape[0]}")
+    logger.info(f"Data split: Train {train_df.shape[0]} ({np.bincount(y_train)}), Val {val_df.shape[0]}")  # type: ignore
 
     # --- Vectorization using TF-IDF (Fit on training, transform both) ---
     vectorizer = TfidfVectorizer(
@@ -123,7 +123,7 @@ def run_imbalanced_experiment(
             # imblearn samplers expect dense arrays or sparse matrices, and return them
             X_train_vec, y_train = sampler.fit_resample(X_train_vec, y_train)  # type: ignore
             logger.info(
-                f"New training sample size: {X_train_vec.shape[0]} (Classes: {np.bincount(y_train)})"
+                f"New training sample size: {X_train_vec.shape[0]} (Classes: {np.bincount(y_train)})"  # type: ignore
             )  # np.bincount for sanity check: count of samples per class after resampling
 
     # --- MLflow Tracking, Training, and Evaluation ---
@@ -196,7 +196,7 @@ def main() -> None:
     # --- Extract parameters from Pydantic config ---
     imbalance_methods = config.imbalance_methods
     # Ensure ngram_range is a tuple for TfidfVectorizer
-    ngram_range = tuple(config.best_ngram_range)
+    ngram_range = (config.best_ngram_range[0], config.best_ngram_range[1])
 
     logger.info(f"--- Running imbalance experiments for methods: {imbalance_methods} ---")
 

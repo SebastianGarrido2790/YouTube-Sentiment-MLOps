@@ -60,7 +60,7 @@ def log_confusion_matrix_as_artifact(cm, model_name: str, labels: list):
     sns.heatmap(
         cm,
         annot=True,
-        fmt="d",
+        fmt="g",
         cmap="Blues",
         xticklabels=labels,
         yticklabels=labels,

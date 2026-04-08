@@ -152,7 +152,7 @@ def main() -> None:
     for max_features in config.max_features_values:
         run_max_features_experiment(
             max_features=max_features,
-            ngram_range=tuple(config.best_ngram_range),  # Convert list to tuple
+            ngram_range=(config.best_ngram_range[0], config.best_ngram_range[1]),  # Ensure it's a tuple[int, int]
             n_estimators=config.n_estimators,
             max_depth=config.max_depth,
         )

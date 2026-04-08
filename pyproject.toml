@@ -27,6 +27,8 @@ dependencies = [
     "fastapi>=0.100",
     "uvicorn>=0.20",
     "httpx",
+    "great-expectations>=1.15.2",
+    "json-log-formatter>=1.1.1",
 ]
 requires-python = ">=3.10, <3.13"
 
@@ -36,6 +38,7 @@ dev = [
     "pytest-cov",
     "pyright>=1.1.350",
     "ruff>=0.1.0",
+    "pre-commit>=4.0",
     "jupyter==1.0.0",
     "ipykernel>=6.30.1",
     "pandas-stubs",
@@ -48,6 +51,11 @@ dev = [
 target-version = "py311"
 line-length = 120
 exclude = ["notebooks"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
+addopts = "--cov=src --cov-report=term-missing"
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "N", "W", "B", "SIM", "C4", "RUF"]

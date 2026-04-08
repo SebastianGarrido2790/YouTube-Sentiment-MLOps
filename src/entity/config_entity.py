@@ -21,6 +21,18 @@ class DataIngestionConfig(BaseModel):
     output_path: str = Field(description="Local path where the raw file will be saved.")
 
 
+class DataValidationConfig(BaseModel):
+    """
+    Configuration for data validation using Great Expectations.
+    """
+
+    model_config = ConfigDict(frozen=True, extra="forbid")
+
+    null_threshold_percent: float = Field(description="Max allowable percentage of null values.")
+    min_text_length: int = Field(description="Minimum expected length for text.")
+    max_text_length: int = Field(description="Maximum expected length for text.")
+
+
 class DataPreparationConfig(BaseModel):
     """
     Configuration for data splitting and cleaning.
@@ -192,6 +204,7 @@ class AppConfig(BaseModel):
     model_config = ConfigDict(frozen=True, extra="forbid")
 
     data_ingestion: DataIngestionConfig
+    data_validation: DataValidationConfig
     data_preparation: DataPreparationConfig
     feature_comparison: FeatureComparisonConfig
     feature_tuning: FeatureTuningConfig
