@@ -4,9 +4,6 @@ Inference utilities for sentiment analysis prediction services.
 Provides:
 - Model loading from MLflow Model Registry (with local fallback).
 - Derived feature engineering (e.g., lengths, lexicon ratios) for consistent preprocessing.
-
-Usage:
-    from src.api.inference_utils import load_production_model, build_derived_features
 """
 
 import json
@@ -22,12 +19,9 @@ from scipy.sparse import issparse
 from src.components.data_preparation import DataPreparation
 from src.components.feature_engineering import FeatureEngineering
 from src.constants import ADVANCED_DIR, EVAL_DIR, PROJECT_ROOT
-
-# --- Project Utilities ---
 from src.utils.logger import get_logger
 from src.utils.mlflow_config import get_mlflow_uri
 
-# --- Logging Setup ---
 logger = get_logger(__name__, headline="inference_utils.py")
 
 
@@ -75,7 +69,7 @@ def load_champion_model_name():
 # =====================================================================
 # Main Model Loading Utility
 # =====================================================================
-def load_production_model(alias_name: str = "Production") -> Any:
+def load_production_model(alias_name: str = "production") -> Any:
     """
     Loads the trained model object.
 
@@ -83,8 +77,8 @@ def load_production_model(alias_name: str = "Production") -> Any:
     1. If env var `PREFER_LOCAL_MODEL` is "true":
        - Try loading local DVC-tracked 'lightgbm_model.pkl' first.
        - If not found, fall back to MLflow Registry.
-    2. Default (Production):
-       - Try MLflow Registry ('@Production') first.
+    2. Default (production):
+       - Try MLflow Registry ('@production') first.
        - If fails/offline, fall back to local file.
 
     Returns:
@@ -110,7 +104,7 @@ def load_production_model(alias_name: str = "Production") -> Any:
         return model
 
     def _load_from_local():
-        logger.info(f"Attempting to load local model from: {local_model_path}")
+        logger.info(f"Attempting to load local model from: {local_model_path.relative_to(PROJECT_ROOT)}")
         if not local_model_path.exists():
             raise FileNotFoundError(f"Local model file not found at {local_model_path}")
 

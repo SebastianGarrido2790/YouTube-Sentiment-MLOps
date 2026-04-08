@@ -23,6 +23,7 @@ const errorEl = document.getElementById("error");
 const backendUrlEl = document.getElementById("backendUrl");
 const loadingTextEl = document.getElementById("loadingText");
 const videoIdEl = document.getElementById("videoId");
+const videoStatusEl = document.getElementById("video-status"); // Video status label
 
 // Settings elements
 const apiKeyInput = document.getElementById("apiKey");
@@ -105,7 +106,11 @@ async function getCommentsFromAPI(maxResults = 20) {
       const videoId = getVideoIdFromUrl(tab.url);
       if (!videoId) return reject("No video detected. Please open a YouTube video.");
 
-      if (videoIdEl) videoIdEl.textContent = videoId;
+      if (videoIdEl) {
+        videoIdEl.textContent = `(ID: ${videoId})`;
+        videoIdEl.style.display = "inline";
+      }
+      if (videoStatusEl) videoStatusEl.textContent = "Video detected";
 
       try {
         if (!currentApiKey) {
@@ -128,7 +133,7 @@ async function callABSAPredict(commentText, aspects) {
   const timeout = setTimeout(() => controller.abort(), 15000); // 15s timeout
 
   try {
-    const resp = await fetch(`${SENTIMENT_API_URL}/predict_absa`, {
+    const resp = await fetch(`${SENTIMENT_API_URL}/v1/predict_absa`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ text: commentText, aspects: aspects }),

@@ -25,6 +25,7 @@ const errorEl = document.getElementById("error");
 const backendUrlEl = document.getElementById("backendUrl");
 const loadingTextEl = document.getElementById("loadingText");
 const videoIdEl = document.getElementById("videoId");           // Video ID display
+const videoStatusEl = document.getElementById("video-status"); // Video status label
 
 // Settings elements
 const apiKeyInput = document.getElementById("apiKey");
@@ -125,7 +126,11 @@ async function getCommentsFromAPI(maxResults = 100) {
       if (!videoId) return reject("No video detected. Please open a YouTube video.");
 
       // Display Video ID
-      if (videoIdEl) videoIdEl.textContent = videoId;
+      if (videoIdEl) {
+        videoIdEl.textContent = `(ID: ${videoId})`;
+        videoIdEl.style.display = "inline";
+      }
+      if (videoStatusEl) videoStatusEl.textContent = "Video detected";
 
       try {
         if (!currentApiKey) {
@@ -148,7 +153,7 @@ async function callPredictWithTimestamps(commentsData) {
   const timeout = setTimeout(() => controller.abort(), 30000); // 30s timeout
 
   try {
-    const resp = await fetch(`${INSIGHTS_URL}/predict_with_timestamps`, {
+    const resp = await fetch(`${INSIGHTS_URL}/v1/predict_with_timestamps`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ comments: commentsData }),
@@ -169,7 +174,7 @@ async function callPredictWithTimestamps(commentsData) {
 }
 
 async function generateChart(sentimentCounts) {
-  const resp = await fetch(`${INSIGHTS_URL}/generate_chart`, {
+  const resp = await fetch(`${INSIGHTS_URL}/v1/generate_chart`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ sentiment_counts: sentimentCounts }),
@@ -179,7 +184,7 @@ async function generateChart(sentimentCounts) {
 }
 
 async function generateWordcloud(comments) {
-  const resp = await fetch(`${INSIGHTS_URL}/generate_wordcloud`, {
+  const resp = await fetch(`${INSIGHTS_URL}/v1/generate_wordcloud`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ comments }),
@@ -189,7 +194,7 @@ async function generateWordcloud(comments) {
 }
 
 async function generateTrendGraph(sentimentData) {
-  const resp = await fetch(`${INSIGHTS_URL}/generate_trend_graph`, {
+  const resp = await fetch(`${INSIGHTS_URL}/v1/generate_trend_graph`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ sentiment_data: sentimentData }),

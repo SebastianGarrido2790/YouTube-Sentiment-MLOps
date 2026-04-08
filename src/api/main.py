@@ -10,20 +10,21 @@ It loads all required models and artifacts at startup.
 
 Usage (local):
 Ensure MLflow server is running if loading from registry:
-    uv run python -m mlflow server --host 127.0.0.1 --port 5000
+        uv run python -m mlflow server --backend-store-uri sqlite:///mlflow_system.db \
+        --default-artifact-root ./mlruns_system --host 127.0.0.1 --port 5000
 Then run:
     uv run python -m src.api.main
 Or via Uvicorn:
-    uv run uvicorn src.api.main:app --reload --port 8000
+    uv run python -m uvicorn src.api.main:app --reload --port 8000
 
 Test with:
 1.  Sentiment Prediction:
-    curl -X POST "http://127.0.0.1:8000/predict" `
+    curl -X POST "http://127.0.0.1:8000/v1/predict" `
      -H "Content-Type: application/json" `
      -d '{"texts": ["I love this video! It was super helpful."]}'
 
 2.  Aspect-Based Sentiment:
-    curl -X POST "http://127.0.0.1:8000/predict_absa" `
+    curl -X POST "http://127.0.0.1:8000/v1/predict_absa" `
      -H "Content-Type: application/json" `
      -d '{ "text": "The video quality was amazing, but the presenter seemed bored.",
      "aspects": ["video quality", "presenter"] }'
@@ -46,8 +47,6 @@ from src.api.inference_utils import (
     safe_to_list,
 )
 from src.constants import FEATURES_DIR
-
-# --- Project Utilities ---
 from src.utils.logger import get_logger
 
 # Sentiment Mapping (assuming model outputs 0=Negative, 1=Neutral, 2=Positive)

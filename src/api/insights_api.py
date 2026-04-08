@@ -11,12 +11,7 @@ Extends the core prediction service with visualization endpoints:
 Usage:
     uv run python -m src.api.insights_api
 Or via Uvicorn:
-    uv run uvicorn src.api.insights_api:app --reload --port 8001
-
-Integrates project utilities for modularity:
-- Logging via src.utils.logger
-- MLflow config via src.utils.mlflow_config
-- Inference helpers via src.api.inference_utils
+    uv run python -m uvicorn src.api.insights_api:app --reload --port 8001
 
 Dependencies: Assumes NLTK data (stopwords, WordNet) is downloaded.
 
@@ -45,20 +40,15 @@ from fastapi.responses import StreamingResponse
 from nltk.corpus import stopwords
 from nltk.stem import WordNetLemmatizer
 from pydantic import BaseModel
-
-# ML/DL Imports
 from scipy.sparse import hstack
 from wordcloud import WordCloud
 
-# Inference Utilities
 from src.api.inference_utils import (
     build_derived_features,
     load_production_model,
     preprocess_text_inference,
 )
 from src.constants import FEATURES_DIR
-
-# Project Utilities
 from src.utils.logger import get_logger
 
 logger = get_logger(__name__, headline="insights_api.py")
