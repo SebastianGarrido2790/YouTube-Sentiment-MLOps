@@ -86,5 +86,3 @@ model_evaluation:
 
 register:
   f1_threshold: 0.75
-
-  

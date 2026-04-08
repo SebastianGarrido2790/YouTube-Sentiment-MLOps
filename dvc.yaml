@@ -247,9 +247,9 @@ stages:
       - artifacts/models/advanced/evaluation/logistic_baseline_test_metrics.json
       # - artifacts/models/advanced/evaluation/distilbert_test_metrics.json
       # Visualizations
-      - reports/figures/evaluation/lightgbm_confusion_matrix.png  
-      - reports/figures/evaluation/xgboost_confusion_matrix.png   
-      - reports/figures/evaluation/comparative_roc_curve.png     
+      - reports/figures/evaluation/lightgbm_confusion_matrix.png
+      - reports/figures/evaluation/xgboost_confusion_matrix.png
+      - reports/figures/evaluation/comparative_roc_curve.png
     params:
       - config/params.yaml:
         - model_evaluation.models
@@ -270,7 +270,3 @@ stages:
     params:
       - config/params.yaml:
         - register.f1_threshold
-    
-
-
-

@@ -18,7 +18,7 @@ stages:
     params:
       config/params.yaml:
         data_ingestion.output_path: data/raw/reddit_comments.csv
-        data_ingestion.url: 
+        data_ingestion.url:
           https://raw.githubusercontent.com/Himanshu-1703/reddit-sentiment-analysis/refs/heads/main/data/reddit.csv
     outs:
     - path: data/raw/reddit_comments.csv
@@ -502,7 +502,7 @@ stages:
       hash: md5
       md5: 4790b129b15dbba676c4bea8ddc75b29
       size: 90
-    - path: 
+    - path:
         artifacts/models/advanced/evaluation/logistic_baseline_test_metrics.json
       hash: md5
       md5: 2f153b83e1c1eb3c27bf9681f2112a7a
@@ -743,7 +743,7 @@ stages:
       hash: md5
       md5: 4790b129b15dbba676c4bea8ddc75b29
       size: 90
-    - path: 
+    - path:
         artifacts/models/advanced/evaluation/logistic_baseline_test_metrics.json
       hash: md5
       md5: 2f153b83e1c1eb3c27bf9681f2112a7a

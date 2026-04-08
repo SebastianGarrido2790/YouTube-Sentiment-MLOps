@@ -53,7 +53,7 @@ echo [3/4] Pillar 3: Pipeline Synchronization DVC...
 call uv run python -m dvc status
 if %ERRORLEVEL% NEQ 0 (
     echo.
-    echo      [!] WARNING: DVC status failed or remote is unreachable. 
+    echo      [!] WARNING: DVC status failed or remote is unreachable.
     echo          [Ensuring this is non-blocking for environment validation]
 )
 
