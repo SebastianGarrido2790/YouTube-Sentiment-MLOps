@@ -26,6 +26,7 @@ from pathlib import Path
 # Break circular dependency by defining LOGS_DIR locally
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 LOGS_DIR = PROJECT_ROOT / "logs"
+LOGS_DIR.mkdir(parents=True, exist_ok=True)
 LOG_FILE = LOGS_DIR / "running_logs.log"
 
 
