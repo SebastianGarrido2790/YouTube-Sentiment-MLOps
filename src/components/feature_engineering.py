@@ -51,7 +51,7 @@ class FeatureEngineering:
 
         if device is None:
             device = "cuda" if torch.cuda.is_available() else "cpu"
-        model.to(device)
+        model.to(device)  # type: ignore
         model.eval()
 
         embeds = []

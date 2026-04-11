@@ -36,7 +36,8 @@
         <input id="loadMore" type="checkbox" checked />
         Attempt to load more comments (scroll)
       </label>
-      <button id="analyzeBtn">Analyze Comments</button>
+      <button id="analyzeBtn">📊 Run Sentiment Analysis</button>
+      <button id="aiAnalyzeBtn" class="ai-btn">🧠 Get AI Analysis</button>
     </section>
 
     <!-- ======================= -->
@@ -97,6 +98,53 @@
 
       <!-- Raw JSON Preview (Hidden) -->
       <pre id="rawPreview" class="raw-preview hidden"></pre>
+    </section>
+
+    <!-- ======================= -->
+    <!-- AI ANALYST REPORT SECTION -->
+    <!-- ======================= -->
+    <section id="ai-report" class="hidden ai-report-section">
+      <div class="ai-report-header">
+        <span class="ai-badge">🧠 AI Analyst</span>
+        <h4 id="ai-report-title">Content Intelligence Report</h4>
+        <span id="ai-confidence-badge" class="confidence-badge"></span>
+      </div>
+
+      <div class="ai-quality-gate" id="ai-quality-gate"></div>
+
+      <div class="ai-sentiment-pills" id="ai-sentiment-pills"></div>
+
+      <div class="ai-block">
+        <h5>Executive Summary</h5>
+        <p id="ai-executive-summary"></p>
+      </div>
+
+      <div class="ai-block">
+        <h5>Key Insights</h5>
+        <ul id="ai-key-insights" class="ai-insights-list"></ul>
+      </div>
+
+      <div class="ai-block ai-recommendation-block">
+        <h5>Strategic Recommendation</h5>
+        <p id="ai-recommendation"></p>
+      </div>
+
+      <div class="ai-meta">
+        <small>Model: <span id="ai-model-version"></span></small>
+      </div>
+    </section>
+
+    <!-- ======================= -->
+    <!-- AI LOADING STATE -->
+    <!-- ======================= -->
+    <section id="ai-loading" class="hidden">
+      <div class="ai-loading-content">
+        <div class="ai-spinner"></div>
+        <div class="ai-loading-text">
+          <strong>🧠 Analyst is thinking...</strong>
+          <small>Fetching comments → Validating data → Running ML model → Synthesizing report</small>
+        </div>
+      </div>
     </section>
 
     <!-- ======================= -->

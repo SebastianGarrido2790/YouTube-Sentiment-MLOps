@@ -355,3 +355,154 @@ analyzeBtn.addEventListener("click", async () => {
     hideLoading();
   }
 });
+
+// ========================
+// AI ANALYST INTEGRATION
+// ========================
+const INFERENCE_URL = "http://127.0.0.1:8000";
+const aiAnalyzeBtn = document.getElementById("aiAnalyzeBtn");
+const aiReportEl = document.getElementById("ai-report");
+const aiLoadingEl = document.getElementById("ai-loading");
+
+/**
+ * Shows the AI loading state, hiding other sections.
+ */
+function showAiLoading() {
+  aiLoadingEl.classList.remove("hidden");
+  aiReportEl.classList.add("hidden");
+  errorEl.classList.add("hidden");
+  if (aiAnalyzeBtn) aiAnalyzeBtn.disabled = true;
+}
+
+/**
+ * Hides the AI loading state.
+ */
+function hideAiLoading() {
+  aiLoadingEl.classList.add("hidden");
+  if (aiAnalyzeBtn) aiAnalyzeBtn.disabled = false;
+}
+
+/**
+ * Renders an AnalystReport JSON object into the AI report section.
+ * @param {Object} report - AnalystReport from POST /v1/agent/analyze
+ */
+function renderAnalystReport(report) {
+  const titleEl = document.getElementById("ai-report-title");
+  const confidenceBadge = document.getElementById("ai-confidence-badge");
+  const qualityGateEl = document.getElementById("ai-quality-gate");
+  const pillsEl = document.getElementById("ai-sentiment-pills");
+  const summaryEl = document.getElementById("ai-executive-summary");
+  const insightsEl = document.getElementById("ai-key-insights");
+  const recommendationEl = document.getElementById("ai-recommendation");
+  const modelVersionEl = document.getElementById("ai-model-version");
+
+  // Title
+  if (titleEl) titleEl.textContent = report.video_title || "Content Intelligence Report";
+
+  // Confidence badge
+  if (confidenceBadge) {
+    const pct = Math.round((report.confidence_score || 0) * 100);
+    const color = pct >= 70 ? "#10b981" : pct >= 40 ? "#f59e0b" : "#ef4444";
+    confidenceBadge.textContent = `${pct}% confidence`;
+    confidenceBadge.style.background = `${color}22`;
+    confidenceBadge.style.color = color;
+    confidenceBadge.style.border = `1px solid ${color}44`;
+  }
+
+  // Data quality gate
+  if (qualityGateEl) {
+    const passed = report.data_quality_passed;
+    qualityGateEl.textContent = passed ? "✅ Data quality gate passed" : "⚠️ Data quality issues detected";
+    qualityGateEl.style.color = passed ? "#10b981" : "#f59e0b";
+  }
+
+  // Sentiment pills
+  if (pillsEl && report.sentiment_breakdown) {
+    const bd = report.sentiment_breakdown;
+    const pills = [
+      { label: "Positive", pct: bd.positive_pct, color: "#10b981" },
+      { label: "Neutral", pct: bd.neutral_pct, color: "#9ca3af" },
+      { label: "Negative", pct: bd.negative_pct, color: "#ef4444" },
+    ];
+    pillsEl.innerHTML = pills
+      .map(p => `
+        <span class="sentiment-pill" style="background:${p.color}22; color:${p.color}; border:1px solid ${p.color}44;">
+          ${p.label} ${Math.round(p.pct * 100)}%
+        </span>
+      `)
+      .join("");
+  }
+
+  // Executive summary
+  if (summaryEl) summaryEl.textContent = report.executive_summary || "";
+
+  // Key insights
+  if (insightsEl) {
+    insightsEl.innerHTML = (report.key_insights || [])
+      .map(insight => `<li>${insight}</li>`)
+      .join("");
+  }
+
+  // Strategic recommendation
+  if (recommendationEl) recommendationEl.textContent = report.strategic_recommendation || "";
+
+  // Model version
+  if (modelVersionEl) modelVersionEl.textContent = report.model_version || "unknown";
+
+  // Show the section
+  aiReportEl.classList.remove("hidden");
+}
+
+/**
+ * Main handler for the "Get AI Analysis" button.
+ * Calls POST /v1/agent/analyze on the Inference API with the current video URL.
+ */
+aiAnalyzeBtn && aiAnalyzeBtn.addEventListener("click", async () => {
+  showAiLoading();
+
+  try {
+    // Get the current tab URL
+    const tabs = await new Promise(resolve =>
+      chrome.tabs.query({ active: true, currentWindow: true }, resolve)
+    );
+    const tab = tabs && tabs[0];
+    if (!tab || !tab.url) throw new Error("No active tab detected.");
+
+    const videoUrl = tab.url;
+    if (!videoUrl.includes("youtube.com/watch")) {
+      throw new Error("Please open a YouTube video page before running AI Analysis.");
+    }
+
+    const maxComments = Math.min(500, Math.max(10, Number(numCommentsInput.value) || 100));
+
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 90000); // 90s for agentic workflow
+
+    const resp = await fetch(`${INFERENCE_URL}/v1/agent/analyze`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ video_url: videoUrl, max_comments: maxComments }),
+      signal: controller.signal,
+    });
+
+    clearTimeout(timeout);
+
+    if (!resp.ok) {
+      const errText = await resp.text();
+      throw new Error(`Agent API error (${resp.status}): ${errText}`);
+    }
+
+    const report = await resp.json();
+    renderAnalystReport(report);
+
+  } catch (err) {
+    if (err.name === "AbortError") {
+      showError("AI Analysis timed out (90s). The agent may still be processing — try again.");
+    } else {
+      console.error("[AI Analyst] Error:", err);
+      showError(err.message || String(err));
+    }
+  } finally {
+    hideAiLoading();
+  }
+});

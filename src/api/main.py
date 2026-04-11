@@ -15,7 +15,7 @@ Ensure MLflow server is running if loading from registry:
 Then run:
     uv run python -m src.api.main
 Or via Uvicorn:
-    uv run python -m uvicorn src.api.main:app --reload --port 8000
+    uv run python -m uvicorn src.api.main:app --host 127.0.0.1 --port 8000 --reload
 
 Test with:
 1.  Sentiment Prediction:
@@ -40,6 +40,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from scipy.sparse import hstack
 
+from src.api.agent_api import agent_router
 from src.api.inference_utils import (
     build_derived_features,
     load_production_model,
@@ -213,6 +214,7 @@ def predict_absa(data: ABSAPredictRequest):
         raise HTTPException(status_code=500, detail=str(e)) from e
 
 
+v1_router.include_router(agent_router)
 app.include_router(v1_router)
 
 

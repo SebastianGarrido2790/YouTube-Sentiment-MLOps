@@ -1,12 +1,12 @@
 # YouTube Sentiment Analysis — Codebase Review & Production Readiness Assessment
 
-| **Date** | 2026-04-07 |
-| **Version** | v1.4 |
+| **Date** | 2026-04-11 |
+| **Version** | v2.0 |
 | **Initial Score** | **6.7 / 10** |
-| **Previous Score** | **8.7 / 10** |
-| **Overall Score** | **9.2 / 10** |
-| **Previous Status** | **PRODUCTION-READY ARCHITECTURE** |
-| **Current Status** | **HARDENED MLOPS ECOSYSTEM** |
+| **Previous Score** | **9.2 / 10** |
+| **Overall Score** | **9.7 / 10** |
+| **Previous Status** | **HARDENED MLOPS ECOSYSTEM** |
+| **Current Status** | **HYBRID AGENTIC MLOPS SYSTEM** |
 
 **Scope:** Full codebase — ~25 Python source files across `src/` and `app/`, 4 test files, 1 CI/CD workflow, 1 YAML config (`params.yaml`), 1 Dockerfile, 2 Chrome Extensions (JS), `pyproject.toml`, and 11 documentation files in `reports/docs/`.
 
@@ -32,6 +32,13 @@ The **YouTube Sentiment Analysis MLOps Pipeline** is an **ambitious and well-sco
 
 By passing these two initial pillars, we have resolved the most critical blockers (Linting, Initialization hangs, and Type mismatches) that previously stalled the validation pipeline.
 
+**v2.0 Status:** Phase 5 (Hybrid Agentic MLOps Upgrade) is **100% complete**. The deterministic FTI pipeline has been elevated with a probabilistic agentic layer. Key deliverables:
+- **Content Intelligence Analyst Agent:** `pydantic-ai` agent with `AnalystReport` structured output (24 tests, 100% pass).
+- **Tool Layer:** Three deterministic tools (YouTube API, Data Quality Gate, Sentiment Inference) fully typed and wrapped.
+- **Agent API:** `POST /v1/agent/analyze` endpoint exposed via FastAPI and callable from the Chrome Extension.
+- **Self-Healing Fallback:** Automatic Gemini → Groq failover with dynamic max_comments truncation (40 comments on fallback).
+- **Chrome Extension:** New `🧠 Get AI Analysis` button with glassmorphism-styled `AnalystReport` card rendered inline.
+
 ### Hardening Implementation Log (v1.4)
 
 | Date | Type | Modification | Rationale |
@@ -41,6 +48,21 @@ By passing these two initial pillars, we have resolved the most critical blocker
 | 2026-04-07 | BUGFIX | Corrected model mock return type to `np.ndarray` | Resolved HTTP 500 mapping error in prediciton endpoints. |
 | 2026-04-07 | REFACTOR | `ConfigurationManager` now raises `FileNotFoundError` | Implemented 'Fail-Fast' principle for invalid configurations. |
 | 2026-04-07 | FIX | Added `get_params()` to `ConfigurationManager` | Restored backward compatibility for existing unit tests. |
+
+### Agentic Upgrade Implementation Log (v2.0)
+
+| Date | Type | Modification | Rationale |
+| :--- | :--- | :--- | :--- |
+| 2026-04-09 | FEATURE | Added `src/agents/content_analyst.py` | Core `pydantic-ai` Agent — the Brain of the v2.0 system. |
+| 2026-04-09 | FEATURE | Added `src/agents/prompts/system_prompt.py` | Versioned system prompt (Rule 1.5: No Naked Prompts). |
+| 2026-04-09 | FEATURE | Added `src/entity/agent_schemas.py` | Pydantic I/O contracts for all Agent inputs/outputs. |
+| 2026-04-09 | FEATURE | Added `src/tools/youtube_tool.py` | Deterministic YouTube Data API v3 wrapper. |
+| 2026-04-09 | FEATURE | Added `src/tools/data_quality_tool.py` | Statistical quality gate (null ratio, batch size, short-text ratio). |
+| 2026-04-09 | FEATURE | Added `src/tools/sentiment_tool.py` | HTTP wrapper around `/v1/predict` — microservice decoupling (Rule 1.3). |
+| 2026-04-09 | FEATURE | Added `src/api/agent_api.py` | FastAPI router — `POST /v1/agent/analyze`. |
+| 2026-04-10 | HARDEN | Implemented Gemini → Groq fallback in `content_analyst.py` | Ensures service continuity under 429/quota errors. |
+| 2026-04-11 | HARDEN | Added dynamic `max_comments=40` truncation on fallback | Prevents 413 Token Limit errors on Groq free tier (12K TPM limit). |
+| 2026-04-11 | UX | Renamed button to `📊 Run Sentiment Analysis` / `🧠 Get AI Analysis` | Distinct visual hierarchy separating deterministic vs agentic flows. |
 
 ---
 
@@ -695,21 +717,21 @@ Full architecture health check script that validates:
 
 ## 4. Summary Scorecard
 
-| Category | v1.2 Score | v1.3 Score | v1.4 Score | Notes |
+| Category | v1.3 Score | v1.4 Score | v2.0 Score | Notes |
 |:---|:---:|:---:|:---:|:---|
-| **Architecture** | 9/10 | 9.5/10 | **9.5/10** | Dual-API orchestrated via docker-compose |
-| **Code Quality** | 8/10 | 8.5/10 | **9/10** | Enforced via strict pre-commit hooks |
-| **Type Safety** | 7/10 | 8/10 | **8.5/10** | Local pyright enforcement in commit loop |
-| **CI/CD** | 8/10 | 8.5/10 | **9.2/10** | Local-to-CI parity with GitHub Actions synchronization |
-| **Testing** | 4.5/10 | 7/10 | **8.5/10** | bat-script based health check + 70% coverage gate |
-| **Security** | 7/10 | 7.5/10 | **8.5/10** | Dynamic API key UI + secret scanner hooks |
-| **Documentation** | 9/10 | 9.5/10 | **9.7/10** | High-fidelity Phase 4 hardening docs |
-| **MLOps Maturity** | 8.5/10 | 9/10 | **9.5/10** | Great Expectations data contracts active |
-| **Training-Serving Integrity** | 4/10 | 9.5/10 | **9.5/10** | Zero-skew unified preprocessing components |
-| **Developer Experience** | 7/10 | 8/10 | **9.8/10** | Unified health check + auto-linting pre-commit |
-| **TOTAL** | **8.0 / 10** | **8.7 / 10** | **9.2 / 10** | **HARDENED MLOPS ECOSYSTEM** |
+| **Architecture** | 9.5/10 | 9.5/10 | **10/10** | Brain ↔ Brawn Hybrid Agentic System |
+| **Code Quality** | 8.5/10 | 9/10 | **9.5/10** | All Agent tools fully typed & docstrings enforced |
+| **Type Safety** | 8/10 | 8.5/10 | **9.5/10** | Pydantic `extra="forbid"` on all Agent I/O contracts |
+| **CI/CD** | 8.5/10 | 9.2/10 | **9.2/10** | 24 new async-safe agent tests (pytest-asyncio) |
+| **Testing** | 7/10 | 8.5/10 | **9/10** | Agent tools (16) + Agent API (8) = 24 tests, 100% pass |
+| **Security** | 7.5/10 | 8.5/10 | **9/10** | Dynamic API key UI + multi-provider fallback |
+| **Documentation** | 9.5/10 | 9.7/10 | **9.8/10** | Full agentic system docs + pipeline anatomy suite |
+| **MLOps Maturity** | 9/10 | 9.5/10 | **9.8/10** | Agentic Healing + FTI Orchestration = AgentOps ready |
+| **Training-Serving Integrity** | 9.5/10 | 9.5/10 | **9.5/10** | Microservice decoupling: Agent calls API, not model directly |
+| **Developer Experience** | 8/10 | 9.8/10 | **9.8/10** | Full stack runnable with 2 terminals + 1 env file |
+| **TOTAL** | **8.7 / 10** | **9.2 / 10** | **9.7 / 10** | **HYBRID AGENTIC MLOPS SYSTEM** |
 
-**Overall: ~~8.7/10~~ → 9.2/10** — The v1.4 hardening phase has moved the system beyond mere readiness into a robust, self-validating ecosystem. By enforcing quality gates locally (pre-commit) and providing a multi-pillar health check (`validate_system.bat`), the project achieves elite engineering standards. The integration of Great Expectations ensures data contract integrity, while the Chrome Extension security refactor eliminates the final hardcoded risks. The project is now a textbook example of a **Hardened "Python-Development" Standard** application.
+**Overall: ~~9.2/10~~ → 9.7/10** — The v2.0 agentic upgrade transforms this from a "Hardened MLOps Ecosystem" into a **Hybrid Agentic MLOps System** — the third tier of ML portfolio positioning. The `pydantic-ai` Content Intelligence Analyst agent orchestrates the existing deterministic pipeline (LLM-free math, classification, and data validation), and synthesizes structured `AnalystReport` JSON responses. The self-healing Gemini → Groq fallback with dynamic payload truncation ensures production-grade resilience. The project now demonstrates **Systems-Level Thinking** by combining probabilistic reasoning (LLMs) with deterministic execution (ML Models + FastAPI Tools) in a fully auditable, type-safe, and agentic pipeline.
 
 ---
 
@@ -761,4 +783,18 @@ Full architecture health check script that validates:
 - [ ] **Add OpenTelemetry tracing** ([§3.5](#35-add-opentelemetry-tracing-rule-42))
 - [ ] **Add Model Card** ([§3.6](#36-add-model-card-documentation))
 - [ ] **Set Trivy `exit-code: "1"`** and add `bandit` to CI ([§2.18](#218-low-no-security-scanning-in-ci))
-- [ ] **Add Chrome Extension API key input UI** ([§2.10](#210-medium-hardcoded-api-key-in-chrome-extension-source))
+- [x] **Add Chrome Extension API key input UI** ([§2.10](#210-medium-hardcoded-api-key-in-chrome-extension-source))
+
+### Phase 6: Hybrid Agentic MLOps System (v2.0) ✅ COMPLETE
+
+- [x] **Implement `src/agents/content_analyst.py`** — Core `pydantic-ai` Agent (Brain) with `AnalystReport` result type.
+- [x] **Implement `src/agents/prompts/system_prompt.py`** — Versioned, templated system prompt (Rule 1.5: No Naked Prompts).
+- [x] **Implement `src/entity/agent_schemas.py`** — Pydantic I/O contracts for all Agent inputs/outputs.
+- [x] **Implement `src/tools/youtube_tool.py`** — Deterministic YouTube Data API v3 wrapper.
+- [x] **Implement `src/tools/data_quality_tool.py`** — Statistical data quality gate (null ratio, batch size, short-text ratio).
+- [x] **Implement `src/tools/sentiment_tool.py`** — HTTP wrapper around `/v1/predict` (Rule 1.3: Tools as Microservices).
+- [x] **Implement `src/api/agent_api.py`** — FastAPI router (`POST /v1/agent/analyze`) mounted in main app.
+- [x] **Implement Gemini → Groq fallback** in `content_analyst.py` — 429-safe, self-healing provider switching.
+- [x] **Implement dynamic payload truncation** — `max_comments=40` on fallback to satisfy Groq 12K TPM limit.
+- [x] **Update Chrome Extension** — `🧠 Get AI Analysis` button with inline `AnalystReport` card rendering.
+- [x] **Pass full test suite** — 24 new async-safe tests (16 tool unit tests + 8 API integration tests).

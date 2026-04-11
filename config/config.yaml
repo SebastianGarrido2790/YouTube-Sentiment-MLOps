@@ -31,3 +31,8 @@ ops:
   logs_dir: logs
   mlruns_dir: mlruns
   gx_dir: artifacts/gx
+
+agent:
+  inference_api_url: http://127.0.0.1:8000
+  insights_api_url: http://127.0.0.1:8001
+  tool_timeout_seconds: 30

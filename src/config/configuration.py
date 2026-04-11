@@ -12,6 +12,7 @@ import yaml
 
 from src.constants import CONFIG_FILE_PATH, PARAMS_FILE_PATH, SCHEMA_FILE_PATH
 from src.entity.config_entity import (
+    AgentConfig,
     AppConfig,
     DataIngestionConfig,
     DataPreparationConfig,
@@ -172,3 +173,26 @@ class ConfigurationManager:
         if not self.config:
             raise RuntimeError("App Config not loaded.")
         return self.config.register_config
+
+    def get_agent_config(self) -> AgentConfig:
+        """
+        Returns the Content Intelligence Analyst Agent configuration.
+        Merges tunable parameters from params.yaml with infrastructure from config.yaml.
+        """
+        if not self.system:
+            raise RuntimeError("System configuration not loaded.")
+        if not self.config:
+            raise RuntimeError("App configuration not loaded.")
+
+        params = self.config.agent
+        infra = self.system.agent
+
+        return AgentConfig(
+            model_name=params.model_name,
+            max_comments=params.max_comments,
+            fallback_enabled=params.fallback_enabled,
+            fallback_model_name=params.fallback_model_name,
+            inference_api_url=infra.inference_api_url,
+            insights_api_url=infra.insights_api_url,
+            tool_timeout_seconds=infra.tool_timeout_seconds,
+        )

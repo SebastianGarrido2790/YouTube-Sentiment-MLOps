@@ -81,6 +81,12 @@ def mock_params_yaml(tmp_path: Path) -> str:
         },
         "model_evaluation": {"models": ["logistic_baseline"]},
         "register": {"f1_threshold": 0.5},
+        "agent": {
+            "model_name": "google-gla:gemini-2.0-flash-lite",
+            "max_comments": 100,
+            "fallback_enabled": True,
+            "fallback_model_name": "groq:llama-3.1-8b-instant",
+        },
     }
 
     p = tmp_path / "params.yaml"
@@ -123,6 +129,11 @@ def mock_config_yaml(tmp_path: Path) -> str:
             "logs_dir": "logs",
             "mlruns_dir": "mlruns",
             "gx_dir": "gx",
+        },
+        "agent": {
+            "inference_api_url": "http://localhost:8000",
+            "insights_api_url": "http://localhost:8080",
+            "tool_timeout_seconds": 10,
         },
     }
 

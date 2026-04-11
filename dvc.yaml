@@ -46,11 +46,11 @@ stages:
 
   # Transient processing stage for feature comparison (no outs)
   feature_comparison:
-    cmd: python -m src.tools.feature_comparison
+    cmd: python -m src.tools.dvc.feature_comparison
     deps:
       - artifacts/data/processed/train.parquet
       - artifacts/data/processed/val.parquet
-      - src/tools/feature_comparison.py
+      - src/tools/dvc/feature_comparison.py
       - src/utils/logger.py
       - src/utils/feature_utils.py
     params:
@@ -63,11 +63,11 @@ stages:
         - feature_comparison.max_depth
 
   feature_tuning:
-    cmd: python -m src.tools.feature_tuning
+    cmd: python -m src.tools.dvc.feature_tuning
     deps:
       - artifacts/data/processed/train.parquet
       - artifacts/data/processed/val.parquet
-      - src/tools/feature_tuning.py
+      - src/tools/dvc/feature_tuning.py
       - src/utils/logger.py
       - src/constants/__init__.py
       - src/utils/feature_utils.py
@@ -81,11 +81,11 @@ stages:
       - reports/figures/tfidf_max_features/
 
   imbalance_tuning:
-    cmd: python -m src.tools.imbalance_tuning
+    cmd: python -m src.tools.dvc.imbalance_tuning
     deps:
     - artifacts/data/processed/train.parquet
     - artifacts/data/processed/val.parquet
-    - src/tools/imbalance_tuning.py
+    - src/tools/dvc/imbalance_tuning.py
     - src/utils/logger.py
     - src/constants/__init__.py
     - src/utils/feature_utils.py

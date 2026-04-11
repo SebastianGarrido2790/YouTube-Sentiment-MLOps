@@ -213,6 +213,7 @@ class AppConfig(BaseModel):
     train: TrainConfig
     model_evaluation: ModelEvaluationConfig
     register_config: RegisterConfig = Field(alias="register")
+    agent: "AgentParamsConfig"
 
 
 class DataPathsConfig(BaseModel):
@@ -226,7 +227,7 @@ class DataPathsConfig(BaseModel):
     val_path: str
 
 
-class ModelsPathsConfig(BaseModel):
+class ModelPathsConfig(BaseModel):
     model_config = ConfigDict(frozen=True, extra="forbid")
     root_dir: str
     baseline_dir: str
@@ -235,7 +236,7 @@ class ModelsPathsConfig(BaseModel):
     evaluation_dir: str
 
 
-class ReportsPathsConfig(BaseModel):
+class ReportPathsConfig(BaseModel):
     model_config = ConfigDict(frozen=True, extra="forbid")
     root_dir: str
     figures_dir: str
@@ -252,15 +253,55 @@ class OpsPathsConfig(BaseModel):
     gx_dir: str
 
 
-class SystemConfig(BaseModel):
-    """System Paths configuration (config.yaml)."""
+class AgentParamsConfig(BaseModel):
+    """Tunable hyperparameters for the Agent (params.yaml)."""
 
     model_config = ConfigDict(frozen=True, extra="forbid")
+
+    model_name: str = Field(description="Primary model identifier.")
+    max_comments: int = Field(default=200, ge=10, le=500)
+    fallback_enabled: bool = True
+    fallback_model_name: str = Field(description="Secondary model if 429 occurs.")
+
+
+class AgentInfraConfig(BaseModel):
+    """Infrastructure configuration for the Agent (config.yaml)."""
+
+    model_config = ConfigDict(frozen=True, extra="forbid")
+
+    inference_api_url: str = Field(description="Base URL for the Inference API.")
+    insights_api_url: str = Field(description="Base URL for the Insights API.")
+    tool_timeout_seconds: int = Field(default=30, ge=5)
+
+
+class AgentConfig(BaseModel):
+    """Consolidated configuration for the Agent (merged)."""
+
+    model_config = ConfigDict(frozen=True, extra="forbid")
+
+    # Tunable (from params.yaml)
+    model_name: str
+    max_comments: int
+    fallback_enabled: bool
+    fallback_model_name: str
+
+    # Infrastructure (from config.yaml)
+    inference_api_url: str
+    insights_api_url: str
+    tool_timeout_seconds: int
+
+
+class SystemConfig(BaseModel):
+    """System-level configuration (config.yaml)."""
+
+    model_config = ConfigDict(frozen=True, extra="forbid")
+
     artifacts_root: str
     data: DataPathsConfig
-    models: ModelsPathsConfig
-    reports: ReportsPathsConfig
+    models: ModelPathsConfig
+    reports: ReportPathsConfig
     ops: OpsPathsConfig
+    agent: AgentInfraConfig
 
 
 class SchemaConfig(BaseModel):
