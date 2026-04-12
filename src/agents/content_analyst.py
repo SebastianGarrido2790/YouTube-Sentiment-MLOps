@@ -10,9 +10,8 @@ Hybrid Agentic MLOps workflow. It embodies the Separation of Concerns:
 Architecture Decision:
     pydantic-ai was chosen over LangChain/LangGraph for this implementation
     because it provides first-class Pydantic v2 integration, strict type safety
-    compatible with pyright strict mode, and a clean API that aligns with the
-    "Python-Development Standard". The Agent's result type is `AnalystReport`,
-    enforcing structured output at the framework level.
+    compatible with pyright strict mode, and a clean API. The Agent's result type is
+    `AnalystReport`, enforcing structured output at the framework level.
 
     The LLM (Gemini Flash) is responsible ONLY for:
     1. Orchestrating the tool call sequence.
