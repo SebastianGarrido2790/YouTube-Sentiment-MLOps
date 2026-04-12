@@ -81,7 +81,7 @@ Executes the dataset transformations:
 - **Stratified Partitioning:** Uses `sklearn.model_selection.train_test_split` twice to achieve specific $Train/Val/Test$ ratios while maintaining class balance.
 - **Parquet Pipeline:** Converts Pandas DataFrames to the columnar Parquet format, ensuring zero type-loss between stages.
 
-### C. AgentOps Monitoring (Rule 2.7)
+### C. AgentOps Monitoring
 When orchestrated via FastAPI, the stage provides:
 - **Success Rate Tracking:** Logged upon successful creation of all three Parquet splits.
 - **Data Distribution Telemetry:** Original vs. Encoded label distributions are captured in logs for auditing.

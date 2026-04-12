@@ -112,7 +112,7 @@ imbalance_tuning:
 
 ## 5. MLOps Design Principles
 
-1.  **Leakage Prevention (Rule 2.1):**
+1.  **Leakage Prevention:**
     Resampling is strictly applied **only to the training set**. The validation set remains natively imbalanced, reflecting the true distribution the model will encounter in production.
 
 2.  **Isolated Optimization:**

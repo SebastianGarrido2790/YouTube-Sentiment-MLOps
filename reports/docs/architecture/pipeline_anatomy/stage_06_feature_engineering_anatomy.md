@@ -106,7 +106,7 @@ Tracks the processed splits and the production configuration.
 
 ## 5. MLOps Best Practices
 
-1.  **Deterministic Mapping (Rule 1.14):**
+1.  **Deterministic Mapping:**
     The `LabelEncoder` is fit on the training data and saved. This guarantees that `positive` always maps to `2` (or the equivalent integer) consistently from training through to the FastAPI inference endpoint.
 
 2.  **No Training-Serving Skew:**

@@ -141,7 +141,7 @@ stages = [
 
 ### 3.4 Agentic Healing — Retry Logic
 
-Each stage is wrapped in a **retry loop with exponential backoff simulation** (Rule 2.7 — Agentic Healing):
+Each stage is wrapped in a **retry loop with exponential backoff simulation**:
 
 ```
 For each stage:
@@ -359,7 +359,7 @@ This is a deliberate architectural decision, not redundancy.
 **`main.py` (Orchestrator Microservice) is the source of truth for:**
 - Development UX — a single HTTP call triggers the pipeline instead of CLI chaining
 - AgentOps telemetry — real-time metrics that DVC cannot natively expose
-- Agentic integration — future AI agents call `/v1/train` to trigger retraining autonomously (Rule 1.3, Rule 1.14)
+- Agentic integration — future AI agents call `/v1/train` to trigger retraining autonomously
 - Async execution — pipeline runs in the background; caller is not blocked
 - Failure auditing — enriched `CustomExceptionError` metadata for self-healing diagnostics
 

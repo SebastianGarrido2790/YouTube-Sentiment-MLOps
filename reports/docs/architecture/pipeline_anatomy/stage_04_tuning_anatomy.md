@@ -107,7 +107,7 @@ feature_tuning:
 
 ## 5. MLOps Design Principles
 
-1.  **Iterative Refinement (Rule 2.1):**
+1.  **Iterative Refinement:**
     By freezing the `best_ngram_range`, this stage follows the scientific method of isolating a single variable (`max_features`) for optimization, reducing noise in the results.
 
 2.  **Scalability Analysis:**

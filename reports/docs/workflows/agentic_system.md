@@ -10,8 +10,6 @@
 
 The codebase is already at **elite production quality** (9.2/10). The infrastructure — deterministic DVC pipeline, dual FastAPI services, Great Expectations data contracts, MLflow model registry — is precisely the "hands" that an Agentic Brain needs to orchestrate. The FTI architecture is not just compatible with an agentic overlay; it was *designed for it*. The question is not *whether* to add an agentic layer — it is **which agentic pattern to implement and how to wire it to the existing deterministic infrastructure**.
 
-This is a high-leverage move. Adding an agent on top of a fragile pipeline creates chaos. Adding an agent on top of **your** pipeline creates a showcase system.
-
 ---
 
 ## 1. Why Now & Why This Project
@@ -26,11 +24,11 @@ Most ML portfolio projects fall into two anti-patterns:
 | MLOps pipeline with DVC + MLflow | "Strong engineer, but executes manually" |
 | **Hybrid Agentic MLOps System** | **"Thinks in systems, builds autonomously operating pipelines"** |
 
-Your current 9.2/10 project demonstrates the second tier. The agentic layer is the leap to the third tier — and it reflects the *actual direction the industry is moving*.
+The current 9.2/10 project demonstrates the second tier. The agentic layer is the leap to the third tier — and it reflects the *actual direction the industry is moving*.
 
-### 1.2 Strategic Fit With Your Codebase
+### 1.2 Strategic Fit With The Codebase
 
-Your existing architecture already provides **all the deterministic tools the Agent needs:**
+The existing architecture already provides **all the deterministic tools the Agent needs:**
 
 ```
 Existing Asset                         → Becomes Agent Tool
@@ -44,7 +42,7 @@ YouTube Data API v3 (ingestion)      → Live Data Fetching Tool
 Chrome Extension (UI layer)          → Human-in-the-Loop Interface
 ```
 
-You are not adding complexity. You are adding **intelligence** that *directs* the pipeline that already exists.
+The agent is not adding complexity. It is adding **intelligence** that *directs* the pipeline that already exists.
 
 ---
 
@@ -52,7 +50,7 @@ You are not adding complexity. You are adding **intelligence** that *directs* th
 
 ### 2.1 The Business Narrative
 
-> *"A content creator or brand manager enters a YouTube video URL. Instead of receiving a raw pie chart of sentiment percentages, they receive a fully curated analyst report: 'Your last 3 videos show a 22% decline in positive sentiment, concentrated in comments about video pacing. Your audience responds best to hands-on tutorials. Competitors in your niche are gaining ground on "beginner-friendly" positioning. Recommended action: A/B test a 10-minute format for your next 3 uploads.'"*
+> *"A content creator or brand manager enters a YouTube video URL. Instead of receiving a raw pie chart of sentiment percentages, they receive a fully curated analyst report: 'The last 3 videos show a 22% decline in positive sentiment, concentrated in comments about video pacing. The audience responds best to hands-on tutorials. Competitors in the niche are gaining ground on "beginner-friendly" positioning. Recommended action: A/B test a 10-minute format for the next 3 uploads.'"*
 
 This is the **qualitative synthesis layer** that: (a) no pure ML pipeline can produce, (b) directly maps to ROI for any content creator or brand.
 
@@ -120,7 +118,7 @@ src/
 │   ├── content_analyst.py           # Core pydantic-ai agent definition
 │   └── prompts/
 │       ├── __init__.py
-│       └── system_prompt.py         # Versioned, templated system prompts (Rule 1.5)
+│       └── system_prompt.py         # Versioned, templated system prompts
 │
 ├── tools/                           # RENAMED/EXTENDED: Deterministic Hands
 │   ├── __init__.py
@@ -139,7 +137,7 @@ src/
     └── agent_api.py                 # NEW: FastAPI endpoint exposing the Agent
 ```
 
-### 3.2 The Agent's Data Contracts (Rule 1.4)
+### 3.2 The Agent's Data Contract
 
 ```python
 # src/entity/agent_schemas.py
@@ -168,7 +166,7 @@ class AnalystReport(BaseModel):
     model_version: str
 ```
 
-### 3.3 Tool Design (Rule 1.3 — Tools as Microservices)
+### 3.3 Tool Design as Microservices
 
 All tools are **deterministic, typed wrappers** that the Agent calls. The LLM never does math.
 
@@ -220,7 +218,7 @@ No structural change to the extension is required — only an additional API cal
 
 ---
 
-## 5. Proposed Changes
+## 5. Needed Changes
 
 ### Phase A: Foundation
 
@@ -229,7 +227,7 @@ No structural change to the extension is required — only an additional API cal
 The core `pydantic-ai` Agent with tool registration and result type set to `AnalystReport`.
 
 #### [NEW] `src/agents/prompts/system_prompt.py`
-Versioned, templated system prompt following Rule 1.5. No naked strings.
+Versioned, templated system prompt. No naked strings.
 
 #### [NEW] `src/entity/agent_schemas.py`
 Pydantic I/O data contracts: `AnalysisRequest`, `SentimentBreakdown`, `AnalystReport`.
@@ -279,7 +277,7 @@ Add the AI Analysis tab/section to the UI.
 Add `pydantic-ai`, `google-generativeai` (or `pydantic-ai[google]`), and `httpx` (async HTTP for tool calls).
 
 #### [MODIFY] `.env.example`
-Add `GEMINI_API_KEY=your_gemini_api_key_here`.
+Add `GEMINI_API_KEY=your_gemini_api_key_here`, `GROQ_API_KEY=your_groq_key_here`, `HF_TOKEN=your_huggingface_token_here`.
 
 #### [MODIFY] `config/config.yaml`
 Add agent configuration block: `model_name`, `max_tokens`, `tool_timeout_seconds`.

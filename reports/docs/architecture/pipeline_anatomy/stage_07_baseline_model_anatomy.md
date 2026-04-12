@@ -103,7 +103,7 @@ Tracks the finalized features and the model training logic.
 
 ## 5. MLOps Design Principles
 
-1.  **Label Context Preservation (Rule 1.14):**
+1.  **Label Context Preservation:**
     By using the `LabelEncoder` during evaluation, the implementation logs class-specific metrics (e.g., `test_f1_Positive`) directly to MLflow. This provides a human-readable performance audit instead of ambiguous integer scores.
 
 2.  **Experiment Traceability:**

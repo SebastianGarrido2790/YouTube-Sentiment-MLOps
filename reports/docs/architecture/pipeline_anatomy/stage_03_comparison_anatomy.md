@@ -102,7 +102,7 @@ feature_comparison:
 
 ## 5. Why This is "Robust MLOps"
 
-1.  **Transient Data Studies (Rule 2.1):**
+1.  **Transient Data Studies:**
     By separating "Discovery" (Feature Comparison) from "Production" (Feature Engineering), we avoid creating a DAG where every experimental change invalidates the entire training pipeline.
 
 2.  **GPU-Awareness:**

@@ -34,7 +34,7 @@ The YouTube Sentiment Analysis project has been upgraded from a **Hardened MLOps
              └─────────────┘ └──────────────┘ └──────────────────────┘
 ```
 
-**Core Rule (1.2):** The LLM Agent **never** runs math or classification. It only orchestrates deterministic tools and synthesizes structured narrative.
+**Core Rule:** The LLM Agent **never** runs math or classification. It only orchestrates deterministic tools and synthesizes structured narrative.
 
 ---
 
@@ -45,7 +45,7 @@ The YouTube Sentiment Analysis project has been upgraded from a **Hardened MLOps
 |------|---------|
 | `src/agents/__init__.py` | Package marker |
 | `src/agents/content_analyst.py` | Core pydantic-ai Agent — registers tools, enforces `AnalystReport` return type |
-| `src/agents/prompts/system_prompt.py` | Versioned system prompt (Rule 1.5: No "Naked" Prompts) |
+| `src/agents/prompts/system_prompt.py` | Versioned system prompt (No "Naked" Prompts) |
 | `src/entity/agent_schemas.py` | Pydantic I/O contracts for all agent inputs/outputs |
 
 ### Tool Layer (Deterministic Hands)
@@ -131,7 +131,7 @@ Response:
     "total_analyzed":50,
     "raw_predictions":[
       "positive","positive","positive","positive","positive","positive","positive","positive","positive","positive","positive","positive","positive","positive","positive","positive","positive","positive","positive","positive","positive","positive","positive","positive","positive","positive","positive","positive","positive","positive","positive","positive","positive","positive","positive","positive","positive","positive","positive","positive","positive","positive","positive","positive","positive","positive","positive","positive","positive","positive","positive","positive","positive"
-      ]
+    ]
   },
   "data_quality_passed":true,
   "model_version":"v1.0",
@@ -150,7 +150,7 @@ uv run pytest tests/test_agent_tools.py tests/test_agent_api.py -v --no-cov
 ```
 
 ### Chrome Extension
-Load `chrome-extension/` as an unpacked extension. Open any YouTube video page and click **"🧠 Get AI Analysis"** — the extension calls the Agent endpoint and renders the AnalystReport card in-popup.
+Load `chrome-extension/` as an unpacked extension. Open any YouTube video page and click **"🧠 Get AI Analysis"**, the extension calls the Agent endpoint and renders the AnalystReport card in-popup.
 
 I have updated the button in `chrome-extension/popup.html` to have a more descriptive and professional name.
 
@@ -171,11 +171,11 @@ I have updated the button in `chrome-extension/popup.html` to have a more descri
 
 1. **`pydantic-ai` over LangChain/LangGraph** — native Pydantic v2 integration, pyright-compatible, minimal abstraction overhead. LangGraph would've been overengineering for a single-agent linear workflow.
 
-2. **Agent result type = `AnalystReport`** — pydantic-ai enforces this at the framework level. No free-form text can escape the endpoint (Rule 1.4).
+2. **Agent result type = `AnalystReport`** — pydantic-ai enforces this at the framework level. No free-form text can escape the endpoint.
 
 3. **Tools registered as closures** — the `build_agent()` factory pattern makes `AgentDeps` config clean injected without global state.
 
-4. **HTTP to Inference API** — the sentiment tool calls `http://127.0.0.1:8000/v1/predict` rather than importing the ML model directly. This preserves microservice decoupling — the Agent would work even if deployed on a different host (Rule 1.3).
+4. **HTTP to Inference API** — the sentiment tool calls `http://127.0.0.1:8000/v1/predict` rather than importing the ML model directly. This preserves microservice decoupling — the Agent would work even if deployed on a different host.
 
 5. **Data Quality Gate before ML inference** — a low-quality batch terminates the agentic workflow early with a clear failure reason included in the `AnalystReport.executive_summary`.
 

@@ -76,7 +76,7 @@ Acts as a thin wrapper designed for pipeline integration. It initializes the `Co
 ### B. The Worker Component (`src/components/data_ingestion.py`)
 Contains the actual "hands" of the operation. It handles directory creation, uses `requests` with streaming (to avoid memory bottlenecks), and implements specific HTTP error handling.
 
-### C. AgentOps Monitoring (Rule 2.7)
+### C. AgentOps Monitoring
 When triggered via the **FastAPI Orchestrator**, this stage is monitored for:
 - **Tool Call Accuracy:** Incremented upon successful file save.
 - **Retry Latency:** Tracked if network timeouts trigger the orchestrator's retry loops.

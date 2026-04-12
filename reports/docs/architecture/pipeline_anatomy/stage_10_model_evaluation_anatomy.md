@@ -102,13 +102,13 @@ Tracks all trained model artifacts and the test dataset splits.
 
 ## 5. MLOps Design Principles
 
-1.  **Test Set Sanctity (Rule 2.4):**
+1.  **Test Set Sanctity:**
     The `X_test` and `y_test` splits are treated as "Sacred Data." They are never allowed to interact with the training or tuning stages, ensuring the evaluation report is a statistically valid representation of production performance.
 
 2.  **The Handover Contract:**
     The `best_model_run_info.json` file is the primary interface between the Research and Operations layers. It explicitly links the local DVC output to a specific **MLflow Run ID**, allowing the `stage_06_register_model.py` stage to automate the promotion logic.
 
-3.  **Visual Evidence (Rule 2.1):**
+3.  **Visual Evidence:**
     The stage produces a **Comparative ROC Plot**. This provides the data science team with a visual "horse race" view, making it easy to see where one model's sensitivity outperforms another, even if their F1 scores are similar.
 
 4.  **Telemetry Tiering:**

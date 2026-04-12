@@ -100,7 +100,7 @@ Tracks the search logic and the resulting best model artifact.
 
 ## 5. MLOps Design Principles
 
-1.  **Search Strategy (Rule 1.14):**
+1.  **Search Strategy:**
     The use of the **TPE (Tree-structured Parzen Estimator)** sampler instead of a Random or Grid search ensures that the optimization process learns from previous trials, converging on the best parameters faster and at a lower token/compute cost.
 
 2.  **Telemetry Tiering:**

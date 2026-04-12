@@ -11,7 +11,7 @@
 |:---|:---|
 | Structured output | Native via Pydantic models — zero boilerplate |
 | Type safety | First-class, fully compatible with your `pyright` strict mode |
-| Tool definitions | Type-annotated functions — Agent reads docstrings per Rule 1.7 |
+| Tool definitions | Type-annotated functions — Agent reads docstrings |
 | State persistence | LangGraph (can be imported separately for checkpointing) |
 | Learning curve | Very low — reads like normal Python |
 | Portfolio signal | Modern, cutting-edge (2024 framework) |

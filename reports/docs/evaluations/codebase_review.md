@@ -54,11 +54,11 @@ By passing these two initial pillars, we have resolved the most critical blocker
 | Date | Type | Modification | Rationale |
 | :--- | :--- | :--- | :--- |
 | 2026-04-09 | FEATURE | Added `src/agents/content_analyst.py` | Core `pydantic-ai` Agent — the Brain of the v2.0 system. |
-| 2026-04-09 | FEATURE | Added `src/agents/prompts/system_prompt.py` | Versioned system prompt (Rule 1.5: No Naked Prompts). |
+| 2026-04-09 | FEATURE | Added `src/agents/prompts/system_prompt.py` | Versioned system prompt (No Naked Prompts). |
 | 2026-04-09 | FEATURE | Added `src/entity/agent_schemas.py` | Pydantic I/O contracts for all Agent inputs/outputs. |
 | 2026-04-09 | FEATURE | Added `src/tools/youtube_tool.py` | Deterministic YouTube Data API v3 wrapper. |
 | 2026-04-09 | FEATURE | Added `src/tools/data_quality_tool.py` | Statistical quality gate (null ratio, batch size, short-text ratio). |
-| 2026-04-09 | FEATURE | Added `src/tools/sentiment_tool.py` | HTTP wrapper around `/v1/predict` — microservice decoupling (Rule 1.3). |
+| 2026-04-09 | FEATURE | Added `src/tools/sentiment_tool.py` | HTTP wrapper around `/v1/predict` — microservice decoupling. |
 | 2026-04-09 | FEATURE | Added `src/api/agent_api.py` | FastAPI router — `POST /v1/agent/analyze`. |
 | 2026-04-10 | HARDEN | Implemented Gemini → Groq fallback in `content_analyst.py` | Ensures service continuity under 429/quota errors. |
 | 2026-04-11 | HARDEN | Added dynamic `max_comments=40` truncation on fallback | Prevents 413 Token Limit errors on Groq free tier (12K TPM limit). |
@@ -92,7 +92,7 @@ By passing these two initial pillars, we have resolved the most critical blocker
 | **Dual-Model Loading Strategy** | [inference_utils.py:76-155](../../../app/inference_utils.py#L76-L155) implements MLflow Registry → Local fallback with `PREFER_LOCAL_MODEL` env override — resilient to registry downtime |
 | **ADASYN Imbalance Handling** | [data_loader.py:96-115](../../../src/models/helpers/data_loader.py#L96-L115) applies ADASYN with `random_state=42` for reproducible oversampling |
 | **Dual-Framework Optuna** | [hyperparameter_tuning.py](../../../src/models/hyperparameter_tuning.py) supports both LightGBM (sklearn API) and XGBoost (native API) in a single script with strategy pattern |
-| **Artifacts Persistence Record** | Adherence to **Rule 2.12** — the pipeline is architected to save and version all reusable artifacts (scalers, encoders, stratified splits) to ensure full lifecycle persistence and reproducibility |
+| **Artifacts Persistence Record** | The pipeline is architected to save and version all reusable artifacts (scalers, encoders, stratified splits) to ensure full lifecycle persistence and reproducibility |
 
 
 ### 1.3 Data Processing
@@ -584,7 +584,7 @@ The CI workflow already includes Trivy, but with `exit-code: "0"` it functions a
 > - **Refactoring**: Replaced all `src.utils.paths` imports with `src.constants`.
 > - **Configuration**: `ConfigurationManager` now uses `PARAMS_FILE_PATH` from constants.
 > - **Cleanup**: Deleted legacy `src/utils/paths.py`.
-> - **Artifacts**: Refactored `PROCESSED_DATA_DIR` and data splits into the `artifacts/` root to satisfy **Rule 2.1** (Artifacts Persistence).
+> - **Artifacts**: Refactored `PROCESSED_DATA_DIR` and data splits into the `artifacts/` root to satisfy Artifacts Persistence.
 >
 > *(Original gap details preserved below for history)*
 
@@ -667,7 +667,7 @@ repos:
 > handler.setFormatter(json_log_formatter.JSONFormatter())
 > ```
 
-### 3.5 Add OpenTelemetry Tracing (Rule 4.2)
+### 3.5 Add OpenTelemetry Tracing
 
 Instrument FastAPI with span-level visibility into prediction latency, model loading time, and feature engineering overhead:
 ```toml
@@ -766,7 +766,7 @@ Full architecture health check script that validates:
 - [x] **Add API versioning (`/v1/` router)** to both APIs ([§2.20](#220-low-no-api-versioning))
 - [x] **Rewrite `test_inference.py` as `pytest` tests** using `TestClient` ([§2.12](#212-medium-apptest_inferencepy-is-a-manual-script-not-an-automated-test))
 - [x] **Create `docker-compose.yml`** for dual-service orchestration ([§2.17](#217-low-root-dockerfile-healthcheck-uses-curl-but-extension-needs-two-apis))
-- [x] **Implement Artifacts Persistence Mandate (Rule 2.12)** — Centralize all non-code outputs into a versioned `artifacts/` root directory. ([§2.23](#223-persistent-artifacts))
+- [x] **Implement Artifacts Persistence Mandate** — Centralize all non-code outputs into a versioned `artifacts/` root directory. ([§2.23](#223-persistent-artifacts))
 
 ### Phase 4: Developer Experience
 
@@ -778,9 +778,9 @@ Full architecture health check script that validates:
 
 ### Phase 5: Portfolio Differentiation
 
-- [x] **Add Great Expectations data validation** ([§3.3](#33-add-great-expectations-gx-data-validation-rule-21))
-- [x] **Add structured JSON logging** ([§3.4](#34-add-structured-json-logging-for-production-rule-22))
-- [ ] **Add OpenTelemetry tracing** ([§3.5](#35-add-opentelemetry-tracing-rule-42))
+- [x] **Add Great Expectations data validation** ([§3.3](#33-add-great-expectations-gx-data-validation-21))
+- [x] **Add structured JSON logging** ([§3.4](#34-add-structured-json-logging-for-production-22))
+- [ ] **Add OpenTelemetry tracing** ([§3.5](#35-add-opentelemetry-tracing-42))
 - [ ] **Add Model Card** ([§3.6](#36-add-model-card-documentation))
 - [ ] **Set Trivy `exit-code: "1"`** and add `bandit` to CI ([§2.18](#218-low-no-security-scanning-in-ci))
 - [x] **Add Chrome Extension API key input UI** ([§2.10](#210-medium-hardcoded-api-key-in-chrome-extension-source))
@@ -788,11 +788,11 @@ Full architecture health check script that validates:
 ### Phase 6: Hybrid Agentic MLOps System (v2.0) ✅ COMPLETE
 
 - [x] **Implement `src/agents/content_analyst.py`** — Core `pydantic-ai` Agent (Brain) with `AnalystReport` result type.
-- [x] **Implement `src/agents/prompts/system_prompt.py`** — Versioned, templated system prompt (Rule 1.5: No Naked Prompts).
+- [x] **Implement `src/agents/prompts/system_prompt.py`** — Versioned, templated system prompt (No Naked Prompts).
 - [x] **Implement `src/entity/agent_schemas.py`** — Pydantic I/O contracts for all Agent inputs/outputs.
 - [x] **Implement `src/tools/youtube_tool.py`** — Deterministic YouTube Data API v3 wrapper.
 - [x] **Implement `src/tools/data_quality_tool.py`** — Statistical data quality gate (null ratio, batch size, short-text ratio).
-- [x] **Implement `src/tools/sentiment_tool.py`** — HTTP wrapper around `/v1/predict` (Rule 1.3: Tools as Microservices).
+- [x] **Implement `src/tools/sentiment_tool.py`** — HTTP wrapper around `/v1/predict` (Tools as Microservices).
 - [x] **Implement `src/api/agent_api.py`** — FastAPI router (`POST /v1/agent/analyze`) mounted in main app.
 - [x] **Implement Gemini → Groq fallback** in `content_analyst.py` — 429-safe, self-healing provider switching.
 - [x] **Implement dynamic payload truncation** — `max_comments=40` on fallback to satisfy Groq 12K TPM limit.

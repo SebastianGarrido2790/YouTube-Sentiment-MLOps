@@ -112,7 +112,7 @@ def build_agent(config: AgentConfig, model_override: str | None = None) -> Agent
     # -----------------------------------------------------------------------
     # Tool Registrations
     # All tools are deterministic. The Agent decides WHEN to call them;
-    # the tools decide HOW to execute. (Rule 1.12)
+    # the tools decide HOW to execute.
     # -----------------------------------------------------------------------
 
     @agent.tool
